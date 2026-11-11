@@ -1,0 +1,113 @@
+{
+  "date": "2026-11-11",
+  "baseline_commit": "87633528f941577cb1f3f3a1698beef74e8e867d",
+  "python_tests": {
+    "errors": 0,
+    "failures": 0,
+    "passed": 130
+  },
+  "browser_checks_passed": 17,
+  "browser_receipts": {
+    "navigation-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "viewport": [
+        1440,
+        900
+      ],
+      "content_digest": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+      "checks": [
+        "Expand src and utils, then open a real Redux file from the tree",
+        "Click the call in source, zoom and pan, follow the declaration, and restore all navigation state with Back",
+        "Following reveals the target folder and Back restores the prior tree expansion"
+      ],
+      "origin": {
+        "camera": "translate(-7658.189208984375 -1720.25) scale(1.875)",
+        "detail": "src/utils/isAction.ts:6 · isPlainObject",
+        "edge": "cand:src/utils/isAction.ts#call:isPlainObject@185",
+        "focus": [
+          [
+            "src/utils/isAction.ts",
+            "185",
+            "198"
+          ]
+        ],
+        "file": "src/utils/isAction.ts",
+        "expanded": [
+          "src",
+          "src/utils"
+        ],
+        "scroll": 0
+      },
+      "destination": {
+        "camera": "translate(-5169.37744140625 -1612.5) scale(1.25)",
+        "detail": "src/utils/isPlainObject.ts:5 · isPlainObject",
+        "edge": "cand:src/utils/isAction.ts#call:isPlainObject@185",
+        "focus": [
+          [
+            "src/utils/isPlainObject.ts",
+            "132",
+            "145"
+          ]
+        ],
+        "file": "src/utils/isPlainObject.ts",
+        "expanded": [
+          "src",
+          "src/utils"
+        ],
+        "scroll": 0
+      },
+      "page_errors": []
+    },
+    "existing-map/browser-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "viewport": [
+        1500,
+        1000
+      ],
+      "content_digest": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+      "checks": [
+        "Full Redux source inventory loads and verifies all 17 source blobs",
+        "Real call navigation and Back preserve source span and camera",
+        "Folder collapse hides source files and expansion preserves camera",
+        "File/symbol search supports keyboard opening of source",
+        "Pointer zoom retains source position within one CSS pixel",
+        "Minimap center navigation accounts for SVG aspect ratio",
+        "Changed embedded source disables relationship navigation"
+      ],
+      "page_errors": [],
+      "performance": "not_run",
+      "production_acceptance": "not_run"
+    },
+    "review/review-map-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "checks": [
+        "Redux reports 25 distinct relationships separately from 30 source sites",
+        "160,001-line source verifies, opens the symbol, and renders at its exact source line"
+      ]
+    },
+    "launcher/launcher-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "checks": [
+        "Local folder submission runs both language adapters through all eight stages",
+        "Four files and two direct relationships reach the shared graph",
+        "Embedded interactive map verifies source bytes and provides file navigation",
+        "Documentation contains package-scoped Preact and FastAPI evidence and structural relationships",
+        "Map/documentation switching retains the same publication"
+      ],
+      "page_errors": []
+    }
+  },
+  "source_sha256": {
+    "README.md": "3652846927994cd683698cc99139465c8a7ec9015519d004b2d31e22dbaedbc0",
+    "seremy/map/product-template.html": "bb3145da9d7fad60b619f5984439e0ff74d0439bdb1667385d642d8bf9c0a21e",
+    "seremy/tools/check-navigation.cjs": "6c0bd917ee1c3c810ea2519c8caf9f358477a5c1a974aa6b8df22d08fa88a2d4",
+    "docs/source-navigation.md": "086449d07c6f13007a6bf113e58b28ce75ac0345c78a9edb44ca855336d9e4c8"
+  },
+  "renderer": "SVG",
+  "representative_performance": "not_run",
+  "mcp_integration": "planned"
+}

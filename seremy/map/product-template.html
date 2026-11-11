@@ -4,13 +4,19 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#101a1d;color:#dce9e2;font:14px system-ui}header,footer{padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid #33483f}header b{letter-spacing:.12em}button,input,select{font:inherit;background:#20332e;color:#e0eee5;border:1px solid #547266;padding:7px;border-radius:4px}button:enabled,select{cursor:pointer}button:disabled{opacity:.4}#status{font-size:12px;color:#afc6b7}#map{width:100%;height:70vh;display:block;touch-action:none;background-image:radial-gradient(#2e443a 1px,transparent 1px);background-size:25px 25px}main{position:relative}#mini{position:absolute;bottom:12px;right:12px;width:145px;height:95px;background:#14231e;border:1px solid #658b76}#detail{flex:1;min-width:240px}#detail small{display:block;color:#9fbca9;margin-top:4px}.file{fill:#14251f;stroke:#789788}.folder{fill:#182a2233;stroke:#587664}.wire{fill:none;stroke:#87b9a3;stroke-width:2}.wire.selected{stroke:#ffd78c;stroke-width:4}.hit{fill:none;stroke:transparent;stroke-width:15;cursor:pointer}.token{fill:#73d9ab33;stroke:#7ac59f;cursor:pointer}.token:hover{fill:#f9e19e66;stroke:#f9e19e}.code{font:14px Consolas,monospace;fill:#c5dbcd}.name{font:600 17px system-ui;fill:#e2eee7}.number{fill:#8aa490}.keyword{fill:#e6b1ce}.comment{fill:#9daf9b}p{padding:0 18px;color:#a1bba9;font-size:12px}#evidence{word-break:break-word}
 </style>
+<style>
+body{background:#141414;color:#ddd}main{display:flex;height:70vh}#map{flex:1;min-width:0;height:100%;background-color:#171717;background-image:radial-gradient(#333 1px,transparent 1px)}
+#repository{width:250px;flex-shrink:0;overflow:auto;padding:12px 8px;border-right:1px solid #383838;background:#1b1b1b;font-size:12px}#repository h2{font-size:12px;color:#aaa;margin:0 8px 12px}#tree details{margin-left:12px}#tree>details{margin-left:0}#tree summary{cursor:pointer;padding:6px;color:#ccc}#tree button{display:block;width:100%;text-align:left;background:transparent;border:0;padding:6px 12px;color:#bbb;font-size:12px;white-space:nowrap}#tree button:hover,#tree summary:hover{background:#303030}#tree button[aria-current=true]{background:#333b48;color:#eef3ff}.source-focus{fill:#d7ac452b;stroke:#edc96c;stroke-width:1.5;pointer-events:none}#mini{background:#202020}header,footer{border-color:#383838}button,input,select{background:#252525;border-color:#555;color:#ddd}.file{fill:#1e1e1e;stroke:#606773}.folder{fill:#33333333;stroke:#555}.wire{stroke:#708198}.wire.selected{stroke:#d3ad65}.token{fill:transparent;stroke:transparent}.token:hover{fill:#8ca2d533;stroke:#9cb9e5}.code{fill:#ccc}.name{fill:#ddd}.number{fill:#777}.keyword{fill:#bb97cf}.comment{fill:#819574}
+@media(max-width:700px){#repository{width:170px}}
+.code{white-space:pre;font-variant-ligatures:none}
+</style>
 <header><b>SEREMY</b><span id="status">Verifying source…</span>
 <input id="search" type="search" placeholder="Find a file or symbol" aria-label="Find file or symbol">
 <select id="files" aria-label="Open file"></select><button id="open">Open file</button>
 <button id="back" disabled>Back</button><button id="fit">Fit map</button>
 <button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button>
 <button id="collapse">Collapse folders</button></header>
-<main><svg id="map" tabindex="0" aria-label="Source code map"><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg></main>
+<main><nav id="repository" aria-label="Repository files"><h2>Files</h2><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg></main>
 <footer><div id="detail" aria-live="polite">Select a relationship or source region.</div><select id="edges" aria-label="Relationship"></select>
 <button id="origin">Show source</button><button id="target">Follow target</button></footer>
 <p id="evidence"></p><p>Scroll to zoom. Drag to pan. Search files or symbols. Select a relationship, then follow it or return with Back. This map shows a scoped static analysis draft.</p>
@@ -20,12 +26,15 @@
 'use strict';
 const data=JSON.parse(document.querySelector('#fixture').textContent);
 const el=id=>document.getElementById(id),map=el('map'),world=el('world'),mini=el('mini');
-const ns='http://www.w3.org/2000/svg',lineHeight=20,charWidth=8.43;
+const ns='http://www.w3.org/2000/svg',lineHeight=20;
 function add(parent,tag,attrs={},text=''){
   const node=document.createElementNS(ns,tag);
   for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);
   node.textContent=text;parent.append(node);return node;
 }
+const fontProbe=add(world,'text',{class:'code',visibility:'hidden'},'M'.repeat(64));
+const charWidth=fontProbe.getComputedTextLength()/64;
+fontProbe.remove();
 const folders={},files={};
 let column=0,maxY=500,maxX=800;
 for(const path of Object.keys(data.files).sort()){
@@ -60,7 +69,16 @@ function anchor(span){
   if(collapsed){const g=folders[f.dir];return {x:g.x+260,y:g.y+45};}
   return {x:f.x+52+p.col*charWidth,y:f.y+47+(p.line-1)*lineHeight};
 }
-function save(){history.push({camera:{...camera},collapsed,selected,focus});}
+function save(){
+  history.push({camera:{...camera},collapsed,selected,focus,
+    expanded:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),
+    treeScroll:el('repository').scrollTop});
+}
+function revealFile(path){
+  const button=[...el('tree').querySelectorAll('button')].find(node=>node.dataset.file===path);
+  for(let parent=button?.parentElement;parent&&parent!==el('tree');parent=parent.parentElement)
+    if(parent.tagName==='DETAILS')parent.open=true;
+}
 function center(p,k){camera={x:map.clientWidth/2-p.x*k,y:map.clientHeight/2-p.y*k,k};}
 function fit(){
   const height=collapsed?250:maxY+30;
@@ -68,7 +86,7 @@ function fit(){
 }
 function follow(span){
   if(!bound||!span)return;
-  save();collapsed=false;focus=span;center(anchor(span),1.25);draw();
+  save();collapsed=false;focus=span;revealFile(span.file);center(anchor(span),1.25);draw();
 }
 function zoom(x,y,factor){
   const k=Math.min(4,Math.max(.001,camera.k*factor)),ratio=k/camera.k;
@@ -81,6 +99,8 @@ function controls(){
   el('back').disabled=!history.length;
   el('collapse').textContent=collapsed?'Expand folders':'Collapse folders';
   el('edges').value=selected?.id||'';
+  for(const button of el('tree').querySelectorAll('button'))
+    button.setAttribute('aria-current',String(button.dataset.file===focus?.file));
   el('detail').textContent=focus?focus.file+':'+position(focus).line+' · '+position(focus).token:
     selected?selected.kind+' · '+selected.from.file+' → '+selected.to.file:
     Object.keys(files).length+' source files · '+data.edges.length+' bound source occurrences';
@@ -115,7 +135,7 @@ function draw(){
       if(camera.k<.5){
         if(line.trim())add(world,'rect',{x:f.x+52,y:y-9,width:line.length*7,height:8,fill:'#507561'});
       }else{
-        const t=add(world,'text',{x:f.x+8,y,class:'code','xml:space':'preserve'});
+        const t=add(world,'text',{x:f.x+8,y,class:'code','xml:space':'preserve','data-file':f.path,'data-line':i+1});
         add(t,'tspan',{class:'number'},String(i+1));
         renderCode(line,add(t,'tspan',{x:f.x+52}));
       }
@@ -137,15 +157,43 @@ function draw(){
       const key=span.file+'@'+span.start;if(seen.has(key))continue;seen.add(key);
       const p=anchor(span),name=position(span).token;
       if(p.x<visible.left||p.x>visible.right||p.y<visible.top||p.y>visible.bottom)continue;
-      const box=add(world,'rect',{x:p.x,y:p.y-14,width:Math.max(8,name.length*charWidth),height:18,class:'token'});
+      const box=add(world,'rect',{x:p.x,y:p.y-14,width:Math.max(8,name.length*charWidth),height:18,class:'token',
+        'data-file':span.file,'data-start':span.start,tabindex:0,role:'button',
+        'aria-label':'Select '+name+' in '+span.file+':'+position(span).line});
       add(box,'title',{},name+' · '+span.file+':'+position(span).line);
       box.onclick=()=>{const edge=data.edges.find(e=>e.from.file===span.file&&e.from.start===span.start);select(edge||null,span);};
+      box.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();box.onclick();}};
+    }
+    if(focus){
+      const p=anchor(focus),location=position(focus);
+      add(world,'rect',{x:p.x,y:p.y-15,width:Math.max(8,location.token.length*charWidth),height:20,
+        class:'source-focus','data-file':focus.file,'data-start':focus.start,'data-end':focus.end});
     }
   }
   add(mini,'rect',{x:visible.left,y:visible.top,width:visible.right-visible.left,height:visible.bottom-visible.top,
     fill:'none',stroke:'#ffd793','stroke-width':Math.max(maxX,maxY)/100});
   controls();
 }
+function buildTree(){
+  const directories=new Map([['',el('tree')]]);
+  for(const path of Object.keys(files).sort()){
+    const parts=path.split('/');let directory='';
+    for(const part of parts.slice(0,-1)){
+      const parent=directories.get(directory);
+      directory=directory?directory+'/'+part:part;
+      if(directories.has(directory))continue;
+      const group=document.createElement('details');group.dataset.directory=directory;
+      const summary=document.createElement('summary');summary.textContent=part;
+      group.append(summary);parent.append(group);directories.set(directory,group);
+    }
+    const button=document.createElement('button');
+    button.type='button';button.textContent=parts.at(-1);button.dataset.file=path;
+    button.setAttribute('aria-label','Open '+path);
+    button.onclick=()=>follow({file:path,start:0,end:0});
+    directories.get(directory).append(button);
+  }
+}
+buildTree();
 function filterFiles(){
   const query=el('search').value.toLowerCase(),picker=el('files');
   picker.replaceChildren();
@@ -166,7 +214,12 @@ el('edges').onchange=()=>select(data.edges.find(e=>e.id===el('edges').value));
 el('origin').onclick=()=>follow(selected?.from);el('target').onclick=()=>follow(selected?.to);
 el('fit').onclick=()=>{save();fit();draw();};
 el('collapse').onclick=()=>{save();collapsed=!collapsed;draw();};
-el('back').onclick=()=>{const prior=history.pop();if(prior){({camera,collapsed,selected,focus}=prior);draw();}};
+el('back').onclick=()=>{
+  const prior=history.pop();if(!prior)return;
+  ({camera,collapsed,selected,focus}=prior);
+  for(const node of el('tree').querySelectorAll('details'))node.open=prior.expanded.includes(node.dataset.directory);
+  el('repository').scrollTop=prior.treeScroll;draw();
+};
 el('in').onclick=()=>zoom(map.clientWidth/2,map.clientHeight/2,1.5);
 el('out').onclick=()=>zoom(map.clientWidth/2,map.clientHeight/2,1/1.5);
 map.addEventListener('wheel',event=>{event.preventDefault();const r=map.getBoundingClientRect();zoom(event.clientX-r.left,event.clientY-r.top,Math.exp(-.002*event.deltaY));},{passive:false});

@@ -18,7 +18,7 @@ python -B -m seremy analyze seremy/fixtures/local-demo --output .seremy-artifact
 python -B -m seremy analyze --zip C:/path/source.zip --output .seremy-artifacts
 ```
 
-The map, graph, documentation, and validation result are stored together under `.seremy-artifacts/versions/`. The map renders actual source in place as you zoom. It supports file and symbol search, call navigation, Back, folder collapse, and a minimap. Distinct relationships and source sites have separate counts.
+The map, graph, documentation, and validation result are stored together under `.seremy-artifacts/versions/`. The map renders actual source in place as you zoom. Its repository tree expands folders and opens files. Select a call in source and choose Follow target to reach its declaration. Back restores selection, camera position, zoom, tree expansion, and tree scroll. The selected source region stays highlighted. File and symbol search, global canvas folder collapse, and a minimap are also available. Distinct relationships and source sites have separate counts.
 
 Install the development dependency and run the Python regressions with the normal product entry points.
 
@@ -33,6 +33,7 @@ Browser checks use Playwright and Chromium. Install the browser once, generate a
 npx --prefix seremy/tools playwright install chromium
 python -B -m seremy analyze seremy/fixtures/redux-slice --output .seremy-artifacts
 node seremy/tools/check-product-map.cjs PUBLICATION_DIRECTORY test-results/map
+node seremy/tools/check-navigation.cjs PUBLICATION_DIRECTORY test-results/navigation
 node seremy/tools/check-review-map.cjs PUBLICATION_DIRECTORY test-results/review-map
 node seremy/tools/check-launcher.cjs test-results/launcher
 ```
