@@ -10,8 +10,12 @@ SVG source text preserves indentation and uses the measured monospace character 
 
 The workspace now opens with No folder, a repository connection action, and centered Docs. Folder paths, ZIP uploads, and HTTPS Git repositories use a connection dialog. The loaded map occupies the window below the workspace toolbar. Documentation switching preserves its camera. A failed replacement repository keeps the existing map available.
 
-This milestone uses the existing SVG renderer. GPU rendering, nested layout on the canvas, MCP integration, and representative performance qualification remain planned work. Panel controls and the source toolbar still require further visual refinement.
+Canvas layout now nests directories and files using their repository paths. Each directory heading controls its own collapsed state, including through Enter and Space. Collapsing a parent preserves its children's independent states. Following a relationship opens the target's ancestors, while Back restores the prior canvas layout and camera. Relationships to hidden files terminate at the visible collapsed ancestor. Internal relationships whose endpoints share the same collapsed ancestor are hidden until expansion. The minimap reflects the visible layout. Directory labels remain readable at overview zoom.
+
+This milestone uses the existing SVG renderer. GPU rendering, MCP integration, long-file folding, and representative performance qualification remain planned work. Panel controls and the source toolbar still require further visual refinement.
 
 The original `verification.json` records the source hashes and test results of baseline commit 8763352. The navigation milestone has its own `navigation-verification.json` receipt.
 
 `workspace-verification.json` records the subsequent selection fix and workspace checks. The launcher check covers first visit, connection, documentation, failed replacement, and 1280 by 800 layout.
+
+`nested-canvas-verification.json` records the nested layout milestone. The dedicated browser check verifies directory containment, independent collapse, boundary endpoints, keyboard controls, and restoration through Back on Redux.
