@@ -2,6 +2,8 @@
 
 SEREMY turns a source repository into a graph of observed declarations and static calls, a spatial source map, and cited Markdown documentation. The local pipeline has eight stages covering discovery, parsing, dependency resolution, framework evidence, structural components, relationship views, validation, and documentation.
 
+The hosted entry point accepts repository ZIP uploads and provides an interactive map, documentation and downloads. Its Docker image contains both language runtimes. See [hosted analysis](docs/hosted-analysis.md) for limits, temporary result storage and deployment commands.
+
 Python 3.12 or newer and Node.js 22 are required. The TypeScript compiler is pinned to 5.9.3. Python analysis uses the standard-library AST. Run these commands from this repository's root.
 
 ```powershell

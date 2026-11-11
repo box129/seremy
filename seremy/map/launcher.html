@@ -21,7 +21,7 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 </style>
 <header><button id="connect" aria-label="Connect repository" aria-haspopup="dialog">No folder <span aria-hidden="true">⌄</span></button>
 <nav id="outputs" aria-label="Workspace views" hidden><button id="map-tab" aria-pressed="true">Interactive map</button><button id="doc-tab" aria-pressed="false">Documentation</button>
-<a id="download" download>Graph JSON</a><a id="checks" target="_blank" rel="noopener">Validation results</a></nav></header>
+<a id="download" download>Graph JSON</a><a id="download-map" download="seremy-map.html" hidden>Download map</a><a id="checks" target="_blank" rel="noopener">Validation results</a></nav></header>
 <main><div id="empty"><button id="empty-connect">Connect repository</button><p>Local folder, ZIP or Git repository</p></div>
 <iframe id="map" title="Interactive source map" hidden></iframe><pre id="doc" tabindex="0" hidden></pre>
 <button id="docs" aria-haspopup="dialog">Docs</button></main>
@@ -39,6 +39,7 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 <ol><li>Connect a local folder, ZIP or HTTPS Git repository.</li><li>Expand folders in Files and open a source file.</li><li>Select a call, then choose Follow target to visit its declaration.</li><li>Use Back to restore your position and selection.</li></ol><p>Scroll to zoom and drag to pan. Documentation and source evidence are generated from the same analysis.</p><p>Results are drafts. Validation results show the analysis coverage.</p></dialog>
 <script>
 const get=id=>document.getElementById(id);
+const hosted=window.SEREMY_HOSTED===true;
 let job=null,publication=null,repositoryName='';
 function status(message){get('status').textContent=get('connection-status').textContent=message;}
 function connect(){get('connect-dialog').showModal();}
@@ -70,6 +71,7 @@ async function poll(){
       get('connect').textContent=repositoryName;
       get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');
       get('download').href='/reports/'+publication+'/graph.json';get('checks').href='/reports/'+publication+'/validation.json';
+      get('download-map').href='/reports/'+publication+'/map.html';get('download-map').hidden=!hosted;
       const c=state.coverage;
       get('summary').textContent=c.s02.parsed_file_records+' source files processed · '+c.s03.direct_edge_count+
         ' distinct call relationships · '+c.s03.attempted_count+' binding attempts · Draft';
@@ -85,14 +87,17 @@ get('form').onsubmit=async event=>{
     const kind=get('kind').value;let value=get('value').value;
     if(kind==='zip'){
       const file=get('zip').files[0];
-      if(!file||file.size>10*1024*1024)throw new Error('Choose a ZIP file up to 10 MiB.');
+      const limit=hosted?3:10;
+      if(!file||file.size>limit*1024*1024)throw new Error('Choose a ZIP file up to '+limit+' MiB.');
       const raw=new Uint8Array(await file.arrayBuffer());let binary='';
       for(let i=0;i<raw.length;i+=8192)binary+=String.fromCharCode(...raw.subarray(i,i+8192));
       value=btoa(binary);
     }
     repositoryName=kind==='zip'?get('zip').files[0].name:value.replace(/[\\/]+$/,'').split(/[\\/]/).pop();
     const result=await post('/api/jobs',{kind,value,revision:get('revision').value||null});
-    job=result.id;get('cancel').hidden=false;poll();
+    job=result.id;
+    if(hosted)try{sessionStorage.setItem('seremy-job',JSON.stringify({job,repositoryName}));}catch(error){}
+    get('cancel').hidden=false;poll();
   }catch(error){status(error.message);get('start').disabled=false;}
 };
 get('cancel').onclick=async()=>{
@@ -110,4 +115,20 @@ get('doc-tab').onclick=async()=>{
     get('map-tab').setAttribute('aria-pressed','false');get('doc-tab').setAttribute('aria-pressed','true');
   }catch(error){status(error.message);}
 };
+if(hosted){
+  get('kind').querySelector('[value=folder]').remove();
+  get('kind').querySelector('[value=git]').remove();
+  get('kind').value='zip';get('kind').onchange();
+  get('empty').querySelector('p').textContent='Repository ZIP · up to 3 MiB';
+  get('help-dialog').querySelector('li').textContent='Upload a repository ZIP. Python and TypeScript source are supported.';
+  const notice=document.createElement('p');
+  notice.textContent='Up to 1,000 ZIP entries and 8 MiB extracted. Results expire after one hour and may disappear when the free service restarts. Download your map and graph to keep them. Keep result links private because they include source code.';
+  get('form').prepend(notice);
+  try{
+    const saved=JSON.parse(sessionStorage.getItem('seremy-job'));
+    if(saved&&/^[0-9a-f]{64}$/.test(saved.job)){
+      job=saved.job;repositoryName=saved.repositoryName;get('start').disabled=true;poll();
+    }
+  }catch(error){}
+}
 </script></html>

@@ -1,0 +1,6 @@
+.git
+.seremy-artifacts
+test-results
+**/node_modules
+**/__pycache__
+docs
