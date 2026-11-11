@@ -22,7 +22,7 @@ async function run(){
     await page.getByRole('button',{name:'Zoom in',exact:true}).click();
     assert.equal(await file.evaluate(node=>node===document.querySelector('.file[data-file="src/utils/isAction.ts"]')),true);
     checks.push('Visible source file retains its DOM node during zoom');
-    assert.ok(await page.locator('.wire').count()<allEdges);
+    assert.ok(await page.locator('.wire[data-overview=false]').count()<data.edges.length);
     checks.push('Source zoom culls offscreen relationships');
     const bounds=await page.locator('#map').boundingBox();
     await page.mouse.move(bounds.x+20,bounds.y+20);await page.mouse.down();

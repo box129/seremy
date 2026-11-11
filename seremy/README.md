@@ -50,7 +50,7 @@ The result supplies static edge witnesses, zero-depth results, no-path and trunc
 | S07 | Snapshot/source/evidence checks, candidate conservation, framework-input and membership/view consistency, optional forbidden-boundary/cycle rules, and exact template-claim checks after generation. |
 | S08 | A cited document model and Markdown explanations for declarations, relationships, framework evidence, structural components and coverage. The map and document read the same graph bundle. |
 
-The source map lays out the observed files by directory and renders code at reading scale. Rendering culls off-screen source lines. This version has global folder collapse and retains individual crossing relationships. Production group-level visual edge aggregation, arbitrary nested folder controls, source-result update streaming and comprehensive accessibility remain further viewer work.
+The source map lays out the observed files by nested directory and renders code at reading scale. Rendering culls off-screen source lines. Folders collapse independently. Below scale 0.5, source occurrences are grouped by visible file or folder and relationship kind, with counts in group tooltips. The relationship picker retains every occurrence, and the selected occurrence receives an exact source-to-target overlay. Source-result update streaming, GPU comparison, representative performance qualification and comprehensive accessibility remain further viewer work.
 
 The framework registry currently names React, Preact, Express, Next.js, Vue, Svelte, Django, FastAPI, Flask and SQLAlchemy. A declaration means the manifest declares a dependency. A source import means import syntax was observed. Routes, DI, ORM relations and runtime behavior require separately qualified rule profiles.
 

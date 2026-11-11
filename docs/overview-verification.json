@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "checks": [
+    "Overview groups represent every original source occurrence",
+    "Any occurrence can be selected, followed and restored from the overview",
+    "Folder collapse recomputes groups and expansion restores them without losing occurrences"
+  ],
+  "page_errors": []
+}

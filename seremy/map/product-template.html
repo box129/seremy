@@ -71,6 +71,7 @@ const root={name:'',children:[]};
 const closedFolders=new Set();
 const expandedFiles=new Set();
 let maxY=500,maxX=800;
+let overviewRelationships=null;
 function folderFor(name){
   if(!name)return root;
   if(folders[name])return folders[name];
@@ -91,6 +92,7 @@ for(const path of Object.keys(data.files).sort()){
   for(let ancestor=folder;ancestor!==root;ancestor=folderFor(ancestor.parent))ancestor.count++;
 }
 function layout(){
+  overviewRelationships=null;
   for(const file of Object.values(files)){
     file.displayLines=file.lines.length>foldThreshold&&!expandedFiles.has(file.path)?previewLines:file.lines.length;
     file.height=file.displayLines*lineHeight+100;
@@ -141,6 +143,27 @@ function anchor(span){
     if(closedFolders.has(folder.name)&&!folder.hidden)return {x:folder.x+folder.width/2,y:folder.y+folder.height/2};
   if(p.line>f.displayLines)return {x:f.x+f.width/2,y:f.y+f.height-15};
   return {x:f.x+52+p.col*charWidth,y:f.y+codeTop+(p.line-1)*lineHeight};
+}
+function overviewContainer(path){
+  const file=files[path];
+  for(let folder=folderFor(file.dir);folder!==root;folder=folderFor(folder.parent))
+    if(closedFolders.has(folder.name)&&!folder.hidden)return folder;
+  return file;
+}
+function overviewEdges(){
+  if(overviewRelationships)return overviewRelationships;
+  const groups=new Map();
+  for(const edge of data.edges){
+    const from=overviewContainer(edge.from.file),to=overviewContainer(edge.to.file);
+    const key=JSON.stringify([from.path||from.name,to.path||to.name,edge.kind]);
+    if(groups.has(key)){groups.get(key).count++;continue;}
+    const same=from===to;
+    groups.set(key,{edge,count:1,
+      a:{x:from.x+from.width*(same ? 0.3 : 0.5),y:from.y+from.height*(same ? 0.4 : 0.5)},
+      b:{x:to.x+to.width*(same ? 0.7 : 0.5),y:to.y+to.height*(same ? 0.6 : 0.5)}});
+  }
+  overviewRelationships=[...groups.values()];
+  return overviewRelationships;
 }
 function save(){
   history.push({camera:{...camera},collapsed,selected,focus,closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],
@@ -232,26 +255,35 @@ function draw(){
     }
     const first=Math.max(0,Math.floor((visible.top-f.y-codeTop)/lineHeight));
     const last=Math.min(f.displayLines,Math.ceil((visible.bottom-f.y)/lineHeight));
-    const stride=camera.k<.5?Math.max(1,Math.ceil(1/(camera.k*lineHeight))):1;
+    const stride=camera.k<.5?Math.max(1,Math.ceil(3/(camera.k*lineHeight))):1;
+    let coarseLines='';
     for(let i=first;i<last;i+=stride){
       const y=f.y+codeTop+i*lineHeight,line=f.lines[i];
       if(camera.k<.5){
-        if(line.trim())add(world,'rect',{x:f.x+52,y:y-9,width:line.length*7,height:8,fill:'#507561'});
+        if(line.trim())coarseLines+='M '+(f.x+52)+' '+(y-9)+' h '+(line.length*7)+' v 8 h '+(-line.length*7)+' Z ';
       }else{
         const t=add(world,'text',{x:f.x+8,y,class:'code','xml:space':'preserve','data-file':f.path,'data-line':i+1});
         add(t,'tspan',{class:'number'},String(i+1));
         renderCode(line,add(t,'tspan',{x:f.x+52}));
       }
     }
+    if(coarseLines)add(world,'path',{d:coarseLines,fill:'#507561','data-source-preview':f.path});
   }
-  for(const edge of data.edges){
-    const a=anchor(edge.from),b=anchor(edge.to);
+  const relationships=camera.k<.5?overviewEdges():data.edges.map(edge=>({edge,count:1}));
+  const drawn=selected&&camera.k<.5?[...relationships,{edge:selected,count:1,exact:true}]:relationships;
+  for(const relationship of drawn){
+    const {edge,count}=relationship;
+    const a=relationship.a||anchor(edge.from),b=relationship.b||anchor(edge.to);
+    const exact=camera.k>=.5||relationship.exact;
     if(a.x===b.x&&a.y===b.y)continue;
     if(edge!==selected&&(Math.max(a.x+140,b.x)<visible.left||Math.min(a.x,b.x-140)>visible.right||
       Math.max(a.y,b.y)<visible.top||Math.min(a.y,b.y)>visible.bottom))continue;
     const d='M '+a.x+' '+a.y+' C '+(a.x+140)+' '+a.y+' '+(b.x-140)+' '+b.y+' '+b.x+' '+b.y;
-    add(world,'path',{d,class:'wire'+(selected===edge?' selected':''),'data-edge':edge.id});
-    const hit=add(world,'path',{d,class:'hit'});add(hit,'title',{},edge.kind+' · '+edge.from.file+' → '+edge.to.file);
+    add(world,'path',{d,class:'wire'+(exact&&selected===edge?' selected':''),'data-edge':edge.id,
+      'data-site-count':count,'data-overview':String(!exact)});
+    const hit=add(world,'path',{d,class:'hit'});
+    add(hit,'title',{},edge.kind+' · '+edge.from.file+' → '+edge.to.file+
+      (exact?'':' · '+count+' source sites · select to inspect the first site'));
     hit.onclick=()=>select(edge);
   }
   {

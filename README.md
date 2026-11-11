@@ -36,6 +36,7 @@ node seremy/tools/check-product-map.cjs PUBLICATION_DIRECTORY test-results/map
 node seremy/tools/check-navigation.cjs PUBLICATION_DIRECTORY test-results/navigation
 node seremy/tools/check-nested-folders.cjs PUBLICATION_DIRECTORY test-results/nested-folders
 node seremy/tools/check-retained-renderer.cjs PUBLICATION_DIRECTORY test-results/retained-renderer
+node seremy/tools/check-overview.cjs SYNTHETIC_PUBLICATION_DIRECTORY test-results/overview
 node seremy/tools/check-review-map.cjs PUBLICATION_DIRECTORY test-results/review-map
 node seremy/tools/check-launcher.cjs test-results/launcher
 ```
@@ -46,6 +47,6 @@ Canvas directories contain their child directories and source files. Use a direc
 
 Files longer than 180 lines show an 80-line preview. Expand full file reveals the remaining source. Search and call navigation reveal lines beyond the preview automatically. Back restores the folded state.
 
-At readable source zoom the SVG renderer reuses unchanged scene nodes and removes offscreen source content. Overview zoom rebuilds the coarse scene. Unselected relationships outside the viewport are culled using their curve bounds. The selected relationship stays available for source navigation.
+At readable source zoom the SVG renderer reuses unchanged scene nodes and removes offscreen source content. Below scale 0.5, the overview groups source occurrences by visible file or collapsed folder and relationship kind. Group tooltips report occurrence counts. Selecting a group inspects its first source site, and the relationship picker exposes every individual occurrence. The selected occurrence receives an exact source-to-target overlay. Coarse source previews share one SVG path per file. Unselected relationships outside the viewport are culled using their curve bounds. See [the overview measurements](docs/overview-renderer.md).
 
-Outputs remain scoped drafts. Direct calls have qualified language profiles. Unsupported dynamic targets retain explicit outcomes. Semantic component detection, architectural layers, route/DI/ORM rules, comprehensive accessibility, edge aggregation, and representative performance qualification remain implementation work. See [the detailed profile](seremy/README.md) and [the fix record](docs/review-fixes.md).
+Outputs remain scoped drafts. Direct calls have qualified language profiles. Unsupported dynamic targets retain explicit outcomes. Semantic component detection, architectural layers, route/DI/ORM rules, comprehensive accessibility, GPU comparison, and representative performance qualification remain implementation work. See [the detailed profile](seremy/README.md) and [the fix record](docs/review-fixes.md).
