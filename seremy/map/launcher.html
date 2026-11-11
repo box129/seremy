@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SEREMY</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101a1d;color:#dce9e2;font:15px system-ui,sans-serif}
+header{padding:20px 28px;border-bottom:1px solid #3b5046}h1{font-size:20px;letter-spacing:.13em;margin:0}
+form{padding:22px 28px;display:flex;align-items:end;gap:12px;flex-wrap:wrap}label{display:grid;gap:7px}#value-label{flex:1;min-width:280px}
+button,input,select{font:inherit;border:1px solid #608371;border-radius:5px;padding:9px;background:#20342c;color:#e4eee7}
+button{cursor:pointer}button:disabled{opacity:.5;cursor:default}#start{background:#b6d5a3;color:#142119;font-weight:600}
+#status{padding:0 28px;min-height:24px;color:#bdd7c5}nav{display:flex;gap:8px;padding:12px 28px}
+iframe{width:100%;height:74vh;border:0;border-top:1px solid #3b5046}pre{margin:0;padding:28px;white-space:pre-wrap;line-height:1.7;overflow-wrap:anywhere;font:14px ui-monospace,Consolas,monospace;background:#14231c}
+[hidden]{display:none!important}a{color:#bddbaf}#summary{padding:0 28px;color:#b3c7b9}
+</style>
+<header><h1>SEREMY</h1></header>
+<form id="form">
+<label>Repository input<select id="kind"><option value="folder">Local folder</option><option value="zip">ZIP file</option><option value="git">Git HTTPS URL</option></select></label>
+<label id="value-label">Folder path<input id="value" required placeholder="C:\path\to\repository"></label>
+<label id="zip-label" hidden>ZIP file<input id="zip" type="file" accept=".zip"></label>
+<label id="revision-label" hidden>Branch or tag<input id="revision" placeholder="Default branch"></label>
+<button id="start">Analyze repository</button><button id="cancel" type="button" hidden>Cancel</button>
+</form>
+<div id="status" role="status" aria-live="polite"></div><p id="summary"></p>
+<nav id="outputs" hidden><button id="map-tab">Interactive map</button><button id="doc-tab">Documentation</button>
+<a id="download" download>Graph JSON</a><a id="checks" target="_blank" rel="noopener">Validation results</a></nav>
+<iframe id="map" title="Interactive source map" hidden></iframe><pre id="doc" hidden></pre>
+<script>
+const get=id=>document.getElementById(id);
+let job=null,publication=null;
+get('kind').onchange=()=>{
+  const kind=get('kind').value;
+  get('zip-label').hidden=kind!=='zip';get('value-label').hidden=kind==='zip';
+  get('value').required=kind!=='zip';get('zip').required=kind==='zip';get('revision-label').hidden=kind!=='git';
+  get('value').placeholder=kind==='git'?'https://github.com/owner/repository':'C:\\path\\to\\repository';
+};
+async function post(path,data){
+  const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const result=await response.json();if(!response.ok)throw new Error(result.error);return result;
+}
+async function poll(){
+  try{
+    const response=await fetch('/api/jobs/'+job),state=await response.json();
+    if(!response.ok)throw new Error(state.error);
+    get('status').textContent=state.error||state.stage;
+    if(state.status==='completed'){
+      publication=state.publication;
+      get('map').src='/reports/'+publication+'/map.html';
+      get('map').hidden=false;get('doc').hidden=true;get('outputs').hidden=false;
+      get('download').href='/reports/'+publication+'/graph.json';get('checks').href='/reports/'+publication+'/validation.json';
+      const c=state.coverage;
+      get('summary').textContent=c.s02.parsed_file_records+' source files processed · '+c.s03.direct_edge_count+
+        ' distinct call relationships · '+c.s03.attempted_count+' binding attempts · Draft';
+    }
+    if(['completed','failed','cancelled'].includes(state.status)){
+      get('start').disabled=false;get('cancel').hidden=true;job=null;
+    }else{setTimeout(poll,750);}
+  }catch(error){get('status').textContent=error.message;get('start').disabled=false;get('cancel').hidden=true;}
+}
+get('form').onsubmit=async event=>{
+  event.preventDefault();get('start').disabled=true;get('status').textContent='Preparing input…';
+  try{
+    const kind=get('kind').value;let value=get('value').value;
+    if(kind==='zip'){
+      const file=get('zip').files[0];
+      if(!file||file.size>10*1024*1024)throw new Error('Choose a ZIP file up to 10 MiB.');
+      const raw=new Uint8Array(await file.arrayBuffer());let binary='';
+      for(let i=0;i<raw.length;i+=8192)binary+=String.fromCharCode(...raw.subarray(i,i+8192));
+      value=btoa(binary);
+    }
+    const result=await post('/api/jobs',{kind,value,revision:get('revision').value||null});
+    job=result.id;get('cancel').hidden=false;poll();
+  }catch(error){get('status').textContent=error.message;get('start').disabled=false;}
+};
+get('cancel').onclick=async()=>{
+  if(job){await post('/api/cancel/'+job,{});get('status').textContent='Cancellation requested. Waiting for the current stage to finish.';}
+};
+get('map-tab').onclick=()=>{get('map').hidden=false;get('doc').hidden=true;};
+get('doc-tab').onclick=async()=>{
+  try{
+    const response=await fetch('/reports/'+publication+'/architecture.md');
+    if(!response.ok)throw new Error('Documentation could not be loaded.');
+    get('doc').textContent=await response.text();get('map').hidden=true;get('doc').hidden=false;
+  }catch(error){get('status').textContent=error.message;}
+};
+</script></html>

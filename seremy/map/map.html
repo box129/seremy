@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SEREMY · Redux slice source map (real bundle)</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101619;color:#e6eeea;font:14px system-ui,sans-serif}header,footer,nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap}header{padding:14px 20px;border-bottom:1px solid #344244}header b{letter-spacing:.1em}header small{color:#a8bdb4}nav{margin-left:auto;gap:6px}button,select{font:inherit;color:inherit;background:#223032;border:1px solid #415454;border-radius:5px;padding:6px 10px}button:enabled,select{cursor:pointer}button:disabled{opacity:.4}main{position:relative}#map{width:100%;height:clamp(260px,74vh,1000px);display:block;touch-action:none;background-color:#101819;background-image:radial-gradient(#32403c 1px,transparent 1px);background-size:24px 24px}svg text{user-select:none}#mini{position:absolute;bottom:12px;right:12px;width:125px;height:85px;background:#142020;border:1px solid #485d55;border-radius:4px}.frame{fill:#182322;stroke:#698478;stroke-width:2}.card{fill:#14201f;stroke:#71958a}.title{fill:#deeee8;font:600 18px system-ui}.code{font:14px "Consolas",monospace;fill:#c5d5cf}.num{fill:#82978e}.kw{fill:#e5adcc}.str{fill:#dbcb90}.comment{fill:#99aea3}.wire{fill:none;stroke:#8cbfb7;stroke-width:2.4}.calls{stroke:#edba74}.wire.active{stroke:#fff0aa;stroke-width:4}.hit{stroke:transparent;stroke-width:13;fill:none;cursor:pointer}.token{fill:#66c9af33;stroke:#6fc5b099;cursor:pointer}.token:hover,.token.active{fill:#ffe69d55;stroke:#ffe69d}#bind-state{font-weight:600}#bind-state.stale{color:#ff9d8a}footer{padding:12px 20px;border-top:1px solid #344244}#detail{min-width:200px;flex:1}#detail small{display:block;color:#a4b9ad;margin-top:3px}#hint{margin:0;padding:0 20px 12px;color:#9bb2a6;font-size:12px}@media(max-width:650px){nav{margin-left:0}#map{height:58vh}}
+</style>
+<header><div><b>SEREMY</b> / Redux slice · real graph bundle<br><small id="bind-state">verifying binding…</small></div>
+<nav aria-label="Map controls"><button id="back" disabled>Back</button><button id="fit">Fit map</button><button id="minus" aria-label="Zoom out">−</button><button id="plus" aria-label="Zoom in">+</button><button id="fold">Collapse utils</button></nav></header>
+<main><svg id="map" aria-label="Spatial source map" tabindex="0"><g id="world"></g></svg><svg id="mini" aria-label="Map overview"></svg></main>
+<footer><div id="detail" aria-live="polite"></div><select id="relations" aria-label="Inspect relationship"></select><button id="origin">Show source</button><button id="target">Follow target</button></footer>
+<p id="hint">Scroll to zoom around the pointer. Drag to pan. Select a connection or highlighted source region to inspect it.</p>
+<script id="fixture" type="application/json">{"bundle": {"content_digest": "c95cfffffef23627a5022d28f8266d0270879654461003b910888e4a963ea884", "bundle_digest": "108d1d282d86b0bab9979310869512864f0f95499bc1e0396adbf0be58fdb47c", "manifest_digest": "e669ddda7316896ac28030bba1b5acda5b70836304ffa2a72aa596be4041c5df"}, "blobs": {"src/utils/isAction.ts": "2cf7a3b535cb14b9bb2ac7648b5f103f2a80427d96c7eb391fd11f617944a8a2", "src/utils/isPlainObject.ts": "30153dae9fd245b8574f96cf9c08cf33e7d12881b0ad4e4e458646bef5b32793"}, "files": {"src/utils/isAction.ts": {"text": "import type { Action } from '../types/actions'\nimport isPlainObject from './isPlainObject'\n\nexport default function isAction(action: unknown): action is Action<string> {\n  return (\n    isPlainObject(action) &&\n    'type' in action &&\n    typeof (action as Record<'type', unknown>).type === 'string'\n  )\n}\n"}, "src/utils/isPlainObject.ts": {"text": "/**\n * @param obj The object to inspect.\n * @returns True if the argument appears to be a plain object.\n */\nexport default function isPlainObject(obj: any): obj is object {\n  if (typeof obj !== 'object' || obj === null) return false\n\n  let proto = obj\n  while (Object.getPrototypeOf(proto) !== null) {\n    proto = Object.getPrototypeOf(proto)\n  }\n\n  return (\n    Object.getPrototypeOf(obj) === proto || Object.getPrototypeOf(obj) === null\n  )\n}\n"}}, "edges": [{"id": "CALLS:cand:src/utils/isAction.ts#call:isPlainObject@185", "kind": "CALLS", "from": {"file": "src/utils/isAction.ts", "start": 185, "end": 198}, "to": {"file": "src/utils/isPlainObject.ts", "start": 132, "end": 145}, "origin": "binder_observation", "method": "typescript-checker-v0.2"}], "regions": [{"file": "src/utils/isAction.ts", "start": 116, "end": 124}, {"file": "src/utils/isPlainObject.ts", "start": 132, "end": 145}]}</script>
+<script>
+(()=>{
+'use strict';
+const data=JSON.parse(document.querySelector('#fixture').textContent);
+const find=id=>document.getElementById(id);
+const map=find('map'),world=find('world'),mini=find('mini'),picker=find('relations');
+const ns='http://www.w3.org/2000/svg';
+function add(parent,tag,attrs={},value=''){
+  const el=document.createElementNS(ns,tag);
+  for(const [name,v] of Object.entries(attrs)) el.setAttribute(name,v);
+  if(value) el.textContent=value;
+  parent.append(el); return el;
+}
+const positions=[[920,150],[1750,220]], width=670, lineHeight=20;
+const files=Object.fromEntries(Object.entries(data.files).map(([path,f],i)=>{
+  const lines=f.text.split(/\r\n|\n/);
+  return [path,{...f,path,lines,x:positions[i][0],y:positions[i][1],height:60+lines.length*lineHeight}];
+}));
+const utils={x:875,y:70,w:1595,h:615};
+let camera={x:0,y:0,k:1},collapsed=false,current=data.edges[0],focus=null,binding='pending';
+const history=[];
+function location(s){
+  const f=files[s.file],bytes=new TextEncoder().encode(f.text);
+  const decode=(a,b)=>new TextDecoder().decode(bytes.slice(a,b));
+  const before=decode(0,s.start).split(/\r\n|\n/);
+  return {line:before.length,col:before.at(-1).length,token:decode(s.start,s.end)};
+}
+function locText(s){return s.file+':'+location(s).line}
+function anchor(s){
+  const f=files[s.file], p=location(s);
+  if(collapsed&&s.file.startsWith('src/utils/')) return {x:utils.x+130,y:utils.y+42};
+  return {x:f.x+49+p.col*8.43,y:f.y+48+(p.line-1)*lineHeight};
+}
+async function verifyBinding(){
+  const state=find('bind-state');
+  try{
+    if(!(window.crypto&&crypto.subtle)) throw new Error('WebCrypto unavailable');
+    for(const [path,f] of Object.entries(data.files)){
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(f.text));
+      const hex=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+      if(hex!==data.blobs[path]) throw new Error(path+' bytes do not match bundle blob');
+    }
+    binding='bound';
+    state.textContent='bound · bundle '+data.bundle.content_digest.slice(0,12);
+  }catch(err){
+    binding='stale';
+    state.textContent='STALE — embedded source does not match the bundle blobs ('+err.message+')';
+    state.classList.add('stale');
+  }
+  updateControls();
+}
+function updateControls(){
+  const hasRelation=binding==='bound'&&(!focus||[current.from,current.to].some(s=>s.file===focus.file&&s.start===focus.start));
+  picker.value=hasRelation?current.id:'';
+  find('origin').disabled=find('target').disabled=!hasRelation;
+  find('back').disabled=!history.length;
+  find('fold').textContent=(collapsed?'Expand':'Collapse')+' utils';
+  const d=find('detail');d.replaceChildren();
+  d.append(focus?locText(focus)+' · '+location(focus).token:current.kind+' · '+locText(current.from)+' → '+locText(current.to));
+  const small=document.createElement('small');
+  small.textContent='tree '+data.bundle.manifest_digest.slice(0,12)+' · statically bound · origin '+current.origin+' · method '+current.method;
+  d.append(small);
+}
+function save(){
+  history.push({camera:{...camera},collapsed,current,focus});
+}
+function inspect(edge,region=null){
+  save(); current=edge;focus=region;draw();
+}
+function center(point,k){
+  camera={k,x:map.clientWidth/2-point.x*k,y:map.clientHeight/2-point.y*k};
+}
+function fit(){
+  const k=Math.min((map.clientWidth-45)/2500,(map.clientHeight-50)/1240,1);
+  center({x:1250,y:610},k);
+}
+function follow(s){
+  save(); if(s.file.startsWith('src/utils/')) collapsed=false;
+  focus=s;center(anchor(s),1.4);draw();
+}
+function zoom(x,y,factor){
+  const k=Math.min(4,Math.max(.035,camera.k*factor)), r=k/camera.k;
+  camera={k,x:x-(x-camera.x)*r,y:y-(y-camera.y)*r};draw();
+}
+function region(s,edge,title){
+  const p=anchor(s),w=Math.max(10,location(s).token.length*8.43);
+  const box=add(world,'rect',{x:p.x-1,y:p.y-14,width:w,height:18,rx:2,class:'token'+(focus&&s.file===focus.file&&s.start===focus.start?' active':'')});
+  add(box,'title',{},title+' · '+locText(s));
+  box.onclick=()=>{if(edge) inspect(edge,s);else {save();focus=s;draw();}};
+}
+function highlight(t,line){
+  for(const piece of line.split(/(\/\/.*$|\/\*\*.*$|^\s*\*.*$|'[^']*'|\b(?:import|from|export|function|return|const|let|while|if|type|default|typeof)\b)/g)){
+    if(!piece) continue;
+    const cls=/^\s*(\/\/|\/\*|\*)/.test(piece)?'comment':piece[0]==="'"?'str':/^(import|from|export|function|return|const|let|while|if|type|default|typeof)$/.test(piece)?'kw':'';
+    add(t,'tspan',{class:cls},piece);
+  }
+}
+function draw(){
+  world.replaceChildren();mini.replaceChildren();mini.setAttribute('viewBox','0 0 2500 1240');
+  world.setAttribute('transform','translate('+camera.x+' '+camera.y+') scale('+camera.k+')');
+  add(world,'text',{x:40,y:45,class:'title'},'redux / src (SEREMY slice)');
+  add(world,'rect',{x:utils.x,y:utils.y,width:collapsed?260:utils.w,height:collapsed?72:utils.h,rx:12,class:'frame'});
+  const folder=add(world,'text',{x:utils.x+12,y:utils.y+26,class:'title'},collapsed?'utils  ·  2 files':'utils');
+  folder.onclick=()=>find('fold').click();
+  for(const f of Object.values(files)){
+    if(collapsed&&f.path.startsWith('src/utils/'))continue;
+    add(mini,'rect',{x:f.x,y:f.y,width,height:f.height,fill:'#749488'});
+    add(world,'rect',{x:f.x,y:f.y,width,height:f.height,rx:6,class:'card'});
+    add(world,'text',{x:f.x+12,y:f.y+22,class:'title'},f.path.split('/').at(-1));
+    f.lines.forEach((line,i)=>{
+      const y=f.y+48+i*lineHeight;
+      if(camera.k<.55){
+        if(line.trim()) add(world,'rect',{x:f.x+48,y:y-9,width:Math.min(width-65,line.length*7),height:8,fill:line.startsWith('import')?'#658777':'#3c5450'});
+      }else{
+        const t=add(world,'text',{x:f.x+10,y,class:'code','xml:space':'preserve'});
+        add(t,'tspan',{class:'num'},String(i+1));
+        const content=add(t,'tspan',{x:f.x+49});highlight(content,line);
+      }
+    });
+  }
+  for(const e of data.edges){
+    const a=anchor(e.from),b=anchor(e.to);
+    if(a.x===b.x&&a.y===b.y) continue;
+    const d='M '+a.x+' '+a.y+' C '+(a.x+170)+' '+a.y+' '+(b.x-170)+' '+b.y+' '+b.x+' '+b.y;
+    add(world,'path',{d,class:'wire '+e.kind+(e===current?' active':'')});
+    const hit=add(world,'path',{d,class:'hit'});add(hit,'title',{},e.kind+' · '+locText(e.from)+' → '+locText(e.to));hit.onclick=()=>inspect(e);
+  }
+  const seen=new Set();
+  for(const [s,e] of [[current.from,current],[current.to,current],...data.edges.flatMap(e=>[[e.from,e],[e.to,e]]),...data.regions.map(s=>[s,null])]){
+    const key=s.file+'@'+s.start;
+    if(seen.has(key)||(collapsed&&s.file.startsWith('src/utils/')))continue;
+    seen.add(key);region(s,e,(e?e.kind+' · ':'syntax · ')+location(s).token);
+  }
+  if(collapsed)add(mini,'rect',{x:utils.x,y:utils.y,width:260,height:72,fill:'#749488'});
+  add(mini,'rect',{x:-camera.x/camera.k,y:-camera.y/camera.k,width:map.clientWidth/camera.k,height:map.clientHeight/camera.k,fill:'none',stroke:'#ffe7a6','stroke-width':22});
+  updateControls();
+}
+for(const e of data.edges)picker.add(new Option(e.kind+' · '+locText(e.from),e.id));
+picker.onchange=()=>inspect(data.edges.find(e=>e.id===picker.value));
+find('target').onclick=()=>follow(current.to);find('origin').onclick=()=>follow(current.from);
+find('fold').onclick=()=>{save();collapsed=!collapsed;draw();};
+find('fit').onclick=()=>{save();fit();draw();};
+find('back').onclick=()=>{const prev=history.pop();if(prev){({camera,collapsed,current,focus}=prev);draw();}};
+for(const [id,f] of [['plus',1.5],['minus',1/1.5]]) find(id).onclick=()=>zoom(map.clientWidth/2,map.clientHeight/2,f);
+map.addEventListener('wheel',e=>{e.preventDefault();const rect=map.getBoundingClientRect();zoom(e.clientX-rect.left,e.clientY-rect.top,Math.exp(-.002*e.deltaY));},{passive:false});
+let start,dragged=false;
+map.onpointerdown=e=>{if(e.button!==0)return;dragged=false;start={x:e.clientX,y:e.clientY,c:{...camera}};};
+map.onpointermove=e=>{if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;if(!dragged&&Math.hypot(dx,dy)<4)return;dragged=true;map.setPointerCapture(e.pointerId);camera={...start.c,x:start.c.x+dx,y:start.c.y+dy};draw();};
+map.addEventListener('click',e=>{if(dragged){e.stopPropagation();dragged=false;}},true);
+for(const event of ['pointerup','pointercancel'])window.addEventListener(event,()=>{start=null;});
+window.addEventListener('resize',draw);fit();draw();verifyBinding();
+})();
+</script></html>

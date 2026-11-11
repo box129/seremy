@@ -1,0 +1,127 @@
+{
+  "fixture": "redux-slice",
+  "repo": "reduxjs/redux",
+  "tree_sha": "61ebf8596654cf3c4b197e426e302fcb3c2bc13e",
+  "tree_url": "https://api.github.com/repos/reduxjs/redux/git/trees/61ebf8596654cf3c4b197e426e302fcb3c2bc13e",
+  "files": [
+    {
+      "path": "src/applyMiddleware.ts",
+      "git_blob_sha1": "58317edde5bb98c2087dd8696d7354ea0651711a",
+      "sha256": "351b6a427c7a0f999a02488f32b3cdb4af69a86daa90734a8f00ed18269b2cf4",
+      "byte_count": 3081,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/58317edde5bb98c2087dd8696d7354ea0651711a"
+    },
+    {
+      "path": "src/bindActionCreators.ts",
+      "git_blob_sha1": "b9689c25484c0e5efd342233e2efeb1b36f1aef6",
+      "sha256": "53b834cc532443fcf9f392ea86b970b640bccea5dac7c2ef16516cbe99a176f1",
+      "byte_count": 2774,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/b9689c25484c0e5efd342233e2efeb1b36f1aef6"
+    },
+    {
+      "path": "src/combineReducers.ts",
+      "git_blob_sha1": "fb6a4a2c4935dc5c49406267839fd9bd0ff02fa0",
+      "sha256": "52f4a8c5561bd9ea2532edd31d3a8958dabb13fcc0d11140d158c84e454ce1dc",
+      "byte_count": 6915,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/fb6a4a2c4935dc5c49406267839fd9bd0ff02fa0"
+    },
+    {
+      "path": "src/compose.ts",
+      "git_blob_sha1": "50ff7652b982336d672fb722a1bf11d8e17ceb46",
+      "sha256": "26dbcb584c805af6ddd3b600df251afa19650048c4108ac86e0193332a5303ef",
+      "byte_count": 1564,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/50ff7652b982336d672fb722a1bf11d8e17ceb46"
+    },
+    {
+      "path": "src/createStore.ts",
+      "git_blob_sha1": "8598448c67ad5f143752982195b4e734be840148",
+      "sha256": "4dc8195c8fb1cceb8bd182b1469eaf4978049a767f00b4558c1ddb9c1b398695",
+      "byte_count": 17586,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/8598448c67ad5f143752982195b4e734be840148"
+    },
+    {
+      "path": "src/index.ts",
+      "git_blob_sha1": "3c1202012865e866964e41b44e53ec59dde10aab",
+      "sha256": "8bb0a6852611119382cae7dc89ab600d43701c87644e518042ab23134a4c16a9",
+      "byte_count": 1268,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/3c1202012865e866964e41b44e53ec59dde10aab"
+    },
+    {
+      "path": "src/types/actions.ts",
+      "git_blob_sha1": "39313115c063ada2f540a1a0ec7f5026249edc06",
+      "sha256": "56f3957bb099d32ce663b5b36e16b825b289763f46742cfa5279fffbd61ef82f",
+      "byte_count": 2775,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/39313115c063ada2f540a1a0ec7f5026249edc06"
+    },
+    {
+      "path": "src/types/middleware.ts",
+      "git_blob_sha1": "7e1b95ffbcf28c4824320cad60338c55dae828be",
+      "sha256": "1cd345a35f7d388db4f62d5bc878745be6dd223fd9886fa9cd20cafaeaee0552",
+      "byte_count": 1091,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/7e1b95ffbcf28c4824320cad60338c55dae828be"
+    },
+    {
+      "path": "src/types/reducers.ts",
+      "git_blob_sha1": "7fb6f7e0e042c98d5948fed79cf1c1a771ceddc6",
+      "sha256": "f79a73490d143561e6071c03d852fc78fe057384a6a3e6ff81b81e887df76bc1",
+      "byte_count": 3504,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/7fb6f7e0e042c98d5948fed79cf1c1a771ceddc6"
+    },
+    {
+      "path": "src/types/store.ts",
+      "git_blob_sha1": "bb69d8391b1549ed49610c5246df39b8b0027a90",
+      "sha256": "14d07fb4a3bd59122730edd9c5080fa051f3ae13df1095a767358ec69d67886b",
+      "byte_count": 9173,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/bb69d8391b1549ed49610c5246df39b8b0027a90"
+    },
+    {
+      "path": "src/utils/actionTypes.ts",
+      "git_blob_sha1": "426435b16e4f72ae920185cd6a2c3187f5789794",
+      "sha256": "450b7a9f3127576abec41f1504c064ddd48eb0ebd91679f3636c102b19bccf5c",
+      "byte_count": 600,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/426435b16e4f72ae920185cd6a2c3187f5789794"
+    },
+    {
+      "path": "src/utils/formatProdErrorMessage.ts",
+      "git_blob_sha1": "196c38264bb2a4968e0d4a7877a81a628177fea7",
+      "sha256": "ce0f119d3b3c44083f81f1eebc2cbee41421321a4f1a0d9be9f1f8e266e93e50",
+      "byte_count": 526,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/196c38264bb2a4968e0d4a7877a81a628177fea7"
+    },
+    {
+      "path": "src/utils/isAction.ts",
+      "git_blob_sha1": "5abc64f62c4bdb5c83b3772762483c24d9c3119a",
+      "sha256": "2cf7a3b535cb14b9bb2ac7648b5f103f2a80427d96c7eb391fd11f617944a8a2",
+      "byte_count": 305,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/5abc64f62c4bdb5c83b3772762483c24d9c3119a"
+    },
+    {
+      "path": "src/utils/isPlainObject.ts",
+      "git_blob_sha1": "442f7d08947f477bf2c87a74ce5048ffc9eddc4c",
+      "sha256": "30153dae9fd245b8574f96cf9c08cf33e7d12881b0ad4e4e458646bef5b32793",
+      "byte_count": 445,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/442f7d08947f477bf2c87a74ce5048ffc9eddc4c"
+    },
+    {
+      "path": "src/utils/kindOf.ts",
+      "git_blob_sha1": "122a14d2c2993af8b830856f0af32cbc8bcf2694",
+      "sha256": "b294e740d5b72819ce5c994b6c2704de2c7ecd908347bc3d21a6b3b70dfd927f",
+      "byte_count": 1546,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/122a14d2c2993af8b830856f0af32cbc8bcf2694"
+    },
+    {
+      "path": "src/utils/symbol-observable.ts",
+      "git_blob_sha1": "a1033a8b0a730f45411601c35937dfb3cfaf5d76",
+      "sha256": "bc16d220feecdcdbe939dbdb8156796c3235f172cccc31009ce8171f3bc150d4",
+      "byte_count": 236,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/a1033a8b0a730f45411601c35937dfb3cfaf5d76"
+    },
+    {
+      "path": "src/utils/warning.ts",
+      "git_blob_sha1": "7f1d598d8e6eb28f9b776b05a1a3d0f0e16bc61a",
+      "sha256": "1ffae6cfebb09c34e76e8bf31abc0523e7986f2b56627dcf915e7586089d18ad",
+      "byte_count": 585,
+      "source_url": "https://api.github.com/repos/reduxjs/redux/git/blobs/7f1d598d8e6eb28f9b776b05a1a3d0f0e16bc61a"
+    }
+  ]
+}
