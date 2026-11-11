@@ -29,10 +29,39 @@ main{height:auto;min-height:0}#map{height:100%}header,footer{padding:8px 12px;ga
 const data=JSON.parse(document.querySelector('#fixture').textContent);
 const el=id=>document.getElementById(id),map=el('map'),world=el('world'),mini=el('mini');
 const ns='http://www.w3.org/2000/svg',lineHeight=20,codeTop=70,foldThreshold=180,previewLines=80;
+const retainedNodes=new WeakMap();
+let renderFrame=null;
+let retainedActive=false;
 function add(parent,tag,attrs={},text=''){
-  const node=document.createElementNS(ns,tag);
-  for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);
-  node.textContent=text;parent.append(node);return node;
+  if(!renderFrame){
+    const node=document.createElementNS(ns,tag);
+    for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);
+    node.textContent=text;parent.append(node);return node;
+  }
+  if(!retainedNodes.has(parent))retainedNodes.set(parent,new Map());
+  if(!renderFrame.has(parent))renderFrame.set(parent,{counts:new Map(),used:new Set(),index:0});
+  const frame=renderFrame.get(parent),cache=retainedNodes.get(parent);
+  const signature=tag+JSON.stringify(attrs),occurrence=frame.counts.get(signature)||0;
+  frame.counts.set(signature,occurrence+1);
+  const key=signature+'@'+occurrence;
+  let node=cache.get(key);
+  if(!node){
+    node=document.createElementNS(ns,tag);
+    for(const [attribute,value] of Object.entries(attrs))node.setAttribute(attribute,value);
+    cache.set(key,node);
+  }
+  if(text&&node.textContent!==text)node.textContent=text;
+  const expected=parent.children[frame.index++];
+  if(expected!==node)parent.insertBefore(node,expected||null);
+  frame.used.add(key);return node;
+}
+function finishFrame(){
+  if(!renderFrame)return;
+  for(const [parent,frame] of renderFrame){
+    const cache=retainedNodes.get(parent);
+    for(const [key,node] of cache)if(!frame.used.has(key)){node.remove();cache.delete(key);}
+  }
+  renderFrame=null;
 }
 const fontProbe=add(world,'text',{class:'code',visibility:'hidden'},'M'.repeat(64));
 const charWidth=fontProbe.getComputedTextLength()/64;
@@ -159,7 +188,12 @@ function renderCode(line,node){
     add(node,'tspan',{class:/^(\/\/|#)/.test(piece)?'comment':/^(def|class|return|import|from|export|function|const|let|while|if|else|async|await)$/.test(piece)?'keyword':''},piece);
 }
 function draw(){
-  world.replaceChildren();mini.replaceChildren();
+  const retain=camera.k>=.5;
+  if(!retain||!retainedActive){
+    world.replaceChildren();mini.replaceChildren();
+    retainedNodes.delete(world);retainedNodes.delete(mini);
+  }
+  retainedActive=retain;renderFrame=retain?new Map():null;
   world.setAttribute('transform','translate('+camera.x+' '+camera.y+') scale('+camera.k+')');
   mini.setAttribute('viewBox','0 0 '+maxX+' '+(maxY+30));
   const visible={left:-camera.x/camera.k,top:-camera.y/camera.k,
@@ -213,6 +247,8 @@ function draw(){
   for(const edge of data.edges){
     const a=anchor(edge.from),b=anchor(edge.to);
     if(a.x===b.x&&a.y===b.y)continue;
+    if(edge!==selected&&(Math.max(a.x+140,b.x)<visible.left||Math.min(a.x,b.x-140)>visible.right||
+      Math.max(a.y,b.y)<visible.top||Math.min(a.y,b.y)>visible.bottom))continue;
     const d='M '+a.x+' '+a.y+' C '+(a.x+140)+' '+a.y+' '+(b.x-140)+' '+b.y+' '+b.x+' '+b.y;
     add(world,'path',{d,class:'wire'+(selected===edge?' selected':''),'data-edge':edge.id});
     const hit=add(world,'path',{d,class:'hit'});add(hit,'title',{},edge.kind+' · '+edge.from.file+' → '+edge.to.file);
@@ -245,6 +281,7 @@ function draw(){
   add(mini,'rect',{x:visible.left,y:visible.top,width:visible.right-visible.left,height:visible.bottom-visible.top,
     fill:'none',stroke:'#ffd793','stroke-width':Math.max(maxX,maxY)/100});
   world.append(folderLabels);
+  finishFrame();
   controls();
 }
 function buildTree(){

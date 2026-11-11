@@ -32,10 +32,11 @@ async function profile(page){
 }
 
 async function run(){
-  const [redux,stress,evidence,scratch]=process.argv.slice(2).map(value=>path.resolve(value));
+  const [redux,stress,evidence,scratch]=process.argv.slice(2,6).map(value=>path.resolve(value));
+  const baselineCommit=process.argv[6]||'bd75e8e';
   fs.mkdirSync(evidence,{recursive:true});fs.mkdirSync(scratch,{recursive:true});
   const repository=path.resolve(__dirname,'../..');
-  const baseline=execFileSync('git',['show','bd75e8e:seremy/map/product-template.html'],{cwd:repository,encoding:'utf8'});
+  const baseline=execFileSync('git',['show',baselineCommit+':seremy/map/product-template.html'],{cwd:repository,encoding:'utf8'});
   const browser=await chromium.launch(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{});
   const results=[];
   try{
@@ -46,7 +47,7 @@ async function run(){
       const inventory={files:Object.keys(data.files).length,
         lines:Object.values(data.files).reduce((count,text)=>count+text.split(/\r\n|\n/).length,0),sites:data.edges.length};
       if(name==='synthetic'){assert.equal(inventory.files,100);assert.equal(inventory.lines,50000);assert.equal(inventory.sites,5000);}
-      for(const [version,html] of [['baseline',baseline.replace('FIXTURE_JSON',()=>fixture)],['folded',current]]){
+      for(const [version,html] of [['baseline',baseline.replace('FIXTURE_JSON',()=>fixture)],['updated',current]]){
         console.log('Profiling '+name+' '+version);
         const file=path.join(scratch,name+'-'+version+'.html');fs.writeFileSync(file,html);
         const page=await browser.newPage({viewport:{width:1440,height:900}});
@@ -63,7 +64,7 @@ async function run(){
         await page.close();
       }
     }
-    const receipt={date:new Date().toISOString(),renderer:'SVG',baseline_commit:'bd75e8e',
+    const receipt={date:new Date().toISOString(),renderer:'SVG',baseline_commit:baselineCommit,
       browser:browser.version(),platform:os.platform(),cpu:os.cpus()[0].model,
       logical_cpus:os.cpus().length,viewport:[1440,900],results,
       limits:'One headless Chromium run per case, no CPU throttling. Synthetic workload. Two-frame timing includes browser scheduling. No GPU renderer comparison.'};

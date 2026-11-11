@@ -35,6 +35,7 @@ python -B -m seremy analyze seremy/fixtures/redux-slice --output .seremy-artifac
 node seremy/tools/check-product-map.cjs PUBLICATION_DIRECTORY test-results/map
 node seremy/tools/check-navigation.cjs PUBLICATION_DIRECTORY test-results/navigation
 node seremy/tools/check-nested-folders.cjs PUBLICATION_DIRECTORY test-results/nested-folders
+node seremy/tools/check-retained-renderer.cjs PUBLICATION_DIRECTORY test-results/retained-renderer
 node seremy/tools/check-review-map.cjs PUBLICATION_DIRECTORY test-results/review-map
 node seremy/tools/check-launcher.cjs test-results/launcher
 ```
@@ -44,5 +45,7 @@ The repository contains the standalone SEREMY implementation, fixtures, and test
 Canvas directories contain their child directories and source files. Use a directory heading to collapse or expand it independently. Enter and Space also activate a focused heading. Following a call opens its target ancestors, and Back restores the previous canvas folder state. Collapsed folders show their source file count and receive boundary endpoints for relationships to hidden files.
 
 Files longer than 180 lines show an 80-line preview. Expand full file reveals the remaining source. Search and call navigation reveal lines beyond the preview automatically. Back restores the folded state.
+
+At readable source zoom the SVG renderer reuses unchanged scene nodes and removes offscreen source content. Overview zoom rebuilds the coarse scene. Unselected relationships outside the viewport are culled using their curve bounds. The selected relationship stays available for source navigation.
 
 Outputs remain scoped drafts. Direct calls have qualified language profiles. Unsupported dynamic targets retain explicit outcomes. Semantic component detection, architectural layers, route/DI/ORM rules, comprehensive accessibility, edge aggregation, and representative performance qualification remain implementation work. See [the detailed profile](seremy/README.md) and [the fix record](docs/review-fixes.md).

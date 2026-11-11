@@ -16,6 +16,8 @@ Files longer than 180 lines initially show an 80-line preview. Their file contro
 
 The viewer caches source positions using a byte-offset line index. Overview source bars sample lines at screen-pixel spacing, and source-region hitboxes appear at readable code zoom.
 
+At zoom scale 0.5 and above, SVG scene elements use a retained cache per parent. Rendering reuses matching nodes, preserves their order, and evicts nodes absent from the new view. Overview zoom rebuilds the coarse scene. Source content remains viewport limited. Unselected relationship curves are culled when their control-point bounds lie outside the viewport, while the selected relationship remains available. The retained-renderer browser check verifies node identity, eviction, restoration, and navigation after viewport changes.
+
 This milestone uses the existing SVG renderer. GPU rendering, MCP integration, and representative performance qualification remain planned work. Panel controls and the source toolbar still require further visual refinement. The local SVG comparison against the previous version is recorded in `render-benchmark.json` alongside the saved browser evidence.
 
 The original `verification.json` records the source hashes and test results of baseline commit 8763352. The navigation milestone has its own `navigation-verification.json` receipt.

@@ -1,0 +1,138 @@
+{
+  "date": "2026-11-11",
+  "baseline_commit": "a191793",
+  "browser_checks_passed": 28,
+  "browser_receipts": {
+    "retained/retained-renderer-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "checks": [
+        "Visible source file retains its DOM node during zoom",
+        "Source zoom culls offscreen relationships",
+        "Leaving the scene evicts file and edge nodes, and Fit restores relationships",
+        "Selected relationship remains available and navigable after culling and restoration"
+      ],
+      "page_errors": []
+    },
+    "navigation/navigation-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "viewport": [
+        1440,
+        900
+      ],
+      "content_digest": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+      "checks": [
+        "Expand src and utils, then open a real Redux file from the tree",
+        "Click the call in source, zoom and pan, follow the declaration, and restore all navigation state with Back",
+        "Opening a file through tree, search, or canvas title clears the relationship and Back recovers it",
+        "Following reveals the target folder and Back restores the prior tree expansion"
+      ],
+      "origin": {
+        "camera": "translate(-6266.85498046875 -4421) scale(1.875)",
+        "detail": "src/utils/isAction.ts:6 · isPlainObject",
+        "edge": "cand:src/utils/isAction.ts#call:isPlainObject@185",
+        "focus": [
+          [
+            "src/utils/isAction.ts",
+            "185",
+            "198"
+          ]
+        ],
+        "file": "src/utils/isAction.ts",
+        "expanded": [
+          "src",
+          "src/utils"
+        ],
+        "scroll": 0
+      },
+      "destination": {
+        "camera": "translate(-5113.93310546875 -2947) scale(1.25)",
+        "detail": "src/utils/isPlainObject.ts:5 · isPlainObject",
+        "edge": "cand:src/utils/isAction.ts#call:isPlainObject@185",
+        "focus": [
+          [
+            "src/utils/isPlainObject.ts",
+            "132",
+            "145"
+          ]
+        ],
+        "file": "src/utils/isPlainObject.ts",
+        "expanded": [
+          "src",
+          "src/utils"
+        ],
+        "scroll": 0
+      },
+      "page_errors": []
+    },
+    "nested/nested-folder-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "checks": [
+        "Redux types and utils folders are geometrically contained by src",
+        "Keyboard collapse hides only utils and expansion restores the original layout and camera",
+        "Cross-folder relationship ends at the collapsed boundary, Follow reveals its source, and Back restores collapse",
+        "Collapsing a parent preserves the independent collapsed state of its child"
+      ],
+      "page_errors": []
+    },
+    "existing-map/browser-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "viewport": [
+        1500,
+        1000
+      ],
+      "content_digest": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+      "checks": [
+        "Full Redux source inventory loads and verifies all 17 source blobs",
+        "Real call navigation and Back preserve source span and camera",
+        "Folder collapse hides source files and expansion preserves camera",
+        "File/symbol search supports keyboard opening of source",
+        "Pointer zoom retains source position within one CSS pixel",
+        "Minimap center navigation accounts for SVG aspect ratio",
+        "Changed embedded source disables relationship navigation"
+      ],
+      "page_errors": [],
+      "performance": "not_run",
+      "production_acceptance": "not_run"
+    },
+    "review/review-map-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "checks": [
+        "Redux reports 25 distinct relationships separately from 30 source sites",
+        "160,001st-line declaration opens through search and call navigation, restores folding through Back, and supports keyboard expansion"
+      ]
+    },
+    "launcher/launcher-checks.json": {
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "checks": [
+        "First visit shows No folder, centered Docs, and a keyboard-dismissable connection dialog",
+        "Local folder submission runs both language adapters through all eight stages",
+        "Four files and two direct relationships reach the shared graph",
+        "Embedded interactive map verifies source bytes and provides file navigation",
+        "Documentation contains package-scoped Preact and FastAPI evidence and structural relationships",
+        "Map/documentation switching retains the same publication and camera",
+        "Loaded canvas fills the workspace and a failed replacement keeps the existing map available"
+      ],
+      "page_errors": []
+    }
+  },
+  "source_sha256": {
+    "README.md": "95b59604960f600290e10492f495e209e58cbd3502af6b294859c76aedd6c22d",
+    "seremy/map/product-template.html": "dccf80b24bd63df8c87d4dbcd80ee79a57b8a3ef945cd65c561cddab97843039",
+    "seremy/tools/check-retained-renderer.cjs": "2e47c77a88b4e331bc6d0e0dd83f62d4dd1410153edeb3ccbc9f9e77bf3b35de",
+    "seremy/tools/benchmark-map.cjs": "294da7f48b33f759dc9151c8647855fa5ce7d03548c1f964fa4868b6e6ea419c",
+    "docs/source-navigation.md": "64f365752e29e7286b830666988770a58ce55e5d1253936dea1de3a3909372c2",
+    "docs/retained-renderer.md": "8bc1663c1bb56c045010f65dc1f1d121989b06f043ac716551b09a8a781da57a",
+    "docs/retained-render-benchmark.json": "8c4a0bde6a49b1ca3cd42745a1b5625f596a9206478377219d65064d23cd1200"
+  },
+  "renderer": "SVG with retained source nodes",
+  "benchmark": "docs/retained-render-benchmark.json",
+  "representative_performance": "not_run",
+  "gpu_comparison": "not_run",
+  "mcp_integration": "planned"
+}
