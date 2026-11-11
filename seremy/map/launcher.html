@@ -2,30 +2,50 @@
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SEREMY</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#101a1d;color:#dce9e2;font:15px system-ui,sans-serif}
-header{padding:20px 28px;border-bottom:1px solid #3b5046}h1{font-size:20px;letter-spacing:.13em;margin:0}
-form{padding:22px 28px;display:flex;align-items:end;gap:12px;flex-wrap:wrap}label{display:grid;gap:7px}#value-label{flex:1;min-width:280px}
-button,input,select{font:inherit;border:1px solid #608371;border-radius:5px;padding:9px;background:#20342c;color:#e4eee7}
-button{cursor:pointer}button:disabled{opacity:.5;cursor:default}#start{background:#b6d5a3;color:#142119;font-weight:600}
-#status{padding:0 28px;min-height:24px;color:#bdd7c5}nav{display:flex;gap:8px;padding:12px 28px}
-iframe{width:100%;height:74vh;border:0;border-top:1px solid #3b5046}pre{margin:0;padding:28px;white-space:pre-wrap;line-height:1.7;overflow-wrap:anywhere;font:14px ui-monospace,Consolas,monospace;background:#14231c}
-[hidden]{display:none!important}a{color:#bddbaf}#summary{padding:0 28px;color:#b3c7b9}
+*{box-sizing:border-box}
+body{margin:0;height:100dvh;overflow:hidden;background:#181818;color:#d5d5d5;font:13px 'Segoe UI',system-ui,sans-serif;display:grid;grid-template-rows:44px minmax(0,1fr) 28px}
+button,input,select{font:inherit;color:inherit;border:1px solid #444;border-radius:5px;background:#272727;padding:8px 10px}
+button,a{transition:background .15s,color .15s}button{cursor:pointer}button:hover,a:hover{background:#343434;color:#fff}button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid #a6bbde;outline-offset:3px}
+header{display:flex;align-items:center;gap:14px;padding:0 12px;border-bottom:1px solid #303030;background:#202020}
+#connect{border:0;background:transparent;text-align:left;max-width:36%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dedede}
+#outputs{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px}#outputs button,#outputs a{padding:6px 9px;border:0;background:transparent;color:#b8b8b8;text-decoration:none}#outputs [aria-pressed=true]{background:#363636;color:#fff}
+main{position:relative;min-height:0;background-image:radial-gradient(#363636 1px,transparent 1px);background-size:24px 24px}
+#empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:12px;color:#777}#empty p{margin:0}#empty button{background:#252525;color:#ccc;border-color:#424242}
+iframe{display:block;width:100%;height:100%;border:0;background:#181818}
+#doc{position:absolute;inset:0;overflow:auto;margin:0;padding:32px max(24px,calc((100% - 900px)/2));white-space:pre-wrap;line-height:1.75;overflow-wrap:anywhere;font:13px Consolas,monospace;background:#1b1b1b}
+footer{display:flex;align-items:center;gap:12px;padding:0 12px;border-top:1px solid #303030;background:#202020;color:#8c8c8c;font-size:11px}#status{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#summary{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#docs{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);border:0;color:#a0a0a0;background:#242424;padding:8px 18px}body.loaded #docs{display:none}
+dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;width:min(440px,calc(100% - 32px));padding:24px;box-shadow:0 24px 80px #0008}dialog::backdrop{background:#0007}dialog h2{font-size:17px;margin:0 0 22px;font-weight:600}dialog .close{position:absolute;top:12px;right:12px;background:transparent;border:0;font-size:18px}dialog p{color:#aaa;line-height:1.7}form{display:grid;gap:16px}label{display:grid;gap:8px;color:#aaa}input,select{width:100%}.actions{display:flex;gap:8px;justify-content:flex-end}#start{background:#d0d0d0;color:#181818;border-color:#d0d0d0;font-weight:600}#connection-status{color:#b0becf;min-height:18px;margin:0}#help-dialog ol{padding-left:20px;color:#bbb;line-height:1.9}#help-dialog code{color:#dedede}
+[hidden]{display:none!important}
+@media(max-width:700px){#outputs a{display:none}#outputs{gap:0}#connect{max-width:42%}}
 </style>
-<header><h1>SEREMY</h1></header>
+<header><button id="connect" aria-label="Connect repository" aria-haspopup="dialog">No folder <span aria-hidden="true">⌄</span></button>
+<nav id="outputs" aria-label="Workspace views" hidden><button id="map-tab" aria-pressed="true">Interactive map</button><button id="doc-tab" aria-pressed="false">Documentation</button>
+<a id="download" download>Graph JSON</a><a id="checks" target="_blank" rel="noopener">Validation results</a></nav></header>
+<main><div id="empty"><button id="empty-connect">Connect repository</button><p>Local folder, ZIP or Git repository</p></div>
+<iframe id="map" title="Interactive source map" hidden></iframe><pre id="doc" tabindex="0" hidden></pre>
+<button id="docs" aria-haspopup="dialog">Docs</button></main>
+<footer><div id="status" role="status" aria-live="polite">Ready</div><p id="summary"></p></footer>
+<dialog id="connect-dialog" aria-labelledby="connect-title"><button class="close" id="close-connect" aria-label="Close connection">×</button><h2 id="connect-title">Connect repository</h2>
 <form id="form">
 <label>Repository input<select id="kind"><option value="folder">Local folder</option><option value="zip">ZIP file</option><option value="git">Git HTTPS URL</option></select></label>
 <label id="value-label">Folder path<input id="value" required placeholder="C:\path\to\repository"></label>
 <label id="zip-label" hidden>ZIP file<input id="zip" type="file" accept=".zip"></label>
 <label id="revision-label" hidden>Branch or tag<input id="revision" placeholder="Default branch"></label>
-<button id="start">Analyze repository</button><button id="cancel" type="button" hidden>Cancel</button>
-</form>
-<div id="status" role="status" aria-live="polite"></div><p id="summary"></p>
-<nav id="outputs" hidden><button id="map-tab">Interactive map</button><button id="doc-tab">Documentation</button>
-<a id="download" download>Graph JSON</a><a id="checks" target="_blank" rel="noopener">Validation results</a></nav>
-<iframe id="map" title="Interactive source map" hidden></iframe><pre id="doc" hidden></pre>
+<p id="connection-status" role="status" aria-live="polite"></p>
+<div class="actions"><button id="cancel" type="button" hidden>Cancel</button><button id="start">Analyze repository</button></div>
+</form></dialog>
+<dialog id="help-dialog" aria-labelledby="help-title"><button class="close" id="close-help" aria-label="Close Docs">×</button><h2 id="help-title">Explore a repository</h2>
+<ol><li>Connect a local folder, ZIP or HTTPS Git repository.</li><li>Expand folders in Files and open a source file.</li><li>Select a call, then choose Follow target to visit its declaration.</li><li>Use Back to restore your position and selection.</li></ol><p>Scroll to zoom and drag to pan. Documentation and source evidence are generated from the same analysis.</p><p>Results are drafts. Validation results show the analysis coverage.</p></dialog>
 <script>
 const get=id=>document.getElementById(id);
-let job=null,publication=null;
+let job=null,publication=null,repositoryName='';
+function status(message){get('status').textContent=get('connection-status').textContent=message;}
+function connect(){get('connect-dialog').showModal();}
+get('connect').onclick=get('empty-connect').onclick=connect;
+get('close-connect').onclick=()=>get('connect-dialog').close();
+get('docs').onclick=()=>get('help-dialog').showModal();
+get('close-help').onclick=()=>get('help-dialog').close();
 get('kind').onchange=()=>{
   const kind=get('kind').value;
   get('zip-label').hidden=kind!=='zip';get('value-label').hidden=kind==='zip';
@@ -40,11 +60,15 @@ async function poll(){
   try{
     const response=await fetch('/api/jobs/'+job),state=await response.json();
     if(!response.ok)throw new Error(state.error);
-    get('status').textContent=state.error||state.stage;
+    status(state.error||state.stage);
     if(state.status==='completed'){
       publication=state.publication;
       get('map').src='/reports/'+publication+'/map.html';
       get('map').hidden=false;get('doc').hidden=true;get('outputs').hidden=false;
+      document.body.classList.add('loaded');get('empty').hidden=true;
+      get('connect-dialog').close();
+      get('connect').textContent=repositoryName;
+      get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');
       get('download').href='/reports/'+publication+'/graph.json';get('checks').href='/reports/'+publication+'/validation.json';
       const c=state.coverage;
       get('summary').textContent=c.s02.parsed_file_records+' source files processed · '+c.s03.direct_edge_count+
@@ -53,10 +77,10 @@ async function poll(){
     if(['completed','failed','cancelled'].includes(state.status)){
       get('start').disabled=false;get('cancel').hidden=true;job=null;
     }else{setTimeout(poll,750);}
-  }catch(error){get('status').textContent=error.message;get('start').disabled=false;get('cancel').hidden=true;}
+  }catch(error){status(error.message);get('start').disabled=false;get('cancel').hidden=true;}
 }
 get('form').onsubmit=async event=>{
-  event.preventDefault();get('start').disabled=true;get('status').textContent='Preparing input…';
+  event.preventDefault();get('start').disabled=true;status('Preparing input…');
   try{
     const kind=get('kind').value;let value=get('value').value;
     if(kind==='zip'){
@@ -66,19 +90,24 @@ get('form').onsubmit=async event=>{
       for(let i=0;i<raw.length;i+=8192)binary+=String.fromCharCode(...raw.subarray(i,i+8192));
       value=btoa(binary);
     }
+    repositoryName=kind==='zip'?get('zip').files[0].name:value.replace(/[\\/]+$/,'').split(/[\\/]/).pop();
     const result=await post('/api/jobs',{kind,value,revision:get('revision').value||null});
     job=result.id;get('cancel').hidden=false;poll();
-  }catch(error){get('status').textContent=error.message;get('start').disabled=false;}
+  }catch(error){status(error.message);get('start').disabled=false;}
 };
 get('cancel').onclick=async()=>{
-  if(job){await post('/api/cancel/'+job,{});get('status').textContent='Cancellation requested. Waiting for the current stage to finish.';}
+  if(job){await post('/api/cancel/'+job,{});status('Cancellation requested. Waiting for the current stage to finish.');}
 };
-get('map-tab').onclick=()=>{get('map').hidden=false;get('doc').hidden=true;};
+get('map-tab').onclick=()=>{get('map').hidden=false;get('doc').hidden=true;get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');};
 get('doc-tab').onclick=async()=>{
   try{
-    const response=await fetch('/reports/'+publication+'/architecture.md');
+    const requestedPublication=publication;
+    const response=await fetch('/reports/'+requestedPublication+'/architecture.md');
     if(!response.ok)throw new Error('Documentation could not be loaded.');
-    get('doc').textContent=await response.text();get('map').hidden=true;get('doc').hidden=false;
-  }catch(error){get('status').textContent=error.message;}
+    const markdown=await response.text();
+    if(publication!==requestedPublication)return;
+    get('doc').textContent=markdown;get('map').hidden=true;get('doc').hidden=false;
+    get('map-tab').setAttribute('aria-pressed','false');get('doc-tab').setAttribute('aria-pressed','true');
+  }catch(error){status(error.message);}
 };
 </script></html>

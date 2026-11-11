@@ -79,6 +79,22 @@ async function run() {
     checks.push('Click the call in source, zoom and pan, follow the declaration, and restore all navigation state with Back');
 
     await page.getByRole('button', {name:'Open src/createStore.ts',exact:true}).click();
+    assert.equal(await page.locator('#target').isDisabled(),true);
+    assert.equal(await page.locator('#origin').isDisabled(),true);
+    assert.equal((await state(page)).edge,'');
+    await page.getByRole('button', {name:'Back',exact:true}).click();
+    assert.deepEqual(await state(page),origin);
+    await page.getByRole('searchbox',{name:'Find file or symbol'}).fill('createStore');
+    await page.getByRole('button',{name:'Open file',exact:true}).click();
+    assert.equal(await page.locator('#target').isDisabled(),true);
+    await page.getByRole('button',{name:'Back',exact:true}).click();
+    assert.deepEqual(await state(page),origin);
+    await page.locator('#world text.name').filter({hasText:/^src\/utils\/isAction\.ts$/}).click();
+    assert.equal(await page.locator('#target').isDisabled(),true);
+    await page.getByRole('button',{name:'Back',exact:true}).click();
+    assert.deepEqual(await state(page),origin);
+    checks.push('Opening a file through tree, search, or canvas title clears the relationship and Back recovers it');
+    await page.getByRole('button', {name:'Open src/createStore.ts',exact:true}).click();
     // Following a relationship reveals its target directory, which Back must undo.
     await utils.locator(':scope > summary').click();
     await page.getByRole('combobox', {name:'Relationship',exact:true}).selectOption(edge.id);

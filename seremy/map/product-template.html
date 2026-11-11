@@ -9,6 +9,8 @@ body{background:#141414;color:#ddd}main{display:flex;height:70vh}#map{flex:1;min
 #repository{width:250px;flex-shrink:0;overflow:auto;padding:12px 8px;border-right:1px solid #383838;background:#1b1b1b;font-size:12px}#repository h2{font-size:12px;color:#aaa;margin:0 8px 12px}#tree details{margin-left:12px}#tree>details{margin-left:0}#tree summary{cursor:pointer;padding:6px;color:#ccc}#tree button{display:block;width:100%;text-align:left;background:transparent;border:0;padding:6px 12px;color:#bbb;font-size:12px;white-space:nowrap}#tree button:hover,#tree summary:hover{background:#303030}#tree button[aria-current=true]{background:#333b48;color:#eef3ff}.source-focus{fill:#d7ac452b;stroke:#edc96c;stroke-width:1.5;pointer-events:none}#mini{background:#202020}header,footer{border-color:#383838}button,input,select{background:#252525;border-color:#555;color:#ddd}.file{fill:#1e1e1e;stroke:#606773}.folder{fill:#33333333;stroke:#555}.wire{stroke:#708198}.wire.selected{stroke:#d3ad65}.token{fill:transparent;stroke:transparent}.token:hover{fill:#8ca2d533;stroke:#9cb9e5}.code{fill:#ccc}.name{fill:#ddd}.number{fill:#777}.keyword{fill:#bb97cf}.comment{fill:#819574}
 @media(max-width:700px){#repository{width:170px}}
 .code{white-space:pre;font-variant-ligatures:none}
+body{height:100dvh;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto}
+main{height:auto;min-height:0}#map{height:100%}header,footer{padding:8px 12px;gap:8px;font-size:12px}button,input,select{padding:6px 8px}header b{display:none}#status{font-size:11px}#evidence{margin:0;padding:8px 12px;font-size:11px}#instructions{display:none}header #files{max-width:230px}#edges{max-width:320px}
 </style>
 <header><b>SEREMY</b><span id="status">Verifying source…</span>
 <input id="search" type="search" placeholder="Find a file or symbol" aria-label="Find file or symbol">
@@ -19,7 +21,7 @@ body{background:#141414;color:#ddd}main{display:flex;height:70vh}#map{flex:1;min
 <main><nav id="repository" aria-label="Repository files"><h2>Files</h2><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg></main>
 <footer><div id="detail" aria-live="polite">Select a relationship or source region.</div><select id="edges" aria-label="Relationship"></select>
 <button id="origin">Show source</button><button id="target">Follow target</button></footer>
-<p id="evidence"></p><p>Scroll to zoom. Drag to pan. Search files or symbols. Select a relationship, then follow it or return with Back. This map shows a scoped static analysis draft.</p>
+<p id="evidence"></p><p id="instructions">Scroll to zoom. Drag to pan. Search files or symbols. Select a relationship, then follow it or return with Back. This map shows a scoped static analysis draft.</p>
 <script id="fixture" type="application/json">FIXTURE_JSON</script>
 <script>
 (()=>{
@@ -56,7 +58,7 @@ for(const folder of Object.values(folders)){
   nextX+=folder.width+140;
 }
 maxX=Math.max(800,nextX);
-let camera={x:0,y:0,k:1},collapsed=false,selected=data.edges[0]||null,focus=null,bound=false;
+let camera={x:0,y:0,k:1},collapsed=false,selected=null,focus=null,bound=false;
 const history=[];
 function position(span){
   const f=files[span.file],raw=new TextEncoder().encode(f.text);
@@ -84,9 +86,9 @@ function fit(){
   const height=collapsed?250:maxY+30;
   center({x:maxX/2,y:height/2},Math.min((map.clientWidth-35)/maxX,(map.clientHeight-35)/height,1));
 }
-function follow(span){
+function follow(span,edge=null){
   if(!bound||!span)return;
-  save();collapsed=false;focus=span;revealFile(span.file);center(anchor(span),1.25);draw();
+  save();selected=edge;collapsed=false;focus=span;revealFile(span.file);center(anchor(span),1.25);draw();
 }
 function zoom(x,y,factor){
   const k=Math.min(4,Math.max(.001,camera.k*factor)),ratio=k/camera.k;
@@ -211,7 +213,7 @@ el('open').onclick=()=>{
 };
 for(const edge of data.edges)el('edges').add(new Option(edge.kind+' · '+edge.from.file+':'+position(edge.from).line,edge.id));
 el('edges').onchange=()=>select(data.edges.find(e=>e.id===el('edges').value));
-el('origin').onclick=()=>follow(selected?.from);el('target').onclick=()=>follow(selected?.to);
+el('origin').onclick=()=>follow(selected?.from,selected);el('target').onclick=()=>follow(selected?.to,selected);
 el('fit').onclick=()=>{save();fit();draw();};
 el('collapse').onclick=()=>{save();collapsed=!collapsed;draw();};
 el('back').onclick=()=>{

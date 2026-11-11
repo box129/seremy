@@ -25,6 +25,13 @@ async function run(){
     const page=await browser.newPage({viewport:{width:1500,height:1100}});
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     await page.goto(url);
+    assert.match(await page.locator('#connect').innerText(), /No folder/);
+    assert.equal(await page.locator('#form').isVisible(), false);
+    await page.screenshot({path:path.join(evidence,'first-visit.png')});
+    await page.getByRole('button',{name:'Docs',exact:true}).click();
+    await page.getByRole('dialog',{name:'Explore a repository'}).waitFor();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button',{name:'Connect repository',exact:true}).first().click();
     await page.locator('#value').fill(path.join(packageRoot,'fixtures','local-demo'));
     await page.getByRole('button',{name:'Analyze repository',exact:true}).click();
     await page.waitForFunction(()=>/Draft ready|Failed/.test(document.querySelector('#status').textContent),{},{timeout:30000});
@@ -33,6 +40,14 @@ async function run(){
     const frame=page.frameLocator('#map');
     await frame.locator('#status').filter({hasText:'source verified'}).waitFor();
     assert.ok(await frame.locator('#files option').count()===4);
+    assert.equal(await page.locator('#connect-dialog').isVisible(),false);
+    const camera=await frame.locator('#world').getAttribute('transform');
+    const mapBounds=await page.locator('#map').boundingBox();
+    assert.ok(mapBounds.height>=1000,'Map fills the workspace below its toolbar');
+    await page.screenshot({path:path.join(evidence,'loaded-workspace.png')});
+    await page.setViewportSize({width:1280,height:800});
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight),false);
+    await page.screenshot({path:path.join(evidence,'loaded-workspace-1280.png')});
     await page.getByRole('button',{name:'Documentation',exact:true}).click();
     const doc=page.locator('#doc');
     await doc.filter({hasText:'FastAPI'}).waitFor();
@@ -41,13 +56,25 @@ async function run(){
     await page.screenshot({path:path.join(evidence,'launcher-documentation.png')});
     await page.getByRole('button',{name:'Interactive map',exact:true}).click();
     assert.equal(await page.locator('#map').isVisible(),true);
+    assert.equal(await frame.locator('#world').getAttribute('transform'),camera);
+    await page.getByRole('button',{name:'Connect repository',exact:true}).click();
+    await page.locator('#value').fill(path.join(evidence,'missing-repository'));
+    await page.getByRole('button',{name:'Analyze repository',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('#connection-status').textContent.includes('Failed')||document.querySelector('#start').disabled===false);
+    assert.equal(await page.locator('#connect-dialog').isVisible(),true);
+    assert.ok((await page.locator('#connection-status').innerText()).length>0);
+    await page.getByRole('button',{name:'Close connection'}).click();
+    assert.equal(await page.locator('#map').isVisible(),true);
+    assert.equal(await frame.locator('#world').getAttribute('transform'),camera);
     assert.deepEqual(errors,[]);
     const result={status:'passed',browser:browser.version(),checks:[
+      'First visit shows No folder, centered Docs, and a keyboard-dismissable connection dialog',
       'Local folder submission runs both language adapters through all eight stages',
       'Four files and two direct relationships reach the shared graph',
       'Embedded interactive map verifies source bytes and provides file navigation',
       'Documentation contains package-scoped Preact and FastAPI evidence and structural relationships',
-      'Map/documentation switching retains the same publication'],page_errors:errors};
+      'Map/documentation switching retains the same publication and camera',
+      'Loaded canvas fills the workspace and a failed replacement keeps the existing map available'],page_errors:errors};
     fs.writeFileSync(path.join(evidence,'launcher-checks.json'),JSON.stringify(result,null,2));
     console.log(JSON.stringify(result));
   }finally{
