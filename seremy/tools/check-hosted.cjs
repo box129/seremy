@@ -26,7 +26,8 @@ async function run(){
     const status=await frame.locator('#status').innerText();assert.match(status,/4 files/);
     assert.match(await page.locator('#summary').innerText(),/2 distinct call relationships/);
     checks.push('ZIP upload runs Python and TypeScript analysis and opens the verified source map');
-    await page.locator('#doc-tab').click();assert.match(await page.locator('#doc').innerText(),/Structural components/);
+    await page.locator('#doc-tab').click();
+    await page.waitForFunction(()=>document.querySelector('#doc').textContent.includes('Structural components'));
     await page.locator('#map-tab').click();
     const mapUrl=await page.locator('#download-map').getAttribute('href');
     assert.equal((await page.request.get(new URL(mapUrl,url).href)).status(),200);
