@@ -37,7 +37,22 @@ async function run(){
     assert.ok(collapsed>0&&collapsed<groups.length);
     const count=await page.locator('.wire[data-overview=true]').evaluateAll(nodes=>nodes.reduce((sum,node)=>sum+Number(node.dataset.siteCount),0));
     assert.equal(count,data.edges.length);
+    const selectedPath=await page.locator('.wire.selected').getAttribute('d');
+    assert.ok(await page.locator('.wire.selected').evaluate(node=>node.getTotalLength()>0));
+    await page.getByRole('button',{name:'Follow target',exact:true}).click();
+    assert.equal(await page.locator('#tree button[aria-current=true]').getAttribute('data-file'),edge.to.file);
+    await page.getByRole('button',{name:'Back',exact:true}).click();
+    assert.equal(await page.locator('.wire.selected').getAttribute('d'),selectedPath);
+    checks.push('Internal selected relationship stays visible when collapsed and Back restores its loop after following');
+    for(let step=0;step<30;step++){
+      const scale=await page.locator('#world').evaluate(node=>Number(node.getAttribute('transform').match(/scale\(([^)]+)\)/)[1]));
+      if(scale>=.5)break;
+      await page.getByRole('button',{name:'Zoom in',exact:true}).click();
+    }
+    assert.ok(await page.locator('.wire.selected').evaluate(node=>node.getTotalLength()>0));
+    checks.push('Collapsed internal relationship remains highlighted at readable source zoom');
     await page.getByRole('button',{name:'Expand folders',exact:true}).click();
+    await page.getByRole('button',{name:'Fit map',exact:true}).click();
     assert.equal(await page.locator('.wire[data-overview=true]').count(),groups.length);
     checks.push('Folder collapse recomputes groups and expansion restores them without losing occurrences');
     assert.deepEqual(errors,[]);

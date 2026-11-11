@@ -3,6 +3,8 @@
   "checks": [
     "Overview groups represent every original source occurrence",
     "Any occurrence can be selected, followed and restored from the overview",
+    "Internal selected relationship stays visible when collapsed and Back restores its loop after following",
+    "Collapsed internal relationship remains highlighted at readable source zoom",
     "Folder collapse recomputes groups and expansion restores them without losing occurrences"
   ],
   "page_errors": []

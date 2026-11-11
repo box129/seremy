@@ -275,12 +275,19 @@ function draw(){
     const {edge,count}=relationship;
     const a=relationship.a||anchor(edge.from),b=relationship.b||anchor(edge.to);
     const exact=camera.k>=.5||relationship.exact;
-    if(a.x===b.x&&a.y===b.y)continue;
+    const coincident=a.x===b.x&&a.y===b.y;
+    if(coincident&&edge!==selected)continue;
     if(edge!==selected&&(Math.max(a.x+140,b.x)<visible.left||Math.min(a.x,b.x-140)>visible.right||
       Math.max(a.y,b.y)<visible.top||Math.min(a.y,b.y)>visible.bottom))continue;
-    const d='M '+a.x+' '+a.y+' C '+(a.x+140)+' '+a.y+' '+(b.x-140)+' '+b.y+' '+b.x+' '+b.y;
+    let d='M '+a.x+' '+a.y+' C '+(a.x+140)+' '+a.y+' '+(b.x-140)+' '+b.y+' '+b.x+' '+b.y;
+    if(coincident){
+      const radius=Math.max(36,12/camera.k);
+      d='M '+a.x+' '+a.y+' C '+(a.x+radius)+' '+(a.y-radius*2)+' '+
+        (a.x-radius)+' '+(a.y-radius*2)+' '+a.x+' '+a.y;
+    }
     add(world,'path',{d,class:'wire'+(exact&&selected===edge?' selected':''),'data-edge':edge.id,
-      'data-site-count':count,'data-overview':String(!exact)});
+      'data-site-count':count,'data-overview':String(!exact),
+      'vector-effect':coincident?'non-scaling-stroke':'none'});
     const hit=add(world,'path',{d,class:'hit'});
     add(hit,'title',{},edge.kind+' · '+edge.from.file+' → '+edge.to.file+
       (exact?'':' · '+count+' source sites · select to inspect the first site'));
