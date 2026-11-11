@@ -10,7 +10,7 @@ async function run() {
   const evidence = path.resolve(process.argv[3]);
   const input = path.join(evidence, 'many-lines-input');
   fs.mkdirSync(input, {recursive:true});
-  fs.writeFileSync(path.join(input, 'long.py'), '\n'.repeat(160000) + 'def main(): pass\n');
+  fs.writeFileSync(path.join(input, 'long.py'), '\n'.repeat(160000) + 'def main(): pass\nmain()\n');
   const result = spawnSync(process.env.PYTHON || 'python', [
     '-B', '-m', 'seremy', 'analyze', input, '--output', path.join(evidence, 'many-lines-output')
   ], {cwd:path.resolve(__dirname, '../..'), windowsHide:true, encoding:'utf8', timeout:60000});
@@ -30,12 +30,32 @@ async function run() {
         assert.match(status, /17 files · 25 relationships · 30 source sites/);
         checks.push('Redux reports 25 distinct relationships separately from 30 source sites');
       } else {
-        assert.match(status, /1 files · 0 relationships · 0 source sites/);
+        assert.match(status, /1 files · 1 relationships · 1 source sites/);
+        const foldedCamera=await page.locator('#world').getAttribute('transform');
+        const foldedHeight=await page.locator('.file').getAttribute('height');
+        assert.ok(Number(foldedHeight)<2000);
+        assert.equal(await page.getByRole('button',{name:'Expand full file long.py',exact:true}).count(),1);
         await page.getByRole('searchbox', {name:'Find file or symbol'}).fill('main');
         await page.getByRole('button', {name:'Open file', exact:true}).click();
         assert.match(await page.locator('#detail').innerText(), /long.py:160001/);
         assert.match(await page.locator('#world').textContent(), /def main/);
-        checks.push('160,001-line source verifies, opens the symbol, and renders at its exact source line');
+        await page.getByRole('button',{name:'Back',exact:true}).click();
+        assert.equal(await page.locator('.file').getAttribute('height'),foldedHeight);
+        assert.equal(await page.locator('#world').getAttribute('transform'),foldedCamera);
+        await page.getByRole('button',{name:'Expand full file long.py',exact:true}).press('Enter');
+        assert.ok(Number(await page.locator('.file').getAttribute('height'))>3000000);
+        await page.getByRole('button',{name:'Fold file long.py',exact:true}).press('Space');
+        assert.equal(await page.locator('.file').getAttribute('height'),foldedHeight);
+        const data=JSON.parse(await page.locator('#fixture').textContent());
+        await page.getByRole('combobox',{name:'Relationship',exact:true}).selectOption(data.edges[0].id);
+        const beforeFollow=await page.locator('#world').getAttribute('transform');
+        await page.getByRole('button',{name:'Follow target',exact:true}).click();
+        assert.match(await page.locator('#detail').innerText(), /long.py:160001/);
+        assert.match(await page.locator('#world').textContent(), /def main/);
+        await page.getByRole('button',{name:'Back',exact:true}).click();
+        assert.equal(await page.locator('.file').getAttribute('height'),foldedHeight);
+        assert.equal(await page.locator('#world').getAttribute('transform'),beforeFollow);
+        checks.push('160,001st-line declaration opens through search and call navigation, restores folding through Back, and supports keyboard expansion');
       }
       assert.deepEqual(errors, []);
       await page.screenshot({path:path.join(evidence, name + '.png')});

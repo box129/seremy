@@ -1,0 +1,116 @@
+{
+  "date": "2026-11-11T18:26:01.387Z",
+  "renderer": "SVG",
+  "baseline_commit": "bd75e8e",
+  "browser": "158.0.8127.18",
+  "platform": "win32",
+  "cpu": "Intel(R) Core(TM) i5-10310U CPU @ 1.70GHz",
+  "logical_cpus": 8,
+  "viewport": [
+    1440,
+    900
+  ],
+  "results": [
+    {
+      "name": "redux",
+      "version": "baseline",
+      "inventory": {
+        "files": 17,
+        "lines": 1582,
+        "sites": 30
+      },
+      "ready_ms": 421,
+      "overview": {
+        "samples": 20,
+        "handler_p50_ms": 60.7,
+        "handler_p95_ms": 126.8,
+        "two_animation_frames_p95_ms": 157.5,
+        "svg_nodes": 1731
+      },
+      "source": {
+        "samples": 20,
+        "handler_p50_ms": 47.2,
+        "handler_p95_ms": 57.2,
+        "two_animation_frames_p95_ms": 90,
+        "svg_nodes": 216
+      },
+      "page_errors": []
+    },
+    {
+      "name": "redux",
+      "version": "folded",
+      "inventory": {
+        "files": 17,
+        "lines": 1582,
+        "sites": 30
+      },
+      "ready_ms": 243,
+      "overview": {
+        "samples": 20,
+        "handler_p50_ms": 9.8,
+        "handler_p95_ms": 22.3,
+        "two_animation_frames_p95_ms": 50.8,
+        "svg_nodes": 925
+      },
+      "source": {
+        "samples": 20,
+        "handler_p50_ms": 5.1,
+        "handler_p95_ms": 6.8,
+        "two_animation_frames_p95_ms": 42.4,
+        "svg_nodes": 195
+      },
+      "page_errors": []
+    },
+    {
+      "name": "synthetic",
+      "version": "baseline",
+      "inventory": {
+        "files": 100,
+        "lines": 50000,
+        "sites": 5000
+      },
+      "ready_ms": 8667,
+      "overview": {
+        "samples": 20,
+        "handler_p50_ms": 5707.1,
+        "handler_p95_ms": 6870.4,
+        "two_animation_frames_p95_ms": 7999.3,
+        "svg_nodes": 77221
+      },
+      "source": {
+        "samples": 20,
+        "handler_p50_ms": 3334.5,
+        "handler_p95_ms": 3771.4,
+        "two_animation_frames_p95_ms": 3900.5,
+        "svg_nodes": 15224
+      },
+      "page_errors": []
+    },
+    {
+      "name": "synthetic",
+      "version": "folded",
+      "inventory": {
+        "files": 100,
+        "lines": 50000,
+        "sites": 5000
+      },
+      "ready_ms": 1252,
+      "overview": {
+        "samples": 20,
+        "handler_p50_ms": 132.3,
+        "handler_p95_ms": 187.4,
+        "two_animation_frames_p95_ms": 404.1,
+        "svg_nodes": 23421
+      },
+      "source": {
+        "samples": 20,
+        "handler_p50_ms": 76.2,
+        "handler_p95_ms": 137.2,
+        "two_animation_frames_p95_ms": 233.9,
+        "svg_nodes": 15229
+      },
+      "page_errors": []
+    }
+  ],
+  "limits": "One headless Chromium run per case, no CPU throttling. Synthetic workload. Two-frame timing includes browser scheduling. No GPU renderer comparison."
+}

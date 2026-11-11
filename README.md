@@ -43,4 +43,6 @@ The repository contains the standalone SEREMY implementation, fixtures, and test
 
 Canvas directories contain their child directories and source files. Use a directory heading to collapse or expand it independently. Enter and Space also activate a focused heading. Following a call opens its target ancestors, and Back restores the previous canvas folder state. Collapsed folders show their source file count and receive boundary endpoints for relationships to hidden files.
 
+Files longer than 180 lines show an 80-line preview. Expand full file reveals the remaining source. Search and call navigation reveal lines beyond the preview automatically. Back restores the folded state.
+
 Outputs remain scoped drafts. Direct calls have qualified language profiles. Unsupported dynamic targets retain explicit outcomes. Semantic component detection, architectural layers, route/DI/ORM rules, comprehensive accessibility, edge aggregation, and representative performance qualification remain implementation work. See [the detailed profile](seremy/README.md) and [the fix record](docs/review-fixes.md).
