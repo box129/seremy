@@ -1,8 +1,7 @@
-"""Bounded ZIP analysis for a single hosted instance with temporary results."""
+"""Bounded hosted repository analysis with temporary results."""
 import base64
 from concurrent.futures import ThreadPoolExecutor
 from http import HTTPStatus
-import io
 import json
 import os
 from pathlib import Path
@@ -16,6 +15,7 @@ import threading
 import time
 from urllib.parse import urlsplit
 import zipfile
+from seremy.github_input import github_source, validate_archive
 
 ID = re.compile(r"[0-9a-f]{64}\Z")
 MAX_UPLOAD = 3 * 1024 * 1024
@@ -43,7 +43,7 @@ class HostedApplication:
             state = json.loads(path.read_text(encoding="utf8"))
             self.jobs[path.parent.name] = state
             if state["status"] in {"queued", "running"}:
-                self.update(path.parent.name, status="failed", error="The service restarted. Upload the ZIP again.")
+                self.update(path.parent.name, status="failed", error="The service restarted. Submit the repository again.")
         self.cleanup()
 
     def update(self, job, **changes):
@@ -67,16 +67,17 @@ class HostedApplication:
                 self.cancelled.discard(job)
 
     def start(self, request):
-        if request.get("kind") != "zip" or not isinstance(request.get("value"), str):
-            raise ValueError("Upload a repository ZIP file.")
-        if len(request["value"]) > 4 * ((MAX_UPLOAD + 2) // 3):
-            raise ValueError("Choose a ZIP file up to 3 MiB.")
-        raw = base64.b64decode(request["value"], validate=True)
-        if len(raw) > MAX_UPLOAD:
-            raise ValueError("Choose a ZIP file up to 3 MiB.")
-        with zipfile.ZipFile(io.BytesIO(raw)) as archive:
-            if len(archive.infolist()) > 1000 or sum(item.file_size for item in archive.infolist()) > 8 * 1024 * 1024:
-                raise ValueError("Repository limit is 1,000 ZIP entries and 8 MiB extracted.")
+        kind, value = request.get("kind"), request.get("value")
+        if kind not in {"zip", "git"} or not isinstance(value, str):
+            raise ValueError("Choose a repository ZIP or public GitHub repository.")
+        if kind == "git":
+            url, revision = github_source(value, request.get("revision"))
+            source = {"url": url, "revision": revision}
+        else:
+            if len(value) > 4 * ((MAX_UPLOAD + 2) // 3):
+                raise ValueError("Choose a ZIP file up to 3 MiB.")
+            raw = base64.b64decode(value, validate=True)
+            validate_archive(raw)
         with self.lock:
             self.cleanup()
             if sum(state["status"] in {"queued", "running"} for state in self.jobs.values()) >= 2 or len(self.jobs) >= 16:
@@ -84,7 +85,10 @@ class HostedApplication:
             job = secrets.token_hex(32)
             folder = self.directory / job
             folder.mkdir()
-            (folder / "input.zip").write_bytes(raw)
+            if kind == "git":
+                (folder / "source.json").write_text(json.dumps(source), encoding="utf8")
+            else:
+                (folder / "input.zip").write_bytes(raw)
             self.jobs[job] = {"id": job, "status": "queued", "stage": "Queued", "expires_at": time.time() + RESULT_TTL}
             self.update(job)
             self.worker.submit(self.run, job)
@@ -122,8 +126,12 @@ class HostedApplication:
                 return
             self.update(job, status="running", stage="Analyzing repository")
             environment = dict(os.environ, NODE_OPTIONS="--max-old-space-size=192", PYTHONDONTWRITEBYTECODE="1")
-            process = subprocess.Popen([sys.executable, "-B", "-m", "seremy", "analyze", "--zip", str(folder / "input.zip"),
-                                        "--output", str(folder / "results")],
+            if (folder / "source.json").exists():
+                source = json.loads((folder / "source.json").read_text(encoding="utf8"))
+                command = ["seremy.github_input", source["url"], "--revision", source["revision"]]
+            else:
+                command = ["seremy", "analyze", "--zip", str(folder / "input.zip")]
+            process = subprocess.Popen([sys.executable, "-B", "-m", *command, "--output", str(folder / "results")],
                                        cwd=Path(__file__).resolve().parent.parent, env=environment,
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                        start_new_session=os.name != "nt")
@@ -142,7 +150,7 @@ class HostedApplication:
                 except subprocess.TimeoutExpired:
                     continue
             if process.returncode:
-                raise ValueError("Analysis failed. Check the ZIP contents and try a smaller repository.")
+                raise ValueError("Analysis failed. Check the repository, revision and size limits, then try again.")
             publication = Path(json.loads(stdout)["publication"])
             coverage = json.loads((publication / "graph.json").read_text(encoding="utf8"))["contents"]["coverage"]
             if job in self.cancelled:
@@ -156,6 +164,7 @@ class HostedApplication:
             outcome = {"status": "failed", "stage": "Analysis failed", "error": str(error)}
         finally:
             (folder / "input.zip").unlink(missing_ok=True)
+            (folder / "source.json").unlink(missing_ok=True)
             self.update(job, **outcome)
 
     def report(self, job, name):
@@ -175,7 +184,11 @@ def make_app(application):
             elif method == "GET" and path == "/":
                 content_type = "text/html; charset=utf-8"
                 body = (Path(__file__).parent / "map/launcher.html").read_text(encoding="utf8").replace(
-                    "<script>", "<script>window.SEREMY_HOSTED=true;", 1).encode()
+                    "<script>", "<script>window.SEREMY_HOSTED=true;", 1).replace(
+                        "</html>", '<script src="/history.js"></script></html>').encode()
+            elif method == "GET" and path == "/history.js":
+                content_type = "text/javascript; charset=utf-8"
+                body = (Path(__file__).parent / "map/history.js").read_bytes()
             elif method == "GET" and path.startswith("/api/jobs/") and ID.fullmatch(path.split("/")[-1]):
                 body = application.state(path.split("/")[-1])
             elif method == "GET" and path.startswith("/reports/"):
@@ -211,7 +224,7 @@ def make_app(application):
         except PermissionError:
             status, body = 403, {"error": "Same-origin access required."}
         except (KeyError, FileNotFoundError):
-            status, body = 404, {"error": "Result unavailable or expired. Upload the ZIP again."}
+            status, body = 404, {"error": "Result unavailable or expired. Submit the repository again."}
         raw = body if isinstance(body, bytes) else json.dumps(body).encode()
         headers = [("Content-Type", content_type), ("Content-Length", str(len(raw))),
                    ("Cache-Control", "no-store"), ("Referrer-Policy", "no-referrer"),

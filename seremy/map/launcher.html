@@ -29,7 +29,7 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 <dialog id="connect-dialog" aria-labelledby="connect-title"><button class="close" id="close-connect" aria-label="Close connection">×</button><h2 id="connect-title">Connect repository</h2>
 <form id="form">
 <label>Repository input<select id="kind"><option value="folder">Local folder</option><option value="zip">ZIP file</option><option value="git">Git HTTPS URL</option></select></label>
-<label id="value-label">Folder path<input id="value" required placeholder="C:\path\to\repository"></label>
+<label id="value-label"><span id="value-title">Folder path</span><input id="value" required placeholder="C:\path\to\repository"></label>
 <label id="zip-label" hidden>ZIP file<input id="zip" type="file" accept=".zip"></label>
 <label id="revision-label" hidden>Branch or tag<input id="revision" placeholder="Default branch"></label>
 <p id="connection-status" role="status" aria-live="polite"></p>
@@ -51,6 +51,7 @@ get('kind').onchange=()=>{
   const kind=get('kind').value;
   get('zip-label').hidden=kind!=='zip';get('value-label').hidden=kind==='zip';
   get('value').required=kind!=='zip';get('zip').required=kind==='zip';get('revision-label').hidden=kind!=='git';
+  get('value-title').textContent=kind==='git'?(hosted?'GitHub repository URL':'Git HTTPS URL'):'Folder path';
   get('value').placeholder=kind==='git'?'https://github.com/owner/repository':'C:\\path\\to\\repository';
 };
 async function post(path,data){
@@ -75,11 +76,12 @@ async function poll(){
       const c=state.coverage;
       get('summary').textContent=c.s02.parsed_file_records+' source files processed · '+c.s03.direct_edge_count+
         ' distinct call relationships · '+c.s03.attempted_count+' binding attempts · Draft';
+      window.dispatchEvent(new Event('seremy-publication'));
     }
     if(['completed','failed','cancelled'].includes(state.status)){
       get('start').disabled=false;get('cancel').hidden=true;job=null;
     }else{setTimeout(poll,750);}
-  }catch(error){status(error.message);get('start').disabled=false;get('cancel').hidden=true;}
+  }catch(error){job=null;status(error.message);get('start').disabled=false;get('cancel').hidden=true;}
 }
 get('form').onsubmit=async event=>{
   event.preventDefault();get('start').disabled=true;status('Preparing input…');
@@ -117,10 +119,10 @@ get('doc-tab').onclick=async()=>{
 };
 if(hosted){
   get('kind').querySelector('[value=folder]').remove();
-  get('kind').querySelector('[value=git]').remove();
+  get('kind').querySelector('[value=git]').textContent='Public GitHub repository';
   get('kind').value='zip';get('kind').onchange();
-  get('empty').querySelector('p').textContent='Repository ZIP · up to 3 MiB';
-  get('help-dialog').querySelector('li').textContent='Upload a repository ZIP. Python and TypeScript source are supported.';
+  get('empty').querySelector('p').textContent='Repository ZIP or public GitHub repository';
+  get('help-dialog').querySelector('li').textContent='Upload a repository ZIP or enter a public GitHub repository URL. Python and TypeScript source are supported.';
   const notice=document.createElement('p');
   notice.textContent='Up to 1,000 ZIP entries and 8 MiB extracted. Results expire after one hour and may disappear when the free service restarts. Download your map and graph to keep them. Keep result links private because they include source code.';
   get('form').prepend(notice);
