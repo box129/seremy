@@ -1,0 +1,129 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>SEREMY Pixi renderer experiment</title>
+<style>*{box-sizing:border-box}body{margin:0;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:#171717;color:#ddd;font:12px system-ui}header,footer{display:flex;gap:8px;align-items:center;padding:8px 12px;background:#202020}button,select{font:inherit;background:#252525;color:#ddd;border:1px solid #555;padding:6px}#viewport{min-height:0;overflow:hidden}canvas{display:block;touch-action:none}:focus-visible{outline:2px solid #a6bbde}#detail{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}</style>
+<style>body{overflow:hidden}header{min-width:0;flex-wrap:wrap}select{min-width:0;max-width:190px}#edges{max-width:260px}#viewport{min-width:0}#status{font-size:11px}</style>
+<header><span id="status">Preparing renderer…</span><select id="files" aria-label="Open file"></select><button id="open">Open file</button><button id="fit">Fit map</button><button id="back">Back</button><select id="edges" aria-label="Relationship"></select><button id="origin">Show source</button><button id="target">Follow target</button><button id="collapse">Collapse folders</button></header>
+<div id="viewport"></div><footer id="detail">Pixi/WebGL renderer experiment</footer>
+<svg style="position:absolute;width:0;height:0;visibility:hidden"><text id="width-probe" style="font:14px Consolas,monospace;white-space:pre;font-variant-ligatures:none"></text></svg>
+<script>PIXI_BUNDLE</script><script id="fixture" type="application/json">FIXTURE_JSON</script><script>
+(async()=>{
+'use strict';
+const data=JSON.parse(document.getElementById('fixture').textContent),el=id=>document.getElementById(id);
+const lineHeight=20,codeTop=70,foldThreshold=180,previewLines=80;
+const measuredWidths=new Map();
+function textWidth(text){const expanded=text.replace(/\t/g,'    ');if(measuredWidths.has(expanded))return measuredWidths.get(expanded);el('width-probe').textContent=expanded;const width=el('width-probe').getComputedTextLength();measuredWidths.set(expanded,width);return width;}
+const charWidth=textWidth('M'.repeat(64))/64;
+SHARED_LAYOUT
+layout();
+let camera={x:0,y:0,k:1},selected=null,focus=null,bound=false;
+const visibleEdges=()=>data.edges;
+SHARED_POSITIONS
+const history=[],cache=new Map(),ascents=new Map();let used=new Set(),hits=[],renderOrder=0;
+const app=new PIXI.Application();
+await app.init({width:el('viewport').clientWidth,height:el('viewport').clientHeight,background:0x171717,preference:'webgl',autoStart:false,resolution:devicePixelRatio,autoDensity:true,antialias:true});
+el('viewport').append(app.canvas);app.canvas.id='map';app.canvas.tabIndex=0;app.canvas.setAttribute('aria-label','Source code map');
+const scene=new PIXI.Container();app.stage.addChild(scene);
+function cached(key,create){
+  used.add(key);let node=cache.get(key);
+  if(!node){node=create();cache.set(key,node);scene.addChild(node);}
+  if(scene.getChildIndex(node)!==renderOrder)scene.setChildIndex(node,renderOrder);renderOrder++;
+  return node;
+}
+function graphics(key,paint){const node=cached(key,()=>new PIXI.Graphics());node.clear();paint(node);return node;}
+function text(key,value,x,y,size=14,color=0xcccccc){
+  const node=cached(key,()=>new PIXI.Text({text:value,style:{fontFamily:'Consolas,monospace',fontSize:size,fill:color},resolution:2}));
+  if(!ascents.has(size))ascents.set(size,PIXI.CanvasTextMetrics.measureText('M',node.style).fontProperties.ascent);
+  if(node.text!==value)node.text=value;node.position.set(x,y-ascents.get(size));return node;
+}
+function save(){history.push({camera:{...camera},selected,focus,closed:[...closedFolders],expanded:[...expandedFiles]});}
+function fit(){const height=maxY+30,k=Math.min((app.screen.width-35)/maxX,(app.screen.height-35)/height,1);camera={x:app.screen.width/2-maxX/2*k,y:app.screen.height/2-height/2*k,k};}
+function follow(span,edge=selected){
+  if(!bound||!span)return;save();selected=edge;focus=span;
+  for(let folder=folderFor(files[span.file].dir);folder!==root;folder=folderFor(folder.parent))closedFolders.delete(folder.name);
+  if(position(span).line>previewLines)expandedFiles.add(span.file);layout();
+  const p=anchor(span);camera={x:app.screen.width/2-p.x*1.25,y:app.screen.height/2-p.y*1.25,k:1.25};draw();
+}
+function back(){const old=history.pop();if(!old)return;({camera,selected,focus}=old);closedFolders.clear();old.closed.forEach(id=>closedFolders.add(id));expandedFiles.clear();old.expanded.forEach(id=>expandedFiles.add(id));layout();draw();}
+function toggleFolder(name){save();if(closedFolders.has(name))closedFolders.delete(name);else closedFolders.add(name);layout();draw();}
+function draw(){
+  used=new Set();hits=[];renderOrder=0;scene.position.set(camera.x,camera.y);scene.scale.set(camera.k);
+  const view={left:-camera.x/camera.k,top:-camera.y/camera.k,right:(app.screen.width-camera.x)/camera.k,bottom:(app.screen.height-camera.y)/camera.k};
+  for(const folder of Object.values(folders)){
+    if(folder.hidden)continue;
+    graphics('folder:'+folder.name,g=>g.roundRect(folder.x,folder.y,folder.width,folder.height,8).fill({color:0x333333,alpha:.2}).stroke({color:0x555555,width:1}));
+    const label=text('folder-label:'+folder.name,(closedFolders.has(folder.name)?'▸ ':'▾ ')+folder.name,folder.x+12,folder.y+27,17,0xdddddd);
+    const labelScale=Math.max(1,11/(17*camera.k));label.scale.set(labelScale);label.y=folder.y+27-ascents.get(17)*labelScale;
+    hits.push({x:folder.x,y:folder.y,w:folder.width,h:32,action:()=>toggleFolder(folder.name)});
+  }
+  for(const file of Object.values(files)){
+    if(file.hidden||file.x+file.width<view.left||file.x>view.right||file.y+file.height<view.top||file.y>view.bottom)continue;
+    graphics('file:'+file.path,g=>g.roundRect(file.x,file.y,file.width,file.height,4).fill(0x1e1e1e).stroke({color:0x606773,width:1}));
+    text('name:'+file.path,file.path,file.x+10,file.y+23,17,0xdddddd);
+    const first=Math.max(0,Math.floor((view.top-file.y-codeTop)/lineHeight)),last=Math.min(file.displayLines,Math.ceil((view.bottom-file.y)/lineHeight));
+    if(camera.k<.5){
+      graphics('preview:'+file.path,g=>{
+        const stride=Math.max(1,Math.ceil(3/(camera.k*lineHeight)));
+        for(let i=first;i<last;i+=stride)if(file.lines[i].trim())g.rect(file.x+52,file.y+codeTop+i*lineHeight-9,file.lines[i].length*7,8);
+        g.fill(0x507561);
+      });
+    }else{
+      for(let i=first;i<last;i++){
+        text('line-number:'+file.path+':'+i,String(i+1),file.x+8,file.y+codeTop+i*lineHeight,14,0x777777);
+        text('line:'+file.path+':'+i,file.lines[i].replace(/\t/g,'    '),file.x+52,file.y+codeTop+i*lineHeight);
+      }
+    }
+  }
+  const relationships=camera.k<.5?overviewEdges():data.edges.map(edge=>({edge,count:1}));
+  const drawn=selected&&camera.k<.5?[...relationships,{edge:selected,exact:true}]:relationships;
+  for(let index=0;index<drawn.length;index++){
+    const item=drawn[index],edge=item.edge,a=item.a||anchor(edge.from),b=item.b||anchor(edge.to),exact=camera.k>=.5||item.exact;
+    if(a.x===b.x&&a.y===b.y&&edge!==selected)continue;
+    if(edge!==selected&&(Math.max(a.x+140,b.x)<view.left||Math.min(a.x,b.x-140)>view.right||Math.max(a.y,b.y)<view.top||Math.min(a.y,b.y)>view.bottom))continue;
+    graphics('edge:'+index,g=>{
+      if(a.x===b.x&&a.y===b.y){const r=Math.max(36,12/camera.k);g.moveTo(a.x,a.y).bezierCurveTo(a.x+r,a.y-r*2,a.x-r,a.y-r*2,a.x,a.y);}
+      else g.moveTo(a.x,a.y).bezierCurveTo(a.x+140,a.y,b.x-140,b.y,b.x,b.y);
+      g.stroke({color:exact&&edge===selected?0xd3ad65:0x708198,width:exact&&edge===selected?4:2});
+    });
+  }
+  if(camera.k>=.5){
+    for(const edge of data.edges){
+      if(files[edge.from.file].hidden||position(edge.from).line>files[edge.from.file].displayLines)continue;
+      const p=anchor(edge.from);if(p.x<view.left||p.x>view.right||p.y<view.top||p.y>view.bottom)continue;
+      hits.push({x:p.x,y:p.y-14,w:Math.max(8,position(edge.from).width),h:18,action:()=>{save();selected=edge;focus=edge.from;draw();}});
+    }
+  }
+  if(focus&&!files[focus.file].hidden&&position(focus).line<=files[focus.file].displayLines){const p=anchor(focus);graphics('focus',g=>g.rect(p.x,p.y-15,Math.max(8,position(focus).width),20).fill({color:0xd7ac45,alpha:.17}).stroke({color:0xedc96c,width:1.5}));}
+  for(const [key,node] of cache)if(!used.has(key)){scene.removeChild(node);node.destroy();cache.delete(key);}
+  // Mirror the product's folder headings above source content and connections.
+  for(const folder of Object.values(folders)){const label=cache.get('folder-label:'+folder.name);if(label)scene.setChildIndex(label,scene.children.length-1);}
+  app.render();el('edges').value=selected?.id||'';el('back').disabled=!history.length;el('target').disabled=el('origin').disabled=!selected||!bound;
+  el('detail').textContent=focus?focus.file+':'+position(focus).line+' · '+position(focus).token.split('\n')[0]:data.edges.length+' source sites';
+}
+for(const file of Object.keys(files))el('files').add(new Option(file,file));
+el('edges').add(new Option('Choose a connection',''));
+for(const edge of data.edges)el('edges').add(new Option(edge.kind+' · '+edge.from.file+':'+position(edge.from).line,edge.id));
+el('edges').onchange=()=>{const id=el('edges').value;save();selected=data.edges.find(edge=>edge.id===id)||null;focus=null;draw();};
+el('open').onclick=()=>follow({file:el('files').value,start:0,end:0},null);
+el('origin').onclick=()=>follow(selected?.from);el('target').onclick=()=>follow(selected?.to);el('back').onclick=back;
+el('fit').onclick=()=>{save();fit();draw();};el('collapse').onclick=()=>{save();if(closedFolders.size)closedFolders.clear();else Object.keys(folders).forEach(name=>closedFolders.add(name));layout();draw();};
+function zoom(x,y,factor){const k=Math.min(4,Math.max(.001,camera.k*factor)),ratio=k/camera.k;camera={x:x-(x-camera.x)*ratio,y:y-(y-camera.y)*ratio,k};draw();}
+app.canvas.addEventListener('wheel',event=>{event.preventDefault();const r=app.canvas.getBoundingClientRect();zoom(event.clientX-r.left,event.clientY-r.top,Math.exp(-.002*event.deltaY));},{passive:false});
+let drag=null,moved=false;
+app.canvas.onpointerdown=event=>{if(event.button!==0)return;drag={x:event.clientX,y:event.clientY,camera:{...camera}};moved=false;};
+app.canvas.onpointermove=event=>{if(!drag)return;const x=event.clientX-drag.x,y=event.clientY-drag.y;if(!moved&&Math.hypot(x,y)<4)return;moved=true;app.canvas.setPointerCapture(event.pointerId);camera={...drag.camera,x:drag.camera.x+x,y:drag.camera.y+y};draw();};
+window.addEventListener('pointerup',()=>{drag=null;});window.addEventListener('pointercancel',()=>{drag=null;});
+app.canvas.onclick=event=>{if(moved){moved=false;return;}const r=app.canvas.getBoundingClientRect(),x=(event.clientX-r.left-camera.x)/camera.k,y=(event.clientY-r.top-camera.y)/camera.k;const hit=hits.findLast(hit=>x>=hit.x&&x<=hit.x+hit.w&&y>=hit.y&&y<=hit.y+hit.h);if(hit)hit.action();};
+window.addEventListener('resize',()=>{app.renderer.resize(el('viewport').clientWidth,el('viewport').clientHeight);draw();});
+for(const [file,source] of Object.entries(data.files)){
+  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source))),byte=>byte.toString(16).padStart(2,'0')).join('');
+  if(hash!==data.hashes[file])throw new Error('Source verification failed');
+}
+bound=true;fit();draw();el('status').textContent=Object.keys(files).length+' files · source verified · Pixi experiment';
+const gl=app.renderer.gl,debug=gl.getExtension('WEBGL_debug_renderer_info');
+window.__rendererExperiment={state:()=>({camera:{...camera},selected:selected?.id||null,focus,closed:[...closedFolders],expanded:[...expandedFiles],objects:cache.size}),
+  gpu:{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),version:gl.getParameter(gl.VERSION),pixi:PIXI.VERSION},
+  geometry:()=>Object.fromEntries(Object.values(files).map(file=>[file.path,[file.x,file.y,file.width,file.height]])),
+  tokenPoint:id=>{const edge=data.edges.find(edge=>edge.id===id),p=anchor(edge.from),r=app.canvas.getBoundingClientRect();return {x:r.left+(p.x+2)*camera.k+camera.x,y:r.top+(p.y-6)*camera.k+camera.y};},
+  resize:(width,height)=>{app.renderer.resize(width,height);draw();},
+  setCamera:value=>{camera={...value};draw();}};
+})().catch(error=>{document.getElementById('status').textContent='Renderer failed · '+error.message;throw error;});
+</script></html>

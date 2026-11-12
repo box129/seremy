@@ -3,10 +3,8 @@ from pathlib import Path
 import argparse
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('output', type=Path)
-    root = parser.parse_args().output.resolve()
+def generate(root):
+    root = Path(root).resolve()
     for index in range(100):
         directory = root / f'package{index // 10}'
         directory.mkdir(parents=True, exist_ok=True)
@@ -14,7 +12,13 @@ def main():
         lines += ['# source context for the rendering workload'] * 440
         lines += [f'function{number % 10}()' for number in range(50)]
         (directory / f'module{index}.py').write_text('\n'.join(lines), encoding='utf8')
-    print(root)
+    return root
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('output', type=Path)
+    print(generate(parser.parse_args().output))
 
 
 if __name__ == '__main__':

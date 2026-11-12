@@ -12,5 +12,8 @@
   "dependencies": {
     "playwright": "^1.65.0",
     "typescript": "5.9.3"
+  },
+  "devDependencies": {
+    "pixi.js": "8.22.0"
   }
 }

@@ -53,6 +53,8 @@ Arrange supports dragging files and folders, Shift selection, named visual group
 
 The local launcher's MCP bridge lets an agent read selected evidence and documentation, focus source and add cited annotations. Install the optional SDK and connect a stdio client using [the MCP setup](docs/mcp.md).
 
+The renderer qualification compares SVG and Pixi on Redux, a fixed 50,000-line fixture and real Pydantic source. It includes the current performance fixes and the next migration work. See [renderer qualification](docs/renderer-qualification.md).
+
 Canvas directories contain their child directories and source files. Use a directory heading to collapse or expand it independently. Enter and Space also activate a focused heading. Following a call opens its target ancestors, and Back restores the previous canvas folder state. Collapsed folders show their source file count and receive boundary endpoints for relationships to hidden files.
 
 Files longer than 180 lines show an 80-line preview. Expand full file reveals the remaining source. Search and call navigation reveal lines beyond the preview automatically. Back restores the folded state.
