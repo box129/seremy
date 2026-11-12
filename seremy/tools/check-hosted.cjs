@@ -4,6 +4,7 @@ const {execFileSync}=require('node:child_process');
 const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
+const {selectRenderer,requireRenderer}=require('./map-test-url.cjs');
 
 async function run(){
   const url=process.argv[2],evidence=path.resolve(process.argv[3]);
@@ -23,12 +24,14 @@ async function run(){
     await page.locator('#start').click();
     const frame=page.frameLocator('#map');
     await frame.locator('#status').filter({hasText:'source verified'}).waitFor({timeout:120000});
+    await selectRenderer(frame);
     const status=await frame.locator('#status').innerText();assert.match(status,/4 files/);
     assert.match(await page.locator('#summary').innerText(),/2 distinct call relationships/);
     checks.push('ZIP upload runs Python and TypeScript analysis and opens the verified source map');
     await page.locator('#doc-tab').click();
     await page.waitForFunction(()=>document.querySelector('#doc').textContent.includes('Structural components'));
     await page.locator('#map-tab').click();
+    await requireRenderer(frame);
     const mapUrl=await page.locator('#download-map').getAttribute('href');
     assert.equal((await page.request.get(new URL(mapUrl,url).href)).status(),200);
     assert.equal((await page.request.get(new URL(await page.locator('#download').getAttribute('href'),url).href)).status(),200);

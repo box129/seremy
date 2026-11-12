@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {pathToFileURL}=require('node:url');
+const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
 
 async function geometry(page){
   return page.locator('.file').evaluateAll(nodes=>Object.fromEntries(nodes.map(node=>[node.dataset.file,
@@ -27,6 +27,7 @@ async function run(){
     const url=pathToFileURL(path.join(publication,'map.html')).href;
     await page.goto(url);
     await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('source verified'));
+    await requireRenderer(page);
     const canonical=await page.locator('#fixture').textContent();
     const data=JSON.parse(canonical);
     const file='src/utils/isAction.ts',second='src/utils/isPlainObject.ts';

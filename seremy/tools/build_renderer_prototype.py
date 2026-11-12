@@ -7,15 +7,13 @@ import re
 
 def build(publication, output):
     tools = Path(__file__).resolve().parent
-    template = (tools.parent / "map/product-template.html").read_text(encoding="utf8")
     html = (publication / "map.html").read_text(encoding="utf8")
     fixture = re.search(r'<script id="fixture" type="application/json">(.*?)</script>', html, re.S).group(1)
-    layout = template[template.index("const folders=Object.create(null)"):template.index("layout();\nlet camera=")]
-    positions = template[template.index("function position(span)"):template.index("function save(){")]
+    model = (tools.parent / "map/scene-model.js").read_text(encoding="utf8")
     prototype = (tools / "renderer-prototype.html").read_text(encoding="utf8")
     pixi = (tools / "node_modules/pixi.js/dist/pixi.min.js").read_text(encoding="utf8")
     prototype = prototype.replace("PIXI_BUNDLE", pixi)
-    prototype = prototype.replace("FIXTURE_JSON", fixture).replace("SHARED_LAYOUT", layout).replace("SHARED_POSITIONS", positions)
+    prototype = prototype.replace("FIXTURE_JSON", fixture).replace("SHARED_LAYOUT", model).replace("SHARED_POSITIONS", "")
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(prototype, encoding="utf8")
     print(json.dumps({"prototype": str(output), "files": len(json.loads(fixture)["files"])}))

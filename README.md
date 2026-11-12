@@ -53,7 +53,9 @@ Arrange supports dragging files and folders, Shift selection, named visual group
 
 The local launcher's MCP bridge lets an agent read selected evidence and documentation, focus source and add cited annotations. Install the optional SDK and connect a stdio client using [the MCP setup](docs/mcp.md).
 
-The renderer qualification compares SVG and Pixi on Redux, a fixed 50,000-line fixture and real Pydantic source. It includes the current performance fixes and the next migration work. See [renderer qualification](docs/renderer-qualification.md).
+SVG remains the default renderer. Inspect → Arrangement and saved view → Renderer offers a Pixi / WebGL preview using the same navigation, source highlighting, filters, arrangement and MCP controller. Saved views retain the renderer choice. The preview paints through WebGL while SVG supplies accessible elements and pointer targets; WebGL failure returns to SVG. See [the integration and checks](docs/pixi-integration.md).
+
+The renderer qualification compares SVG and Pixi on Redux, a fixed 50,000-line fixture and real Pydantic source. Its first comparison used an isolated prototype. The new integration is measured separately with the complete controller. See [renderer qualification](docs/renderer-qualification.md).
 
 Canvas directories contain their child directories and source files. Use a directory heading to collapse or expand it independently. Enter and Space also activate a focused heading. Following a call opens its target ancestors, and Back restores the previous canvas folder state. Collapsed folders show their source file count and receive boundary endpoints for relationships to hidden files.
 
@@ -61,4 +63,4 @@ Files longer than 180 lines show an 80-line preview. Expand full file reveals th
 
 At readable source zoom the SVG renderer reuses unchanged scene nodes and removes offscreen source content. Below scale 0.5, the overview groups source occurrences by visible file or collapsed folder and relationship kind. Group tooltips report occurrence counts. Selecting a group inspects its first source site, and the relationship picker exposes every individual occurrence. The selected occurrence receives an exact source-to-target overlay. Coarse source previews share one SVG path per file. Unselected relationships outside the viewport are culled using their curve bounds. See [the overview measurements](docs/overview-renderer.md).
 
-Outputs remain scoped drafts. Direct calls have qualified language profiles. Unsupported dynamic targets retain explicit outcomes. Semantic component detection, architectural layers, route/DI/ORM rules, comprehensive accessibility, GPU comparison, and representative performance qualification remain implementation work. See [the detailed profile](seremy/README.md) and [the fix record](docs/review-fixes.md).
+Outputs remain scoped drafts. Direct calls have qualified language profiles. Unsupported dynamic targets retain explicit outcomes. Semantic component detection, architectural layers, route/DI/ORM rules, comprehensive accessibility and broader renderer/hardware qualification remain implementation work. See [the detailed profile](seremy/README.md) and [the fix record](docs/review-fixes.md).

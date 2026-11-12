@@ -3,7 +3,7 @@ const {chromium} = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {pathToFileURL} = require('node:url');
+const {pathToFileURL,requireRenderer} = require('./map-test-url.cjs');
 
 async function state(page) {
   return page.evaluate(() => ({
@@ -30,6 +30,7 @@ async function run() {
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(pathToFileURL(path.join(publication, 'map.html')).href);
     await page.waitForFunction(() => document.querySelector('#status').textContent.includes('source verified'));
+    await requireRenderer(page);
     const data = JSON.parse(await page.locator('#fixture').textContent());
     assert.equal(Object.keys(data.files).length, 17);
     const src = page.locator('details[data-directory="src"]');
@@ -124,6 +125,14 @@ async function run() {
     await page.getByRole('button', {name:'Back',exact:true}).click();
     assert.deepEqual(await state(page), beforeReveal);
     checks.push('Following reveals the target folder and Back restores the prior tree expansion');
+    await page.locator('#repository').evaluate(node=>{node.style.height='180px';node.querySelectorAll('details').forEach(group=>group.open=true);});
+    await page.locator('#repository').hover();await page.mouse.wheel(0,200);
+    await page.waitForFunction(()=>document.querySelector('#repository').scrollTop>0);
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    const scrolled=await state(page);assert.ok(scrolled.scroll>0);
+    await page.locator('#target').click();await page.locator('#back').click();
+    assert.deepEqual(await state(page),scrolled);
+    checks.push('History restores an actually scrolled tree without reading layout during capture');
     for(const viewport of [{width:1440,height:900},{width:1280,height:800}]){
       await page.setViewportSize(viewport);
       await page.locator('#inspect').focus();

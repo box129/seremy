@@ -2,7 +2,7 @@
 const {chromium}=require('playwright');
 const fs=require('node:fs');
 const path=require('node:path');
-const {pathToFileURL}=require('node:url');
+const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
 const assert=require('node:assert/strict');
 
 async function run(){
@@ -16,6 +16,7 @@ async function run(){
     page.on('pageerror',e=>errors.push(e.message));
     await page.goto(pathToFileURL(path.join(root,'map.html')).href);
     await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('source verified'));
+    await requireRenderer(page);
     const data=JSON.parse(await page.locator('#fixture').textContent());
     assert.equal(Object.keys(data.files).length,17);
     assert.ok(data.edges.length>1);

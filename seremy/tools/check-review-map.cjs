@@ -3,7 +3,7 @@ const {spawnSync} = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const {pathToFileURL} = require('node:url');
+const {pathToFileURL,requireRenderer} = require('./map-test-url.cjs');
 const assert = require('node:assert/strict');
 
 async function run() {
@@ -48,6 +48,7 @@ async function run() {
         assert.ok(Number(await page.locator('.file').getAttribute('height'))>3000000);
         await page.getByRole('button',{name:'Fold file long.py',exact:true}).press('Space');
         assert.equal(await page.locator('.file').getAttribute('height'),foldedHeight);
+        await requireRenderer(page);
         const data=JSON.parse(await page.locator('#fixture').textContent());
         if (!await page.locator('#inspector').isVisible()) await page.locator('#inspect').click();
         await page.getByRole('combobox',{name:'Relationship',exact:true}).selectOption(data.edges[0].id);

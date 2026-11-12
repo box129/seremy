@@ -26,6 +26,12 @@ def render_map(bundle):
              "outcomes":[record for record in loader.contents["s03"]["artifact"]["resolutions"]
                          if record["candidate_id"] not in bound_ids],
              "repository":loader.contents["snapshot"]["repository_id"]}
-    template=(Path(__file__).parent/"map/product-template.html").read_text(encoding="utf8")
+    assets=Path(__file__).parent/"map"
+    template=(assets/"product-template.html").read_text(encoding="utf8")
+    template=template.replace("SCENE_MODEL_JS",(assets/"scene-model.js").read_text(encoding="utf8"))
+    runtime=Path(__file__).parent/"tools/node_modules/pixi.js/dist/pixi.min.js"
+    script=runtime.read_text(encoding="utf8") if runtime.exists() else ""
+    template=template.replace("PIXI_RUNTIME_JS",script.replace("</script",r"<\/script"))
+    template=template.replace("PIXI_SURFACE_JS",(assets/"pixi-surface.js").read_text(encoding="utf8"))
     return template.replace("FIXTURE_JSON",json.dumps(fixture,ensure_ascii=False).replace("<",r"\u003c"))
 

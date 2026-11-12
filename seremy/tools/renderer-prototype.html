@@ -13,7 +13,6 @@ const measuredWidths=new Map();
 function textWidth(text){const expanded=text.replace(/\t/g,'    ');if(measuredWidths.has(expanded))return measuredWidths.get(expanded);el('width-probe').textContent=expanded;const width=el('width-probe').getComputedTextLength();measuredWidths.set(expanded,width);return width;}
 const charWidth=textWidth('M'.repeat(64))/64;
 SHARED_LAYOUT
-layout();
 let camera={x:0,y:0,k:1},selected=null,focus=null,bound=false;
 const visibleEdges=()=>data.edges;
 SHARED_POSITIONS

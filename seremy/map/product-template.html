@@ -27,6 +27,7 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 .string{fill:#c4b28c}.literal{fill:#91b8be}.wire.faded{opacity:.2}#connection-count,#scope-label,#outcome-detail,#region-detail{padding:0;color:#aaa;line-height:1.6;overflow-wrap:anywhere}#inspector select{max-width:100%}.scope-controls{display:grid;gap:10px;margin-bottom:18px}
 #breadcrumbs{display:flex;gap:4px;align-items:center;overflow:auto;max-width:55%;font-size:11px;margin-left:auto}#breadcrumbs button{padding:2px 5px;border:0;background:transparent;white-space:nowrap}#arrangement{display:grid;gap:10px;margin:12px 0}#arrangement label{gap:5px}#arrangement-actions{display:flex;gap:6px;flex-wrap:wrap}#view-status{line-height:1.6;color:#aaa}.arranged-selection{fill:none;stroke:#a6bbde;stroke-width:2;pointer-events:none;vector-effect:non-scaling-stroke}.view-group{fill:#8198be0c;stroke:#8198be;stroke-dasharray:8 5;vector-effect:non-scaling-stroke}
 #mcp-tools{margin:12px 0}#mcp-tools p{padding:0;line-height:1.6;color:#aaa;overflow-wrap:anywhere}#agent-notes article{border-top:1px solid #444;margin-top:12px;padding-top:10px}#agent-notes p{white-space:pre-wrap}#agent-notes button{display:block;margin:6px 0;max-width:100%;overflow-wrap:anywhere;text-align:left}
+#pixi-surface{position:absolute;inset:0 auto auto 0;pointer-events:none;z-index:0;background-color:#171717;background-image:radial-gradient(#333 1px,transparent 1px);background-size:25px 25px}body[data-renderer=pixi] #map{position:relative;z-index:1;background:transparent}body[data-renderer=pixi] #world{opacity:0}#mini{z-index:2}#renderer-status{color:#aaa;line-height:1.6}
 #evidence{padding:0;line-height:1.7;color:#999;overflow-wrap:anywhere}#inspection-empty{color:#aaa;line-height:1.7}#detail{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}footer{min-height:28px;padding:5px 12px;background:#202020;border-top:1px solid #383838}
 @media(max-width:700px){#repository{width:210px}header input{width:130px}header #files{max-width:130px}}
 </style>
@@ -40,7 +41,7 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 <main><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
 <aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
 <details id="mcp-tools"><summary>MCP and agent notes</summary><p id="agent-status" role="status">Connect an agent through the local launcher.</p><button id="connect-agent">Share selection with agent</button><div id="agent-notes"></div></details>
-<details id="arrangement-tools"><summary>Arrangement and saved view</summary><div id="arrangement"><label>Layout<select id="layout-mode"><option value="packed">Packed</option><option value="columns">Columns</option></select></label><label>Group name<input id="group-name" maxlength="80" placeholder="Group name"></label><div id="arrangement-actions"><button id="group-selection">Group selection</button><button id="ungroup">Ungroup</button><button id="save-view">Save view</button><button id="restore-view">Restore view</button></div><div id="view-status" role="status">Use Arrange to move files or folders. Shift selects multiple items.</div></div></details>
+<details id="arrangement-tools"><summary>Arrangement and saved view</summary><div id="arrangement"><label>Renderer<select id="renderer"><option value="svg">SVG</option><option value="pixi">Pixi / WebGL preview</option></select></label><div id="renderer-status" role="status">SVG active</div><label>Layout<select id="layout-mode"><option value="packed">Packed</option><option value="columns">Columns</option></select></label><label>Group name<input id="group-name" maxlength="80" placeholder="Group name"></label><div id="arrangement-actions"><button id="group-selection">Group selection</button><button id="ungroup">Ungroup</button><button id="save-view">Save view</button><button id="restore-view">Restore view</button></div><div id="view-status" role="status">Use Arrange to move files or folders. Shift selects multiple items.</div></div></details>
 <div class="scope-controls"><label>Connections<select id="connection-mode"><option value="all">All files</option><option value="incoming">Incoming to selected file</option><option value="outgoing">Outgoing from selected file</option><option value="neighborhood">Selected file neighborhood</option></select></label><div id="scope-label"></div><div id="connection-count" role="status"></div></div>
 <label>Connection<select id="edges" aria-label="Relationship"><option value="">Choose a connection</option></select></label>
 <details id="outcome-tools"><summary>Unresolved and other outcomes</summary><label>Resolution outcome<select id="outcomes"><option value="">Choose a recorded outcome</option></select></label></details><p id="outcome-detail"></p>
@@ -51,6 +52,8 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 <p id="evidence"></p></aside></main>
 <footer><div id="detail" aria-live="polite">Select a relationship or source region.</div><nav id="breadcrumbs" aria-label="Source breadcrumbs"></nav></footer>
 <script id="fixture" type="application/json">FIXTURE_JSON</script>
+<script id="pixi-runtime" type="text/plain">PIXI_RUNTIME_JS</script>
+<script>PIXI_SURFACE_JS</script>
 <script>
 (()=>{
 'use strict';
@@ -58,6 +61,31 @@ const data=JSON.parse(document.querySelector('#fixture').textContent);
 const el=id=>document.getElementById(id),map=el('map'),world=el('world'),mini=el('mini');
 const ns='http://www.w3.org/2000/svg',lineHeight=20,codeTop=70,foldThreshold=180,previewLines=80;
 const retainedNodes=new WeakMap();
+let renderer='svg',rendererRequest=0,surface=null,surfacePromise=null;
+async function chooseRenderer(value){
+  const request=++rendererRequest;
+  if(value==='svg'){
+    renderer='svg';document.body.dataset.renderer=renderer;el('renderer').value=renderer;
+    if(surface)surface.canvas.hidden=true;el('renderer-status').textContent='SVG active';return;
+  }
+  el('renderer-status').textContent='Preparing Pixi / WebGL…';
+  try{
+    if(!window.PIXI){const script=document.createElement('script');script.textContent=el('pixi-runtime').textContent;document.head.append(script);}
+    if(!surfacePromise)surfacePromise=window.createSeremyPixiSurface(map,world).then(ready=>{
+      ready.canvas.addEventListener('webglcontextlost',()=>{if(renderer==='pixi'){chooseRenderer('svg');el('renderer-status').textContent='WebGL context lost. SVG active.';}});
+      return ready;
+    });
+    const ready=await surfacePromise;surface=ready;
+    if(request!==rendererRequest){if(renderer==='svg')surface.canvas.hidden=true;return;}
+    renderer='pixi';surface.canvas.hidden=false;surface.paint(camera);
+    document.body.dataset.renderer=renderer;el('renderer').value=renderer;el('renderer-status').textContent='Pixi / WebGL active · SVG input layer';
+  }catch(error){
+    if(request!==rendererRequest)return;
+    surfacePromise=null;renderer='svg';document.body.dataset.renderer=renderer;el('renderer').value=renderer;
+    if(surface){surface.canvas.hidden=true;surface.destroy();surface=null;}el('renderer-status').textContent='Pixi unavailable. SVG active.';
+  }
+}
+window.__seremyRendererInfo=()=>renderer==='pixi'?surface.info():{engine:'svg'};
 let renderFrame=null;
 let retainedActive=false;
 function add(parent,tag,attrs={},text=''){
@@ -103,72 +131,10 @@ function textWidth(text){
   widthProbe.textContent=expanded;
   const width=widthProbe.getComputedTextLength();measuredWidths.set(expanded,width);return width;
 }
-const folders=Object.create(null),files=Object.create(null);
-const root={name:'',children:[]};
-const closedFolders=new Set();
-const expandedFiles=new Set();
-let layoutMode='packed',placements={packed:{},columns:{}},viewGroups=[],nodeSelection=new Set(),selectedGroup=null,arranging=false;
-const nodeId=node=>(node.path?'file:':'folder:')+(node.path||node.name);
-function sceneNode(id){return id.startsWith('file:')?files[id.slice(5)]:id.startsWith('folder:')?folders[id.slice(7)]:null;}
-let maxY=500,maxX=800;
-let overviewRelationships=null;
-function folderFor(name){
-  if(!name)return root;
-  if(folders[name])return folders[name];
-  const parent=name.includes('/')?name.slice(0,name.lastIndexOf('/')):'';
-  const folder={name,parent,children:[],count:0};
-  folders[name]=folder;folderFor(parent).children.push(folder);
-  return folder;
-}
-for(const path of Object.keys(data.files).sort()){
-  const dir=path.includes('/')?path.slice(0,path.lastIndexOf('/')):'';
-  const folder=folderFor(dir),lines=data.files[path].split(/\r\n|\n/);
-  let width=650;
-  for(const line of lines)width=Math.max(width,line.replace(/\t/g,'    ').length*charWidth+65);
-  const raw=new TextEncoder().encode(data.files[path]),lineOffsets=[0];
-  for(let offset=0;offset<raw.length;offset++)if(raw[offset]===10)lineOffsets.push(offset+1);
-  files[path]={path,text:data.files[path],lines,raw,lineOffsets,positions:new Map(),width,dir};
-  folder.children.push(files[path]);
-  for(let ancestor=folder;ancestor!==root;ancestor=folderFor(ancestor.parent))ancestor.count++;
-}
-function layout(){
-  overviewRelationships=null;
-  for(const file of Object.values(files)){
-    file.displayLines=file.lines.length>foldThreshold&&!expandedFiles.has(file.path)?previewLines:file.lines.length;
-    file.height=file.displayLines*lineHeight+100;
-  }
-  for(const node of [...Object.values(folders),...Object.values(files)])node.hidden=true;
-  function measure(folder){
-    if(closedFolders.has(folder.name)){folder.width=320;folder.height=90;return;}
-    let area=0,widest=320;
-    for(const child of folder.children){
-      if(child.children)measure(child);
-      area+=(child.width+40)*(child.height+40);widest=Math.max(widest,child.width);
-    }
-    const rowWidth=layoutMode==='columns'?Number.MAX_SAFE_INTEGER:Math.max(widest,Math.sqrt(area*1.4));
-    let x=24,y=52,rowHeight=0,right=320,bottom=52;
-    for(const child of folder.children){
-      if(x>24&&x+child.width>rowWidth+24){x=24;y+=rowHeight+40;rowHeight=0;}
-      const placed=placements[layoutMode][nodeId(child)];
-      child.offsetX=placed?.x??x;child.offsetY=placed?.y??y;
-      right=Math.max(right,child.offsetX+child.width);rowHeight=Math.max(rowHeight,child.offsetY-y+child.height);x+=child.width+40;
-      bottom=Math.max(bottom,child.offsetY+child.height);
-    }
-    folder.width=right+24;folder.height=bottom+24;
-  }
-  function place(folder,x,y){
-    folder.x=x;folder.y=y;folder.hidden=false;
-    if(closedFolders.has(folder.name))return;
-    for(const child of folder.children){
-      if(child.children)place(child,x+child.offsetX,y+child.offsetY);
-      else{child.x=x+child.offsetX;child.y=y+child.offsetY;child.hidden=false;}
-    }
-  }
-  measure(root);place(root,60,40);
-  maxX=root.width+120;maxY=root.height+80;
-}
-layout();
+SCENE_MODEL_JS
 let camera={x:0,y:0,k:1},collapsed=false,selected=null,focus=null,bound=false;
+let repositoryScroll=0;
+el('repository').addEventListener('scroll',()=>{repositoryScroll=el('repository').scrollTop;});
 let connectionMode='all',scopeFile=null,selectedOutcome=null;
 let agentSharing=false,agentBusy=false,agentSyncNeeded=false,agentTimer=null,agentAck=0,agentNotes=[];
 const agentViewId=crypto.randomUUID();
@@ -180,50 +146,11 @@ function visibleEdges(){
     connectionMode==='outgoing'?edge.from.file===scopeFile:edge.from.file===scopeFile||edge.to.file===scopeFile);
 }
 const history=[];
-function position(span){
-  const f=files[span.file],key=span.start+':'+span.end;
-  if(f.positions.has(key))return f.positions.get(key);
-  let low=0,high=f.lineOffsets.length;
-  while(low+1<high){const middle=Math.floor((low+high)/2);if(f.lineOffsets[middle]<=span.start)low=middle;else high=middle;}
-  const prefix=new TextDecoder().decode(f.raw.subarray(f.lineOffsets[low],span.start));
-  const result={line:low+1,col:prefix.replace(/\t/g,'    ').length,x:textWidth(prefix),
-    token:new TextDecoder().decode(f.raw.subarray(span.start,span.end))};
-  result.width=textWidth(result.token.split(/\r\n|\n/)[0]);
-  f.positions.set(key,result);return result;
-}
-function anchor(span){
-  const f=files[span.file],p=position(span);
-  for(let folder=folderFor(f.dir);folder!==root;folder=folderFor(folder.parent))
-    if(closedFolders.has(folder.name)&&!folder.hidden)return {x:folder.x+folder.width/2,y:folder.y+folder.height/2};
-  if(p.line>f.displayLines)return {x:f.x+f.width/2,y:f.y+f.height-15};
-  return {x:f.x+52+p.x,y:f.y+codeTop+(p.line-1)*lineHeight};
-}
-function overviewContainer(path){
-  const file=files[path];
-  for(let folder=folderFor(file.dir);folder!==root;folder=folderFor(folder.parent))
-    if(closedFolders.has(folder.name)&&!folder.hidden)return folder;
-  return file;
-}
-function overviewEdges(){
-  if(overviewRelationships)return overviewRelationships;
-  const groups=new Map();
-  for(const edge of visibleEdges()){
-    const from=overviewContainer(edge.from.file),to=overviewContainer(edge.to.file);
-    const key=JSON.stringify([from.path||from.name,to.path||to.name,edge.kind]);
-    if(groups.has(key)){groups.get(key).count++;continue;}
-    const same=from===to;
-    groups.set(key,{edge,count:1,
-      a:{x:from.x+from.width*(same ? 0.3 : 0.5),y:from.y+from.height*(same ? 0.4 : 0.5)},
-      b:{x:to.x+to.width*(same ? 0.7 : 0.5),y:to.y+to.height*(same ? 0.6 : 0.5)}});
-  }
-  overviewRelationships=[...groups.values()];
-  return overviewRelationships;
-}
 function save(){
   history.push({camera:{...camera},collapsed,selected,focus,connectionMode,scopeFile,selectedOutcome,closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],
     arrangement:arrangementState(),
     expanded:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),
-    treeScroll:el('repository').scrollTop});
+    treeScroll:repositoryScroll});
 }
 function arrangementState(){return {layoutMode,placements:structuredClone(placements),viewGroups:structuredClone(viewGroups),nodeSelection:[...nodeSelection],selectedGroup};}
 function restoreArrangement(state){
@@ -253,7 +180,7 @@ function saveView(){
   const state={schema:1,repository:data.repository,digest:data.bundle.content_digest,camera,arrangement:arrangementState(),
     closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],collapsed,focus,connectionMode,scopeFile,
     edge:selected?.id||null,outcome:selectedOutcome?.candidate_id||null,
-    tree:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),treeScroll:el('repository').scrollTop,agentNotes};
+    tree:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),treeScroll:repositoryScroll,agentNotes,renderer};
   try{localStorage.setItem(viewKey,JSON.stringify(state));el('view-status').textContent='View saved on this browser for this snapshot.';}
   catch(error){el('view-status').textContent='Could not save this view. Browser storage is unavailable or full.';}
 }
@@ -284,6 +211,7 @@ function validView(state){
     try{const decoder=new TextDecoder('utf-8',{fatal:true});decoder.decode(files[file].raw.subarray(0,start));decoder.decode(files[file].raw.subarray(start,end));}catch{return false;}
   }
   if(state.agentNotes!==undefined&&(!Array.isArray(state.agentNotes)||state.agentNotes.length>100||!state.agentNotes.every(validAgentNote)))return false;
+  if(state.renderer!==undefined&&!['svg','pixi'].includes(state.renderer))return false;
   return true;
 }
 function restoreView(){
@@ -298,7 +226,7 @@ function restoreView(){
     closedFolders.clear();state.closedFolders.forEach(id=>closedFolders.add(id));
     expandedFiles.clear();state.expandedFiles.forEach(id=>expandedFiles.add(id));layout();
     for(const node of el('tree').querySelectorAll('details'))node.open=state.tree.includes(node.dataset.directory);
-    el('repository').scrollTop=state.treeScroll;agentNotes=state.agentNotes||[];renderAgentNotes();draw();el('view-status').textContent='Saved view restored.';
+    repositoryScroll=state.treeScroll;el('repository').scrollTop=repositoryScroll;agentNotes=state.agentNotes||[];renderAgentNotes();draw();chooseRenderer(state.renderer||'svg');el('view-status').textContent='Saved view restored.';
   }catch(error){el('view-status').textContent='Could not read the saved view. Browser storage may be unavailable.';}
 }
 function revealFile(path){
@@ -565,6 +493,9 @@ function draw(){
   }
   world.append(folderLabels);
   finishFrame();
+  if(renderer==='pixi'){
+    try{surface.paint(camera);}catch(error){chooseRenderer('svg');el('renderer-status').textContent='Pixi could not render this view. SVG active.';}
+  }
   controls();
 }
 function buildTree(){
@@ -631,6 +562,8 @@ el('group-selection').onclick=()=>{
 };
 el('ungroup').onclick=()=>{save();viewGroups=viewGroups.filter(group=>group.id!==selectedGroup);selectedGroup=null;draw();};
 el('save-view').onclick=saveView;el('restore-view').onclick=restoreView;
+el('renderer').querySelector('[value=pixi]').disabled=!el('pixi-runtime').textContent.trim();
+el('renderer').onchange=()=>chooseRenderer(el('renderer').value);
 function validAgentSpan(span){
   if(!span||!files[span.file]||!Number.isInteger(span.start)||!Number.isInteger(span.end)||span.start<0||span.end<span.start||span.end>files[span.file].raw.length)return false;
   try{const decoder=new TextDecoder('utf-8',{fatal:true});decoder.decode(files[span.file].raw.subarray(0,span.start));decoder.decode(files[span.file].raw.subarray(span.start,span.end));return true;}catch{return false;}
@@ -696,7 +629,7 @@ el('back').onclick=()=>{
   closedFolders.clear();for(const name of prior.closedFolders)closedFolders.add(name);
   expandedFiles.clear();for(const name of prior.expandedFiles)expandedFiles.add(name);layout();
   for(const node of el('tree').querySelectorAll('details'))node.open=prior.expanded.includes(node.dataset.directory);
-  el('repository').scrollTop=prior.treeScroll;draw();
+  repositoryScroll=prior.treeScroll;el('repository').scrollTop=repositoryScroll;draw();
 };
 el('in').onclick=()=>zoom(map.clientWidth/2,map.clientHeight/2,1.5);
 el('out').onclick=()=>zoom(map.clientWidth/2,map.clientHeight/2,1/1.5);
@@ -748,8 +681,10 @@ fit();draw();
       const hash=Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
       if(hash!==data.hashes[path])throw new Error('source mismatch');
     }
-    bound=true;el('status').textContent=Object.keys(files).length+' files · '+data.coverage.s03.direct_edge_count+' relationships · '+data.edges.length+' source sites · source verified · draft';
+    bound=true;
   }catch(error){bound=false;el('status').textContent='STALE · source verification failed';}
+  if(new URLSearchParams(location.search).get('renderer')==='pixi')await chooseRenderer('pixi');
+  if(bound)el('status').textContent=Object.keys(files).length+' files · '+data.coverage.s03.direct_edge_count+' relationships · '+data.edges.length+' source sites · source verified · draft';
   controls();
 })();
 })();

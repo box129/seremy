@@ -3,6 +3,7 @@ const {spawn}=require('node:child_process');
 const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
+const {selectRenderer}=require('./map-test-url.cjs');
 async function run(){
   const packageRoot=path.resolve(__dirname,'..');
   const evidence=path.resolve(process.argv[2]);
@@ -39,6 +40,7 @@ async function run(){
     assert.match(await page.locator('#summary').innerText(),/4 source files processed · 2 distinct call relationships/);
     const frame=page.frameLocator('#map');
     await frame.locator('#status').filter({hasText:'source verified'}).waitFor();
+    await selectRenderer(frame);
     assert.ok(await frame.locator('#files option').count()===4);
     assert.equal(await page.locator('#connect-dialog').isVisible(),false);
     await frame.locator('#inspect').click();

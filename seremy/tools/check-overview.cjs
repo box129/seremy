@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {pathToFileURL}=require('node:url');
+const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
 
 async function run(){
   const publication=path.resolve(process.argv[2]),evidence=path.resolve(process.argv[3]);
@@ -15,6 +15,7 @@ async function run(){
     page.on('pageerror',error=>errors.push(error.message));
     await page.goto(pathToFileURL(path.join(publication,'map.html')).href);
     await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('source verified'));
+    await requireRenderer(page);
     const data=JSON.parse(await page.locator('#fixture').textContent());
     const groups=await page.locator('.wire[data-overview=true]').evaluateAll(nodes=>nodes.map(node=>Number(node.dataset.siteCount)));
     assert.ok(groups.length>0&&groups.length<data.edges.length);

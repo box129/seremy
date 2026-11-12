@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
-const {pathToFileURL}=require('node:url');
+const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
 
 async function state(page){return page.evaluate(()=>({camera:document.querySelector('#world').getAttribute('transform'),edge:document.querySelector('#edges').value,
   focus:[...document.querySelectorAll('.source-focus')].map(node=>[node.dataset.file,node.dataset.start,node.dataset.end,node.dataset.line]),
@@ -21,6 +21,7 @@ async function run(){
         const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
         await page.goto(pathToFileURL(path.join(publication,'map.html')).href,{timeout:120000});
         await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('source verified'),{},{timeout:120000});
+        await requireRenderer(page);
         const data=JSON.parse(await page.locator('#fixture').textContent());
         const edge=name==='redux'?data.edges.find(edge=>edge.from.file==='src/utils/isAction.ts'&&edge.to.file==='src/utils/isPlainObject.ts'):data.edges[0];
         await page.locator('#inspect').click();await page.locator('#edges').selectOption(edge.id);await page.locator('#origin').press('Enter');

@@ -2,7 +2,7 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {pathToFileURL}=require('node:url');
+const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
 
 async function state(page){
   return page.evaluate(()=>({
@@ -45,6 +45,7 @@ async function run(){
     checks.push('Keyboard collapse hides only utils and expansion restores the original layout and camera');
     await page.getByRole('button',{name:'Back',exact:true}).click();
     assert.deepEqual(await state(page),collapsed);
+    await requireRenderer(page);
     const data=JSON.parse(await page.locator('#fixture').textContent());
     const edge=data.edges.find(edge=>!edge.from.file.startsWith('src/utils/')&&edge.to.file.startsWith('src/utils/'));
     assert.ok(edge);

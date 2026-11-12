@@ -4,6 +4,7 @@ const {spawn,execFileSync}=require('node:child_process');
 const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
+const {selectRenderer}=require('./map-test-url.cjs');
 
 async function run(){
   const root=path.resolve(__dirname,'../..'),evidence=path.resolve(process.argv[2]);
@@ -40,6 +41,7 @@ async function run(){
     await page.locator('#start').click();
     const map=page.frameLocator('#map');
     await map.locator('#status').filter({hasText:'source verified'}).waitFor({timeout:60000});
+    await selectRenderer(map);
     const canonical=await map.locator('#fixture').textContent(),data=JSON.parse(canonical);
     const edge=data.edges.find(edge=>edge.from.file==='src/utils/isAction.ts'&&edge.to.file==='src/utils/isPlainObject.ts');
     await map.locator('#inspect').click();await map.locator('#edges').selectOption(edge.id);
@@ -63,6 +65,7 @@ async function run(){
     const second=await browser.newPage();second.on('pageerror',error=>errors.push(error.message));
     await second.goto(new URL(await page.locator('#map').getAttribute('src'),url).href);
     await second.locator('#status').filter({hasText:'source verified'}).waitFor();
+    await selectRenderer(second);
     await second.locator('#inspect').click();await second.locator('#mcp-tools summary').click();await second.locator('#connect-agent').click();
     const otherCamera=await second.locator('#world').getAttribute('transform');
     const span=context.citations[1],source=context.citations[0];
@@ -98,6 +101,7 @@ async function run(){
     await map.locator('#status').filter({hasText:'source verified'}).waitFor();
     await map.locator('#inspect').click();await map.locator('#arrangement-tools summary').click();await map.locator('#restore-view').click();
     await map.locator('#mcp-tools summary').click();
+    if(process.env.SEREMY_RENDERER==='pixi')await map.locator('body[data-renderer=pixi]').waitFor();
     assert.equal(await map.locator('#agent-notes p').textContent(),text);
     assert.equal(await map.locator('#fixture').textContent(),canonical);
     checks.push('Cited agent annotations focus source, persist in saved views and remain distinct from graph evidence; stopping sharing revokes access');

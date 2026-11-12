@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
-const {pathToFileURL}=require('node:url');
+const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
 
 async function run(){
   const evidence=path.resolve(process.argv[2]);
@@ -32,6 +32,7 @@ async function run(){
     page.on('pageerror',error=>errors.push(error.message));
     await page.goto(pathToFileURL(publication.map).href);
     await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('source verified'));
+    await requireRenderer(page);
     const data=JSON.parse(await page.locator('#fixture').textContent());
     assert.equal(data.edges.length,3);
     assert.equal(new Set(data.edges.map(edge=>edge.relation_id)).size,2);
