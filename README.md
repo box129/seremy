@@ -55,7 +55,7 @@ The local launcher's MCP bridge lets an agent read selected evidence and documen
 
 SVG remains the default renderer. Inspect → Arrangement and saved view → Renderer offers a Pixi / WebGL preview using the same navigation, source highlighting, filters, arrangement and MCP controller. Saved views retain the renderer choice. The preview paints through WebGL while SVG supplies accessible elements and pointer targets; WebGL failure returns to SVG. See [the integration and checks](docs/pixi-integration.md).
 
-The renderer qualification compares SVG and Pixi on Redux, a fixed 50,000-line fixture and real Pydantic source. Its first comparison used an isolated prototype. The new integration is measured separately with the complete controller. See [renderer qualification](docs/renderer-qualification.md).
+The renderer qualification compares SVG and Pixi on Redux, a fixed 50,000-line fixture and real Pydantic source. Its first comparison used an isolated prototype. The integration is measured separately with the complete controller. The latest [scene-retention and texture-lifetime work](docs/scene-performance.md) adds stable neutral records, visible-file selection indexing and verified GPU resource release. See [renderer qualification](docs/renderer-qualification.md).
 
 Canvas directories contain their child directories and source files. Use a directory heading to collapse or expand it independently. Enter and Space also activate a focused heading. Following a call opens its target ancestors, and Back restores the previous canvas folder state. Collapsed folders show their source file count and receive boundary endpoints for relationships to hidden files.
 

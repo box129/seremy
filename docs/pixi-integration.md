@@ -4,7 +4,7 @@ The map now has an opt-in PixiJS 8.22.0 / WebGL preview. Open Inspect → Arrang
 
 Both modes use the existing product controller for byte-range selection, target navigation, Back, search, tree expansion, collapse, long-file folding, filters, direction markers, minimap, group movement, layouts, saved views, keyboard actions and local MCP. The scene's geometry and UTF-8 position helpers live in `seremy/map/scene-model.js`. The isolated comparison builder reads that maintained asset instead of extracting controller source by substring boundaries.
 
-The preview is an intermediate integration. `pixi-surface.js` retains Graphics and Text objects corresponding to the controller's SVG scene nodes. Pixi paints source syntax colors, cards, folders, labels, relationship arrows, selection and focus outlines. SVG remains the semantic and pointer-input layer, with its visible scene hidden while Pixi is active. The minimap and surrounding panels retain their existing DOM rendering. Consequently the preview keeps SVG update costs and adds GPU scene reconciliation and text textures. It does not yet establish a large-map speed improvement or full CodeCanvas visual parity.
+The preview remains an intermediate integration. The controller now emits stable neutral scene records; SVG supplies native semantics and pointer targets, and `pixi-surface.js` retains Graphics/Text objects keyed by the same records. Pixi no longer walks SVG to reconstruct its scene. Both overview and source views retain their nodes. See [the latest retention and texture-lifetime results](scene-performance.md). Pixi paints source syntax colors, cards, folders, labels, relationship arrows, selection and focus outlines. SVG remains the semantic and pointer-input layer, with its visible scene hidden while Pixi is active. The minimap and surrounding panels retain their existing DOM rendering. The preview still updates SVG semantics and adds GPU reconciliation and text textures; stable records now avoid repeated overview object/texture creation. It does not yet establish a large-map speed improvement or full CodeCanvas visual parity.
 
 The exporter embeds the pinned runtime in each map, for portable use without a CDN. It executes only when Pixi is requested. `npm ci --prefix seremy/tools` provides it; the Docker production install includes it. Without that package, Python-only SVG exports work and the Pixi option is disabled. The runtime increases the portable map's payload. GPU texture memory is outside the JavaScript heap measurements.
 
@@ -28,9 +28,9 @@ node seremy/tools/qualify-product-renderers.cjs REDUX_PUBLICATION test-results/q
 
 The complete-product comparison uses three trials with 20 samples per mode on Redux, the fixed 100-file / 50,000-line / 5,000-site fixture and 106-file Pydantic 2.14.3. Both modes use identical geometry and cameras. It records startup, wheel handlers, selection dispatch, native dropdown assignment, frame scheduling proxies, DOM count, JavaScript heap and CPU profiles. First-trial synthetic selections include profiler overhead. These measurements describe this laptop and Chromium; they exclude GPU texture memory and do not measure compositor FPS. See the local `SEREMY-Pixi-Integration-Verification` deliverable for receipts, screenshots and raw results.
 
-## Measured decision
+## Earlier integration baseline
 
-Keep SVG as the default. The complete-product three-trial comparison on this laptop produced:
+SVG remained the default after the first integration. The following table is the earlier baseline; current results are in [scene performance](scene-performance.md). That earlier complete-product three-trial comparison produced:
 
 | Workload | Renderer | Ready median, s | Overview handler p95, ms | Source handler p95, ms | Selection handler p95, ms | JS heap median, MiB |
 |---|---|---:|---:|---:|---:|---:|

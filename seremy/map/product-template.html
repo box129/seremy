@@ -60,24 +60,26 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 const data=JSON.parse(document.querySelector('#fixture').textContent);
 const el=id=>document.getElementById(id),map=el('map'),world=el('world'),mini=el('mini');
 const ns='http://www.w3.org/2000/svg',lineHeight=20,codeTop=70,foldThreshold=180,previewLines=80;
-const retainedNodes=new WeakMap();
+SCENE_RECORDS_JS
+const sceneAdapter=createSceneAdapter(ns);
+let sceneFrame=null;
 let renderer='svg',rendererRequest=0,surface=null,surfacePromise=null;
 async function chooseRenderer(value){
   const request=++rendererRequest;
   if(value==='svg'){
     renderer='svg';document.body.dataset.renderer=renderer;el('renderer').value=renderer;
-    if(surface)surface.canvas.hidden=true;el('renderer-status').textContent='SVG active';return;
+    if(surface){surface.canvas.hidden=true;surface.release();}el('renderer-status').textContent='SVG active';return;
   }
   el('renderer-status').textContent='Preparing Pixi / WebGL…';
   try{
     if(!window.PIXI){const script=document.createElement('script');script.textContent=el('pixi-runtime').textContent;document.head.append(script);}
-    if(!surfacePromise)surfacePromise=window.createSeremyPixiSurface(map,world).then(ready=>{
+    if(!surfacePromise)surfacePromise=window.createSeremyPixiSurface(map,world,sceneAdapter.recordFor).then(ready=>{
       ready.canvas.addEventListener('webglcontextlost',()=>{if(renderer==='pixi'){chooseRenderer('svg');el('renderer-status').textContent='WebGL context lost. SVG active.';}});
       return ready;
     });
     const ready=await surfacePromise;surface=ready;
     if(request!==rendererRequest){if(renderer==='svg')surface.canvas.hidden=true;return;}
-    renderer='pixi';surface.canvas.hidden=false;surface.paint(camera);
+    renderer='pixi';surface.canvas.hidden=false;surface.paint(camera,sceneFrame);
     document.body.dataset.renderer=renderer;el('renderer').value=renderer;el('renderer-status').textContent='Pixi / WebGL active · SVG input layer';
   }catch(error){
     if(request!==rendererRequest)return;
@@ -85,40 +87,8 @@ async function chooseRenderer(value){
     if(surface){surface.canvas.hidden=true;surface.destroy();surface=null;}el('renderer-status').textContent='Pixi unavailable. SVG active.';
   }
 }
-window.__seremyRendererInfo=()=>renderer==='pixi'?surface.info():{engine:'svg'};
-let renderFrame=null;
-let retainedActive=false;
-function add(parent,tag,attrs={},text=''){
-  if(!renderFrame){
-    const node=document.createElementNS(ns,tag);
-    for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);
-    node.textContent=text;parent.append(node);return node;
-  }
-  if(!retainedNodes.has(parent))retainedNodes.set(parent,new Map());
-  if(!renderFrame.has(parent))renderFrame.set(parent,{counts:new Map(),used:new Set(),index:0});
-  const frame=renderFrame.get(parent),cache=retainedNodes.get(parent);
-  const signature=tag+JSON.stringify(attrs),occurrence=frame.counts.get(signature)||0;
-  frame.counts.set(signature,occurrence+1);
-  const key=signature+'@'+occurrence;
-  let node=cache.get(key);
-  if(!node){
-    node=document.createElementNS(ns,tag);
-    for(const [attribute,value] of Object.entries(attrs))node.setAttribute(attribute,value);
-    cache.set(key,node);
-  }
-  if(text&&node.textContent!==text)node.textContent=text;
-  const expected=parent.children[frame.index++];
-  if(expected!==node)parent.insertBefore(node,expected||null);
-  frame.used.add(key);return node;
-}
-function finishFrame(){
-  if(!renderFrame)return;
-  for(const [parent,frame] of renderFrame){
-    const cache=retainedNodes.get(parent);
-    for(const [key,node] of cache)if(!frame.used.has(key)){node.remove();cache.delete(key);}
-  }
-  renderFrame=null;
-}
+window.__seremyRendererInfo=()=>({... (renderer==='pixi'?surface.info():{engine:'svg'}),scene:sceneAdapter.info()});
+function add(parent,tag,attrs={},text=''){return sceneAdapter.add(parent,tag,attrs,text);}
 const fontProbe=add(world,'text',{class:'code',visibility:'hidden'},'M'.repeat(64));
 const charWidth=fontProbe.getComputedTextLength()/64;
 fontProbe.remove();
@@ -140,6 +110,17 @@ let agentSharing=false,agentBusy=false,agentSyncNeeded=false,agentTimer=null,age
 const agentViewId=crypto.randomUUID();
 const agentPublication=location.protocol==='http:'&&['localhost','127.0.0.1'].includes(location.hostname)?location.pathname.match(/^\/reports\/([0-9a-f]{64})\/map.html$/)?.[1]:null;
 const outcomes=data.outcomes||[];
+const selectableSites=new Map(),edgeAtSite=new Map(),outcomeAtSite=new Map(),siteKeys=new Set();
+const siteKey=span=>span.file+'@'+span.start;
+for(const edge of data.edges)if(!edgeAtSite.has(siteKey(edge.from)))edgeAtSite.set(siteKey(edge.from),edge);
+for(const record of outcomes){const key=record.file_id+'@'+record.candidate_span[0];if(!outcomeAtSite.has(key))outcomeAtSite.set(key,record);}
+for(const span of [...data.entities.map(e=>({file:e.file_id,start:e.name_span[0],end:e.name_span[1]})),
+  ...data.edges.flatMap(e=>[e.from,e.to]),...outcomes.filter(record=>files[record.file_id]).map(record=>({file:record.file_id,start:record.candidate_span[0],end:record.candidate_span[1]}))]){
+  const key=siteKey(span);if(siteKeys.has(key))continue;siteKeys.add(key);
+  if(!selectableSites.has(span.file))selectableSites.set(span.file,[]);selectableSites.get(span.file).push(span);
+}
+siteKeys.clear();
+
 function visibleEdges(){
   if(connectionMode==='all')return data.edges;
   return data.edges.filter(edge=>connectionMode==='incoming'?edge.to.file===scopeFile:
@@ -362,22 +343,18 @@ function renderCode(line,node){
   }
 }
 function draw(){
-  const retain=camera.k>=.5;
-  if(!retain||!retainedActive){
-    world.replaceChildren();mini.replaceChildren();
-    retainedNodes.delete(world);retainedNodes.delete(mini);
-  }
-  retainedActive=retain;renderFrame=retain?new Map():null;
+  sceneAdapter.begin();
   world.setAttribute('transform','translate('+camera.x+' '+camera.y+') scale('+camera.k+')');
   mini.setAttribute('viewBox','0 0 '+maxX+' '+(maxY+30));
   const visible={left:-camera.x/camera.k,top:-camera.y/camera.k,
     right:(map.clientWidth-camera.x)/camera.k,bottom:(map.clientHeight-camera.y)/camera.k};
+  const visibleFiles=[];
   const folderLabels=add(world,'g');
   for(const group of viewGroups){
     const bounds=groupBounds(group);if(!bounds)continue;
     add(world,'rect',{...bounds,rx:8,class:'view-group','data-view-group':group.id});
     const label=add(folderLabels,'text',{x:bounds.x+10,y:bounds.y+22,class:'name','data-view-group':group.id,role:'button',tabindex:0,'aria-label':'Select group '+group.name},group.name);
-    label.style.fontSize=Math.max(17,11/camera.k)+'px';label.style.paintOrder='stroke';label.style.stroke='#171717';label.style.strokeWidth=4/camera.k;label.style.cursor='move';
+    sceneAdapter.style(label,{fontSize:Math.max(17,11/camera.k)+'px',paintOrder:'stroke',stroke:'#171717',strokeWidth:4/camera.k,cursor:'move'});
     label.onclick=()=>{save();selectedGroup=group.id;nodeSelection=new Set(group.members);draw();};
     label.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();label.onclick();}};
   }
@@ -388,9 +365,7 @@ function draw(){
     add(mini,'rect',{x:g.x,y:g.y,width:g.width,height:g.height,fill:'none',stroke:'#738492','stroke-width':8});
     const toggle=add(folderLabels,'text',{x:g.x+12,y:g.y+27,class:'name',role:'button',tabindex:0,
       'aria-label':(closed?'Expand ':'Collapse ')+g.name,'aria-expanded':String(!closed)},(closed?'▸ ':'▾ ')+g.name);
-    toggle.style.fontSize=Math.max(17,11/camera.k)+'px';
-    toggle.style.paintOrder='stroke';toggle.style.stroke='#171717';toggle.style.strokeWidth=4/camera.k;
-    toggle.style.cursor='pointer';
+    sceneAdapter.style(toggle,{fontSize:Math.max(17,11/camera.k)+'px',paintOrder:'stroke',stroke:'#171717',strokeWidth:4/camera.k,cursor:'pointer'});
     toggle.onclick=()=>{save();if(closed)closedFolders.delete(g.name);else closedFolders.add(g.name);collapsed=false;layout();draw();};
     toggle.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();toggle.onclick();}};
     if(closed)add(world,'text',{x:g.x+12,y:g.y+57,class:'name'},g.count+' files');
@@ -399,6 +374,7 @@ function draw(){
     if(f.hidden)continue;
     add(mini,'rect',{x:f.x,y:f.y,width:f.width,height:f.height,fill:'#7a9f89'});
     if(f.x+f.width<visible.left||f.x>visible.right||f.y+f.height<visible.top||f.y>visible.bottom)continue;
+    visibleFiles.push(f);
     add(world,'rect',{x:f.x,y:f.y,width:f.width,height:f.height,rx:4,class:'file','data-file':f.path});
     const title=add(world,'text',{x:f.x+10,y:f.y+23,class:'name'},f.path);
     title.onclick=()=>follow({file:f.path,start:0,end:0});
@@ -407,7 +383,7 @@ function draw(){
       const toggle=add(world,'text',{x:f.x+10,y:f.y+47,class:'name',role:'button',tabindex:0,
         'aria-label':(expanded?'Fold file ':'Expand full file ')+f.path,'aria-expanded':String(expanded)},
         expanded?'Fold file':f.lines.length+' lines · showing first '+previewLines+' · Expand');
-      toggle.style.cursor='pointer';
+      sceneAdapter.style(toggle,{cursor:'pointer'});
       toggle.onclick=()=>{save();if(expanded)expandedFiles.delete(f.path);else expandedFiles.add(f.path);layout();draw();};
       toggle.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();toggle.onclick();}};
       if(!expanded)add(world,'text',{x:f.x+10,y:f.y+f.height-16,class:'name'},(f.lines.length-previewLines)+' lines folded');
@@ -455,23 +431,16 @@ function draw(){
     hit.onclick=()=>select(edge);
   }
   {
-    const seen=new Set();
-    const spans=[...data.entities.map(e=>({file:e.file_id,start:e.name_span[0],end:e.name_span[1]})),
-      ...data.edges.flatMap(e=>[e.from,e.to]),
-      ...outcomes.filter(record=>files[record.file_id]).map(record=>({file:record.file_id,start:record.candidate_span[0],end:record.candidate_span[1]}))];
-    for(const span of spans){
-      if(camera.k<.5)continue;
-      if(files[span.file].hidden)continue;
-      if(position(span).line>files[span.file].displayLines)continue;
-      const key=span.file+'@'+span.start;if(seen.has(key))continue;seen.add(key);
+    for(const file of camera.k>=.5?visibleFiles:[])for(const span of selectableSites.get(file.path)||[]){
+      if(position(span).line>file.displayLines)continue;
       const p=anchor(span),name=position(span).token;
       if(p.x<visible.left||p.x>visible.right||p.y<visible.top||p.y>visible.bottom)continue;
       const box=add(world,'rect',{x:p.x,y:p.y-14,width:Math.max(8,position(span).width),height:18,class:'token',
         'data-file':span.file,'data-start':span.start,tabindex:0,role:'button',
         'aria-label':'Select '+name+' in '+span.file+':'+position(span).line});
       add(box,'title',{},name+' · '+span.file+':'+position(span).line);
-      box.onclick=()=>{const edge=data.edges.find(e=>e.from.file===span.file&&e.from.start===span.start);
-        const outcome=outcomes.find(record=>record.file_id===span.file&&record.candidate_span[0]===span.start);
+      box.onclick=()=>{const edge=edgeAtSite.get(siteKey(span));
+        const outcome=outcomeAtSite.get(siteKey(span));
         if(outcome&&!edge)chooseOutcome(outcome);else select(edge||null,span);};
       box.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();box.onclick();}};
     }
@@ -491,10 +460,10 @@ function draw(){
     const node=sceneNode(id);if(!node||node.hidden)continue;
     add(world,'rect',{x:node.x,y:node.y,width:node.width,height:node.height,rx:4,class:'arranged-selection','data-node-id':id});
   }
-  world.append(folderLabels);
-  finishFrame();
+  sceneAdapter.raise(world,folderLabels);
+  sceneFrame=sceneAdapter.finish(world);
   if(renderer==='pixi'){
-    try{surface.paint(camera);}catch(error){chooseRenderer('svg');el('renderer-status').textContent='Pixi could not render this view. SVG active.';}
+    try{surface.paint(camera,sceneFrame);}catch(error){chooseRenderer('svg');el('renderer-status').textContent='Pixi could not render this view. SVG active.';}
   }
   controls();
 }

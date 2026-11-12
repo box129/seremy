@@ -1,5 +1,5 @@
-// Pixi paints the controller's retained scene. SVG provides source semantics and hit testing.
-window.createSeremyPixiSurface=async function(map,world){
+// Pixi consumes neutral scene records. SVG remains the semantic/input adapter.
+window.createSeremyPixiSurface=async function(map,world,recordFor){
   const app=new PIXI.Application();
   await app.init({width:map.clientWidth,height:map.clientHeight,preference:'webgl',autoStart:false,
     resolution:devicePixelRatio,autoDensity:true,antialias:true,backgroundAlpha:0});
@@ -8,8 +8,9 @@ window.createSeremyPixiSurface=async function(map,world){
   canvas.id='pixi-surface';canvas.setAttribute('aria-hidden','true');
   map.parentElement.insertBefore(canvas,map);
   const scene=new PIXI.Container(),highlight=new PIXI.Graphics();app.stage.addChild(scene);scene.addChild(highlight);
-  const cache=new Map(),widths=new Map(),ascents=new Map();
-  let used=new Set(),order=0,scale=1,hover=null,focused=null;
+  const cache=new Map(),widths=new Map(),ascents=new Map(),styles=new Map();
+  const counters={created:0,destroyed:0,text_updates:0,graphics_updates:0};
+  let used=new Set(),usedStyles=new Set(),order=0,scale=1,hover=null,focused=null;
   const palette={file:{fill:'#1e1e1e',stroke:'#606773'},folder:{fill:'#33333333',stroke:'#555555'},
     'source-focus':{fill:'#d7ac452b',stroke:'#edc96c',width:1.5},
     'view-group':{fill:'#8198be0c',stroke:'#8198be',dash:true},
@@ -22,8 +23,8 @@ window.createSeremyPixiSurface=async function(map,world){
   }
   function object(key,create){
     used.add(key);let record=cache.get(key);
-    if(!record){record={node:create(),signature:null};cache.set(key,record);scene.addChild(record.node);}
-    if(scene.getChildIndex(record.node)!==order)scene.setChildIndex(record.node,order);order++;
+    if(!record){record={node:create(),signature:null};counters.created++;cache.set(key,record);scene.addChild(record.node);}
+    if(scene.children[order]!==record.node)scene.setChildIndex(record.node,order);order++;
     return record;
   }
   function path(graphics,value){
@@ -57,27 +58,28 @@ window.createSeremyPixiSurface=async function(map,world){
         graphics.moveTo(ax+(bx-ax)*offset/length,ay+(by-ay)*offset/length).lineTo(ax+(bx-ax)*end/length,ay+(by-ay)*end/length);}
     }
   }
+  const has=(element,name)=>(element.attrs.class||'').split(' ').includes(name);
   function shape(element){
-    if(element.classList.contains('hit')||element.classList.contains('token'))return;
-    const base=Object.entries(palette).find(([name])=>element.classList.contains(name))?.[1]||{};
-    const fill=color(base.fill||element.getAttribute('fill'));
-    const stroke=color(element.classList.contains('selected')?'#d3ad65':base.stroke||element.getAttribute('stroke'));
-    const width=(element.classList.contains('selected')?4:base.width||1)/(element.getAttribute('vector-effect')==='non-scaling-stroke'?scale:1);
-    const signature=JSON.stringify([element.getAttribute('x'),element.getAttribute('y'),element.getAttribute('width'),element.getAttribute('height'),element.getAttribute('rx'),element.getAttribute('d'),fill,stroke,width,base.dash,element.classList.contains('faded'),element.hasAttribute('marker-end')]);
-    const record=object(element,()=>new PIXI.Graphics());
+    if(has(element,'hit')||has(element,'token'))return;
+    const base=Object.entries(palette).find(([name])=>has(element,name))?.[1]||{};
+    const fill=color(base.fill||element.attrs['fill']);
+    const stroke=color(has(element,'selected')?'#d3ad65':base.stroke||element.attrs['stroke']);
+    const width=(has(element,'selected')?4:base.width||1)/(element.attrs['vector-effect']==='non-scaling-stroke'?scale:1);
+    const signature=JSON.stringify([element.attrs['x'],element.attrs['y'],element.attrs['width'],element.attrs['height'],element.attrs['rx'],element.attrs['d'],fill,stroke,width,base.dash,has(element,'faded'),!!element.attrs['marker-end']]);
+    const record=object(element.id,()=>new PIXI.Graphics());
     if(record.signature===signature)return;
-    record.signature=signature;const graphics=record.node;graphics.clear();
+    record.signature=signature;counters.graphics_updates++;const graphics=record.node;graphics.clear();
     let end=null;
-    if(element.tagName==='rect'){
-      const [x,y,w,h]=['x','y','width','height'].map(key=>Number(element.getAttribute(key)));
-      graphics.roundRect(x,y,w,h,Number(element.getAttribute('rx')||0));
+    if(element.tag==='rect'){
+      const [x,y,w,h]=['x','y','width','height'].map(key=>Number(element.attrs[key]));
+      graphics.roundRect(x,y,w,h,Number(element.attrs['rx']||0));
       if(fill)graphics.fill(fill);
       if(base.dash){if(!fill)graphics.clear();else graphics.beginPath();dashedRect(graphics,x,y,w,h,8/scale);}
-    }else end=path(graphics,element.getAttribute('d')||'');
-    if(element.tagName!=='rect'&&fill)graphics.fill(fill);
+    }else end=path(graphics,element.attrs['d']||'');
+    if(element.tag!=='rect'&&fill)graphics.fill(fill);
     if(stroke)graphics.stroke({...stroke,width});
-    graphics.alpha=element.classList.contains('faded')?0.2:1;
-    if(end&&element.hasAttribute('marker-end')){
+    graphics.alpha=has(element,'faded')?0.2:1;
+    if(end&&!!element.attrs['marker-end']){
       const angle=Math.atan2(end.tangent.y,end.tangent.x),length=width*7,side=width*3.5;
       const bx=end.x-Math.cos(angle)*length,by=end.y-Math.sin(angle)*length;
       graphics.moveTo(end.x,end.y).lineTo(bx-Math.sin(angle)*side,by+Math.cos(angle)*side)
@@ -85,37 +87,48 @@ window.createSeremyPixiSurface=async function(map,world){
     }
   }
   function sourceText(element){
-    const named=element.classList.contains('name'),baseSize=named?17:14;
+    const named=has(element,'name'),baseSize=named?17:14;
     const size=Number.parseFloat(element.style.fontSize)||baseSize,factor=size/baseSize;
     const family=named?['Segoe UI','system-ui']:['Consolas','monospace'],weight=named?'600':'400';
     const resolution=Math.max(2,2**Math.ceil(Math.log2(Math.max(1,scale*devicePixelRatio))));
-    let x=Number(element.getAttribute('x')),y=Number(element.getAttribute('y'));
+    let x=Number(element.attrs.x),y=Number(element.attrs.y),top=y,bottom=y;
+    const left=x;
     function visit(node,currentColor){
-      if(node.nodeType===Node.TEXT_NODE){
-        const value=node.textContent;if(!value)return;
-        const style={fontFamily:family,fontSize:baseSize,fontWeight:weight,fill:currentColor};
-        if(element.style.stroke)style.stroke={color:element.style.stroke,width:(Number.parseFloat(element.style.strokeWidth)||0)/factor};
-        const signature=JSON.stringify([value,style,resolution]);
-        const record=object(node,()=>new PIXI.Text({text:value,style,resolution}));
-        if(record.signature!==signature){record.signature=signature;record.node.text=value;record.node.style=style;record.node.resolution=resolution;}
-        const fontKey=JSON.stringify([family,weight,baseSize]);
-        if(!ascents.has(fontKey))ascents.set(fontKey,PIXI.CanvasTextMetrics.measureText('M',record.node.style).fontProperties.ascent);
-        record.node.scale.set(factor);record.node.position.set(x,y-ascents.get(fontKey)*factor);
-        const widthKey=JSON.stringify([fontKey,value]);
-        if(!widths.has(widthKey))widths.set(widthKey,PIXI.CanvasTextMetrics.measureText(value,record.node.style).width);
-        x+=widths.get(widthKey)*factor;
-      }else if(node.nodeType===Node.ELEMENT_NODE&&node.tagName!=='title'){
-        if(node.hasAttribute('x'))x=Number(node.getAttribute('x'));if(node.hasAttribute('y'))y=Number(node.getAttribute('y'));
-        const next=Object.keys(colors).find(name=>node.classList.contains(name));
-        for(const child of node.childNodes)visit(child,next?colors[next]:currentColor);
+      if(node.text){
+        const value=node.text,stroke=element.style.stroke;
+        // Quantize inverse-camera stroke arithmetic so unchanged screen styles reuse textures.
+        const strokeWidth=stroke?Number(((Number.parseFloat(element.style.strokeWidth)||0)/factor).toFixed(3)):0;
+        const styleKey=JSON.stringify([named,currentColor,stroke,strokeWidth]);
+        if(!styles.has(styleKey))styles.set(styleKey,new PIXI.TextStyle({fontFamily:family,fontSize:baseSize,fontWeight:weight,fill:currentColor,...stroke?{stroke:{color:stroke,width:strokeWidth}}:{}}));
+        usedStyles.add(styleKey);
+        const style=styles.get(styleKey),signature=JSON.stringify([value,styleKey,resolution]);
+        const record=object(node.id+':text',()=>new PIXI.Text({text:value,style,resolution}));
+        if(record.signature!==signature){record.signature=signature;record.node.text=value;record.node.style=style;record.node.resolution=resolution;counters.text_updates++;}
+        const fontKey=named?'name':'code';
+        if(!ascents.has(fontKey))ascents.set(fontKey,PIXI.CanvasTextMetrics.measureText('M',style).fontProperties);
+        const metrics=ascents.get(fontKey),ascent=metrics.ascent*factor;
+        record.node.scale.set(factor);record.node.position.set(x,y-ascent);
+        const widthKey=fontKey+'|'+value;
+        if(!widths.has(widthKey)){
+          if(widths.size>=8192)widths.delete(widths.keys().next().value);
+          widths.set(widthKey,PIXI.CanvasTextMetrics.measureText(value,style).width);
+        }
+        x+=widths.get(widthKey)*factor;top=Math.min(top,y-ascent);bottom=Math.max(bottom,y+metrics.descent*factor);
+      }
+      for(const child of node.children){
+        if(child.tag==='title')continue;
+        if(child.attrs.x!==undefined)x=Number(child.attrs.x);if(child.attrs.y!==undefined)y=Number(child.attrs.y);
+        const next=Object.keys(colors).find(name=>has(child,name));visit(child,next?colors[next]:currentColor);
       }
     }
-    for(const child of element.childNodes)visit(child,named?colors.name:colors.code);
+    visit(element,named?colors.name:colors.code);
+    element.bounds={x:left,y:top,width:x-left,height:bottom-top};
   }
   function outline(){
     highlight.clear();const element=focused||hover;
     if(!element?.isConnected||!world.contains(element))return;
-    const box=element.getBBox();highlight.rect(box.x-1,box.y-1,box.width+2,box.height+2).stroke({color:0x9cb9e5,width:1.5/scale});
+    const record=recordFor(element),box=record.tag==='rect'?record.attrs:record.bounds;
+    if(!box)return;highlight.rect(box.x-1,box.y-1,box.width+2,box.height+2).stroke({color:0x9cb9e5,width:1.5/scale});
   }
   const gl=app.renderer.gl,debug=gl.getExtension('WEBGL_debug_renderer_info');
   function render(){if(gl.isContextLost())return;outline();scene.setChildIndex(highlight,scene.children.length-1);app.render();}
@@ -126,24 +139,34 @@ window.createSeremyPixiSurface=async function(map,world){
     focusout(){focused=null;if(!canvas.hidden)render();}
   };
   for(const [name,handler] of Object.entries(events))map.addEventListener(name,handler);
+  function release(){
+    for(const record of cache.values()){record.node.destroy();counters.destroyed++;}
+    cache.clear();for(const style of styles.values())style.destroy();styles.clear();widths.clear();
+    PIXI.TexturePool.clear();
+  }
   return {
     canvas,
-    destroy(){for(const [name,handler] of Object.entries(events))map.removeEventListener(name,handler);cache.clear();app.destroy(true,{children:true});},
-    paint(camera){
+    release,
+    destroy(){for(const [name,handler] of Object.entries(events))map.removeEventListener(name,handler);release();app.destroy(true,{children:true});},
+    paint(camera,model){
       if(!map.clientWidth||!map.clientHeight)return;
       if(gl.isContextLost())throw new Error('WebGL context lost');
       if(app.screen.width!==map.clientWidth||app.screen.height!==map.clientHeight)app.renderer.resize(map.clientWidth,map.clientHeight);
-      scale=camera.k;scene.position.set(camera.x,camera.y);scene.scale.set(scale);used=new Set();order=0;
+      scale=camera.k;scene.position.set(camera.x,camera.y);scene.scale.set(scale);used=new Set();usedStyles=new Set();order=0;
       function visit(element){
-        if(element.tagName==='text')sourceText(element);
-        else if(element.tagName==='rect'||element.tagName==='path')shape(element);
-        else if(element.tagName==='g')for(const child of element.children)visit(child);
+        if(element.tag==='text')sourceText(element);
+        else if(element.tag==='rect'||element.tag==='path')shape(element);
+        else if(element.tag==='g')for(const child of element.children)visit(child);
       }
-      for(const child of world.children)visit(child);
-      for(const [key,record] of cache)if(!used.has(key)){record.node.destroy();cache.delete(key);}
+      for(const child of model.children)visit(child);
+      let evicted=0;
+      for(const [key,record] of cache)if(!used.has(key)){record.node.destroy();cache.delete(key);counters.destroyed++;evicted++;}
+      for(const [key,style] of styles)if(!usedStyles.has(key)){style.destroy();styles.delete(key);}
       render();
+      // Only idle pooled textures are cleared; live/shared text textures retain their references.
+      if(evicted||!cache.size)PIXI.TexturePool.clear();
     },
     info(){return {engine:'pixi',version:PIXI.VERSION,renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),
-      objects:cache.size,text_objects:[...cache.values()].filter(record=>record.node instanceof PIXI.Text).length,gl_error:gl.getError()};}
+      ...counters,style_objects:styles.size,width_cache:widths.size,objects:cache.size,text_objects:[...cache.values()].filter(record=>record.node instanceof PIXI.Text).length,gl_error:gl.getError()};}
   };
 };

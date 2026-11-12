@@ -28,6 +28,7 @@ def render_map(bundle):
              "repository":loader.contents["snapshot"]["repository_id"]}
     assets=Path(__file__).parent/"map"
     template=(assets/"product-template.html").read_text(encoding="utf8")
+    template=template.replace("SCENE_RECORDS_JS",(assets/"scene-records.js").read_text(encoding="utf8"))
     template=template.replace("SCENE_MODEL_JS",(assets/"scene-model.js").read_text(encoding="utf8"))
     runtime=Path(__file__).parent/"tools/node_modules/pixi.js/dist/pixi.min.js"
     script=runtime.read_text(encoding="utf8") if runtime.exists() else ""

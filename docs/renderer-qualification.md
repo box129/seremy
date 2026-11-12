@@ -1,6 +1,6 @@
 # Renderer qualification
 
-The full product now also offers an optional Pixi renderer using the existing controller, source colors and controls. SVG remains the default. This integration has its own three-workload measurements; the older isolated prototype results below do not describe its performance. The integrated preview retains an SVG input scene and adds GPU work, and is not currently a reason to change the default. See [the integration, limitations and reproduction commands](pixi-integration.md).
+The full product now also offers an optional Pixi renderer using the existing controller, source colors and controls. SVG remains the default. This integration has its own three-workload measurements; the older isolated prototype results below do not describe its performance. The integrated preview retains an SVG input scene and adds GPU work, and is not currently a reason to change the default. See [the integration, limitations and reproduction commands](pixi-integration.md) and the [subsequent scene-retention and resource measurements](scene-performance.md).
 
 ## Earlier isolated prototype baseline
 
