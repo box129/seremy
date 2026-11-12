@@ -42,3 +42,7 @@ SVG stays the default. Current timing results against the earlier integration ba
 | Pydantic | PIXI | 3.53 | 355.1 → 176.2 | 68.3 → 52.1 | 92.3 → 58.9 | 28.5 |
 
 The gains on the larger inputs do not establish that Pixi beats SVG. Redux SVG overview tails varied: 23.2 ms in the primary run and 12.6 ms in a bounded repeat versus the earlier 10.1 ms; source tails also varied. Both runs are retained. This is not an across-the-board speed improvement. Next product work is compact control rails and source framing with horizontal reveal, while GPU default promotion remains subject to broader performance/browser qualification. Raw measurements, the repeat, actual GL allocation receipts and screenshots are in the local SEREMY-Scene-Performance-Verification deliverable.
+
+## Verified hosted rollout
+
+Runtime commit `bb18dfa` is live at https://seremy-analysis.onrender.com/ (12 November 2026, deploy `dep-dbr34qek1f9s73dr4bp0`). Both SVG and opt-in Pixi passed all five hosted upload/download/history groups. Receipts include the new scene counters and zero GL error for active Pixi; there were no page errors or new runtime error logs during verification. The hosted browser used SwiftShader software WebGL. The 125 local plus ten hosted groups total 135 browser case groups. Live MCP still uses the local launcher.
