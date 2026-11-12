@@ -47,6 +47,8 @@ The repository contains the standalone SEREMY implementation, fixtures, and test
 
 Selecting a symbol or connection opens an evidence inspector with caller and target source excerpts. Inspect and Files toggle their panels without changing the camera. See [selection inspector](docs/selection-inspector.md).
 
+The inspector filters incoming, outgoing and neighboring connections by the selected file. It shows relationship and source-site counts, recorded unresolved outcomes and enclosing parser declarations. See [dependency exploration](docs/dependency-exploration.md).
+
 Canvas directories contain their child directories and source files. Use a directory heading to collapse or expand it independently. Enter and Space also activate a focused heading. Following a call opens its target ancestors, and Back restores the previous canvas folder state. Collapsed folders show their source file count and receive boundary endpoints for relationships to hidden files.
 
 Files longer than 180 lines show an 80-line preview. Expand full file reveals the remaining source. Search and call navigation reveal lines beyond the preview automatically. Back restores the folded state.

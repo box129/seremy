@@ -24,6 +24,7 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 .panel-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.panel-heading h2{font-size:13px;font-weight:600;margin:0}.panel-heading button{border:0;background:transparent;font-size:18px;padding:2px 8px}
 #inspector label{display:grid;gap:8px;color:#aaa}#edges{width:100%;max-width:100%;margin-bottom:16px}#inspector h3{font-size:12px;font-weight:500;margin:20px 0 8px;color:#aab6c8}
 .source-location{overflow-wrap:anywhere;margin:0 0 8px;color:#ddd}.source-excerpt{margin:0 0 10px;background:#181818;padding:10px;overflow:auto;font:12px/1.7 Consolas,monospace;color:#bbb;tab-size:4}.source-excerpt mark{background:#635235;color:#ffe3a6}
+.string{fill:#c4b28c}.literal{fill:#91b8be}.wire.faded{opacity:.2}#connection-count,#scope-label,#outcome-detail,#region-detail{padding:0;color:#aaa;line-height:1.6;overflow-wrap:anywhere}#inspector select{max-width:100%}.scope-controls{display:grid;gap:10px;margin-bottom:18px}
 #evidence{padding:0;line-height:1.7;color:#999;overflow-wrap:anywhere}#inspection-empty{color:#aaa;line-height:1.7}#detail{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}footer{min-height:28px;padding:5px 12px;background:#202020;border-top:1px solid #383838}
 @media(max-width:700px){#repository{width:210px}header input{width:130px}header #files{max-width:130px}}
 </style>
@@ -34,9 +35,12 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 <button id="back" disabled>Back</button><button id="fit">Fit map</button>
 <button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button>
 <button id="collapse">Collapse folders</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></header>
-<main><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
+<main><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
 <aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
+<div class="scope-controls"><label>Connections<select id="connection-mode"><option value="all">All files</option><option value="incoming">Incoming to selected file</option><option value="outgoing">Outgoing from selected file</option><option value="neighborhood">Selected file neighborhood</option></select></label><div id="scope-label"></div><div id="connection-count" role="status"></div></div>
 <label>Connection<select id="edges" aria-label="Relationship"><option value="">Choose a connection</option></select></label>
+<details id="outcome-tools"><summary>Unresolved and other outcomes</summary><label>Resolution outcome<select id="outcomes"><option value="">Choose a recorded outcome</option></select></label></details><p id="outcome-detail"></p>
+<details id="region-tools"><summary>Source regions</summary><label>Source region<select id="regions"><option value="">Selected span</option></select></label><p id="region-detail"></p></details>
 <p id="inspection-empty">Select a symbol or connection to inspect its source evidence.</p>
 <section id="inspection-source" hidden><h3 id="source-heading">Caller</h3><p id="source-location" class="source-location"></p><pre id="source-excerpt" class="source-excerpt"></pre><button id="origin">Show source</button></section>
 <section id="inspection-target" hidden><h3>Target declaration</h3><p id="target-location" class="source-location"></p><pre id="target-excerpt" class="source-excerpt"></pre><button id="target">Follow target</button></section>
@@ -86,6 +90,9 @@ function finishFrame(){
 const fontProbe=add(world,'text',{class:'code',visibility:'hidden'},'M'.repeat(64));
 const charWidth=fontProbe.getComputedTextLength()/64;
 fontProbe.remove();
+const widthProbe=document.createElementNS(ns,'text');
+widthProbe.setAttribute('class','code');widthProbe.setAttribute('visibility','hidden');map.append(widthProbe);
+function textWidth(text){widthProbe.textContent=text.replace(/\t/g,'    ');return widthProbe.getComputedTextLength();}
 const folders=Object.create(null),files=Object.create(null);
 const root={name:'',children:[]};
 const closedFolders=new Set();
@@ -147,14 +154,23 @@ function layout(){
 }
 layout();
 let camera={x:0,y:0,k:1},collapsed=false,selected=null,focus=null,bound=false;
+let connectionMode='all',scopeFile=null,selectedOutcome=null;
+const outcomes=data.outcomes||[];
+function visibleEdges(){
+  if(connectionMode==='all')return data.edges;
+  return data.edges.filter(edge=>connectionMode==='incoming'?edge.to.file===scopeFile:
+    connectionMode==='outgoing'?edge.from.file===scopeFile:edge.from.file===scopeFile||edge.to.file===scopeFile);
+}
 const history=[];
 function position(span){
   const f=files[span.file],key=span.start+':'+span.end;
   if(f.positions.has(key))return f.positions.get(key);
   let low=0,high=f.lineOffsets.length;
   while(low+1<high){const middle=Math.floor((low+high)/2);if(f.lineOffsets[middle]<=span.start)low=middle;else high=middle;}
-  const result={line:low+1,col:new TextDecoder().decode(f.raw.subarray(f.lineOffsets[low],span.start)).replace(/\t/g,'    ').length,
+  const prefix=new TextDecoder().decode(f.raw.subarray(f.lineOffsets[low],span.start));
+  const result={line:low+1,col:prefix.replace(/\t/g,'    ').length,x:textWidth(prefix),
     token:new TextDecoder().decode(f.raw.subarray(span.start,span.end))};
+  result.width=textWidth(result.token.split(/\r\n|\n/)[0]);
   f.positions.set(key,result);return result;
 }
 function anchor(span){
@@ -162,7 +178,7 @@ function anchor(span){
   for(let folder=folderFor(f.dir);folder!==root;folder=folderFor(folder.parent))
     if(closedFolders.has(folder.name)&&!folder.hidden)return {x:folder.x+folder.width/2,y:folder.y+folder.height/2};
   if(p.line>f.displayLines)return {x:f.x+f.width/2,y:f.y+f.height-15};
-  return {x:f.x+52+p.col*charWidth,y:f.y+codeTop+(p.line-1)*lineHeight};
+  return {x:f.x+52+p.x,y:f.y+codeTop+(p.line-1)*lineHeight};
 }
 function overviewContainer(path){
   const file=files[path];
@@ -173,7 +189,7 @@ function overviewContainer(path){
 function overviewEdges(){
   if(overviewRelationships)return overviewRelationships;
   const groups=new Map();
-  for(const edge of data.edges){
+  for(const edge of visibleEdges()){
     const from=overviewContainer(edge.from.file),to=overviewContainer(edge.to.file);
     const key=JSON.stringify([from.path||from.name,to.path||to.name,edge.kind]);
     if(groups.has(key)){groups.get(key).count++;continue;}
@@ -186,7 +202,7 @@ function overviewEdges(){
   return overviewRelationships;
 }
 function save(){
-  history.push({camera:{...camera},collapsed,selected,focus,closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],
+  history.push({camera:{...camera},collapsed,selected,focus,connectionMode,scopeFile,selectedOutcome,closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],
     expanded:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),
     treeScroll:el('repository').scrollTop});
 }
@@ -200,18 +216,23 @@ function fit(){
   const height=maxY+30;
   center({x:maxX/2,y:height/2},Math.min((map.clientWidth-35)/maxX,(map.clientHeight-35)/height,1));
 }
-function follow(span,edge=null){
+function follow(span,edge=null,outcome=null){
   if(!bound||!span)return;
-  save();selected=edge;collapsed=false;focus=span;revealFile(span.file);
+  save();selected=edge;selectedOutcome=outcome;collapsed=false;focus=span;revealFile(span.file);
+  if(!edge)scopeFile=span.file;
   for(let folder=folderFor(files[span.file].dir);folder!==root;folder=folderFor(folder.parent))closedFolders.delete(folder.name);
-  if(position(span).line>previewLines)expandedFiles.add(span.file);
+  if(position({file:span.file,start:span.end,end:span.end}).line>previewLines)expandedFiles.add(span.file);
   layout();center(anchor(span),1.25);draw();
 }
 function zoom(x,y,factor){
   const k=Math.min(4,Math.max(.001,camera.k*factor)),ratio=k/camera.k;
   camera={x:x-(x-camera.x)*ratio,y:y-(y-camera.y)*ratio,k};draw();
 }
-function select(edge,span=null){save();selected=edge;focus=span;draw();setPanel('inspector',true);}
+function select(edge,span=null){
+  save();selected=edge;selectedOutcome=null;focus=span;
+  if(connectionMode==='all'||span)scopeFile=span?.file||edge?.from.file||scopeFile;
+  overviewRelationships=null;draw();setPanel('inspector',true);
+}
 function setPanel(id,open){
   el(id).hidden=!open;
   el(id==='inspector'?'inspect':'toggle-files').setAttribute('aria-expanded',String(open));
@@ -226,7 +247,7 @@ function excerpt(span,id){
   }
 }
 function inspection(){
-  const key=JSON.stringify([selected?.id,focus]);
+  const key=JSON.stringify([selected?.id,focus,selectedOutcome?.candidate_id,bound]);
   if(key===inspectedSelection)return;
   inspectedSelection=key;
   const source=selected?.from||focus;
@@ -236,25 +257,63 @@ function inspection(){
   el('source-heading').textContent=selected?'Caller':'Selected source';
   if(source){el('source-location').textContent=source.file+':'+position(source).line;excerpt(source,'source-excerpt');}
   if(selected){el('target-location').textContent=selected.to.file+':'+position(selected.to).line;excerpt(selected.to,'target-excerpt');}
+  el('outcomes').value=selectedOutcome?.candidate_id||'';
+  el('outcome-detail').textContent=!bound?'Source verification pending or failed. Evidence navigation is disabled.':
+    selectedOutcome?[selectedOutcome.outcome,selectedOutcome.reason,selectedOutcome.target].filter(Boolean).join(' · '):'';
+  const picker=el('regions');picker.replaceChildren(new Option('Selected span',''));
+  const regionSource=focus||source;
+  if(regionSource){
+    const regions=data.entities.filter(entity=>entity.file_id===regionSource.file&&entity.decl_span&&
+      entity.decl_span[0]<=regionSource.start&&entity.decl_span[1]>=regionSource.end)
+      .sort((a,b)=>(a.decl_span[1]-a.decl_span[0])-(b.decl_span[1]-b.decl_span[0]));
+    for(const entity of regions)picker.add(new Option(entity.kind+' '+entity.name,entity.entity_id));
+    const region=regions.find(entity=>entity.decl_span[0]===regionSource.start&&entity.decl_span[1]===regionSource.end);
+    if(region)picker.value=region.entity_id;
+    el('region-detail').textContent=regionSource.file+' · UTF-8 bytes ['+regionSource.start+', '+regionSource.end+')';
+  }else el('region-detail').textContent='';
 }
 function controls(){
   const active=selected&&bound;
-  el('origin').disabled=el('target').disabled=!active;
+  el('origin').disabled=!(bound&&(selected||selectedOutcome));el('target').disabled=!active;
   el('back').disabled=!history.length;
   el('collapse').textContent=collapsed?'Expand folders':'Collapse folders';
   el('edges').value=selected?.id||'';
   for(const button of el('tree').querySelectorAll('button'))
     button.setAttribute('aria-current',String(button.dataset.file===focus?.file));
-  el('detail').textContent=focus?focus.file+':'+position(focus).line+' · '+position(focus).token:
+  el('detail').textContent=focus?focus.file+':'+position(focus).line+' · '+position(focus).token.split(/\r\n|\n/)[0].slice(0,160):
     selected?selected.kind+' · '+selected.from.file+' → '+selected.to.file:
     Object.keys(files).length+' source files · '+data.edges.length+' bound source occurrences';
   el('evidence').textContent=selected?'origin '+selected.origin+' · method '+selected.method+
-    ' · source bytes ['+selected.from.start+', '+selected.from.end+') · target bytes ['+selected.to.start+', '+selected.to.end+') · bundle '+data.bundle.content_digest:'';
+    ' · source bytes ['+selected.from.start+', '+selected.from.end+') · target bytes ['+selected.to.start+', '+selected.to.end+') · bundle '+data.bundle.content_digest:
+    selectedOutcome?'operation '+selectedOutcome.operation+' · attempted '+selectedOutcome.attempted+
+      ' · source bytes ['+selectedOutcome.candidate_span.join(', ')+') · bundle '+data.bundle.content_digest:'';
   inspection();
+  connectionControls();
+}
+let connectionSignature=null;
+function connectionControls(){
+  const edges=visibleEdges();
+  const signature=JSON.stringify([connectionMode,scopeFile]);
+  if(connectionSignature!==signature){
+    connectionSignature=signature;
+    el('edges').replaceChildren(new Option('Choose a connection',''));
+    for(const edge of edges)el('edges').add(new Option(edge.kind+' · '+edge.from.file+':'+position(edge.from).line,edge.id));
+  }
+  el('edges').value=selected?.id||'';
+  el('connection-mode').value=connectionMode;
+  el('scope-label').textContent=connectionMode==='all'?'Entire repository':scopeFile||'Select a source file to apply this filter.';
+  el('connection-count').textContent=new Set(edges.map(edge=>edge.relation_id||edge.id)).size+' relationships · '+edges.length+' source sites';
 }
 function renderCode(line,node){
-  for(const piece of line.replace(/\t/g,'    ').split(/(\/\/.*$|#.*$|\b(?:def|class|return|import|from|export|function|const|let|while|if|else|async|await)\b)/g))
-    add(node,'tspan',{class:/^(\/\/|#)/.test(piece)?'comment':/^(def|class|return|import|from|export|function|const|let|while|if|else|async|await)$/.test(piece)?'keyword':''},piece);
+  const pieces=line.replace(/\t/g,'    ').split(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\/\/.*$|#.*$|\b(?:def|class|return|import|from|export|default|function|const|let|while|if|else|async|await|try|except|raise|throw|new|interface|type|extends|true|false|null|None|True|False|\d+(?:\.\d+)?)\b)/g);
+  for(const piece of pieces){
+    let kind='';
+    if(/^(\/\/|#)/.test(piece))kind='comment';
+    else if(/^["'`]/.test(piece))kind='string';
+    else if(/^(true|false|null|None|True|False|\d+(?:\.\d+)?)$/.test(piece))kind='literal';
+    else if(/^(def|class|return|import|from|export|default|function|const|let|while|if|else|async|await|try|except|raise|throw|new|interface|type|extends)$/.test(piece))kind='keyword';
+    add(node,'tspan',{class:kind},piece);
+  }
 }
 function draw(){
   const retain=camera.k>=.5;
@@ -315,8 +374,9 @@ function draw(){
     }
     if(coarseLines)add(world,'path',{d:coarseLines,fill:'#507561','data-source-preview':f.path});
   }
-  const relationships=camera.k<.5?overviewEdges():data.edges.map(edge=>({edge,count:1}));
-  const drawn=selected&&camera.k<.5?[...relationships,{edge:selected,count:1,exact:true}]:relationships;
+  const filtered=visibleEdges();
+  const relationships=camera.k<.5?overviewEdges():filtered.map(edge=>({edge,count:1}));
+  const drawn=selected&&filtered.includes(selected)&&camera.k<.5?[...relationships,{edge:selected,count:1,exact:true}]:relationships;
   for(const relationship of drawn){
     const {edge,count}=relationship;
     const a=relationship.a||anchor(edge.from),b=relationship.b||anchor(edge.to);
@@ -331,7 +391,8 @@ function draw(){
       d='M '+a.x+' '+a.y+' C '+(a.x+radius)+' '+(a.y-radius*2)+' '+
         (a.x-radius)+' '+(a.y-radius*2)+' '+a.x+' '+a.y;
     }
-    add(world,'path',{d,class:'wire'+(exact&&selected===edge?' selected':''),'data-edge':edge.id,
+    const related=!selected||edge.from.file===selected.from.file||edge.to.file===selected.from.file||edge.from.file===selected.to.file||edge.to.file===selected.to.file;
+    add(world,'path',{d,class:'wire'+(exact&&selected===edge?' selected':'')+(related?'':' faded'),'data-edge':edge.id,'marker-end':'url(#direction)',
       'data-site-count':count,'data-overview':String(!exact),
       'vector-effect':coincident?'non-scaling-stroke':'none'});
     const hit=add(world,'path',{d,class:'hit'});
@@ -342,7 +403,8 @@ function draw(){
   {
     const seen=new Set();
     const spans=[...data.entities.map(e=>({file:e.file_id,start:e.name_span[0],end:e.name_span[1]})),
-      ...data.edges.flatMap(e=>[e.from,e.to])];
+      ...data.edges.flatMap(e=>[e.from,e.to]),
+      ...outcomes.filter(record=>files[record.file_id]).map(record=>({file:record.file_id,start:record.candidate_span[0],end:record.candidate_span[1]}))];
     for(const span of spans){
       if(camera.k<.5)continue;
       if(files[span.file].hidden)continue;
@@ -350,17 +412,23 @@ function draw(){
       const key=span.file+'@'+span.start;if(seen.has(key))continue;seen.add(key);
       const p=anchor(span),name=position(span).token;
       if(p.x<visible.left||p.x>visible.right||p.y<visible.top||p.y>visible.bottom)continue;
-      const box=add(world,'rect',{x:p.x,y:p.y-14,width:Math.max(8,name.length*charWidth),height:18,class:'token',
+      const box=add(world,'rect',{x:p.x,y:p.y-14,width:Math.max(8,position(span).width),height:18,class:'token',
         'data-file':span.file,'data-start':span.start,tabindex:0,role:'button',
         'aria-label':'Select '+name+' in '+span.file+':'+position(span).line});
       add(box,'title',{},name+' · '+span.file+':'+position(span).line);
-      box.onclick=()=>{const edge=data.edges.find(e=>e.from.file===span.file&&e.from.start===span.start);select(edge||null,span);};
+      box.onclick=()=>{const edge=data.edges.find(e=>e.from.file===span.file&&e.from.start===span.start);
+        const outcome=outcomes.find(record=>record.file_id===span.file&&record.candidate_span[0]===span.start);
+        if(outcome&&!edge)chooseOutcome(outcome);else select(edge||null,span);};
       box.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();box.onclick();}};
     }
     if(focus&&!files[focus.file].hidden&&position(focus).line<=files[focus.file].displayLines){
-      const p=anchor(focus),location=position(focus);
-      add(world,'rect',{x:p.x,y:p.y-15,width:Math.max(8,location.token.length*charWidth),height:20,
-        class:'source-focus','data-file':focus.file,'data-start':focus.start,'data-end':focus.end});
+      const file=files[focus.file],start=position(focus),end=position({file:focus.file,start:focus.end,end:focus.end});
+      for(let line=Math.max(start.line,1,Math.floor((visible.top-file.y-codeTop)/lineHeight));line<=Math.min(end.line,file.displayLines,Math.ceil((visible.bottom-file.y-codeTop)/lineHeight)+1);line++){
+        const left=line===start.line?start.x:0,right=line===end.line?end.x:textWidth(file.lines[line-1]);
+        if(line===end.line&&end.x===0&&line!==start.line)continue;
+        add(world,'rect',{x:file.x+52+left,y:file.y+codeTop+(line-1)*lineHeight-15,width:Math.max(8,right-left),height:20,
+          class:'source-focus','data-file':focus.file,'data-start':focus.start,'data-end':focus.end,'data-line':line});
+      }
     }
   }
   add(mini,'rect',{x:visible.left,y:visible.top,width:visible.right-visible.left,height:visible.bottom-visible.top,
@@ -404,9 +472,22 @@ el('open').onclick=()=>{
   const entity=data.entities.find(e=>e.file_id===file&&e.name.toLowerCase().includes(query));
   follow(entity?{file,start:entity.name_span[0],end:entity.name_span[1]}:{file,start:0,end:0});
 };
-for(const edge of data.edges)el('edges').add(new Option(edge.kind+' · '+edge.from.file+':'+position(edge.from).line,edge.id));
 el('edges').onchange=()=>select(data.edges.find(e=>e.id===el('edges').value));
-el('origin').onclick=()=>follow(selected?.from||focus,selected);el('target').onclick=()=>follow(selected?.to,selected);
+el('connection-mode').onchange=()=>{
+  save();connectionMode=el('connection-mode').value;scopeFile=scopeFile||focus?.file||selected?.from.file;
+  overviewRelationships=null;draw();
+};
+function chooseOutcome(record){
+  save();selected=null;selectedOutcome=record;focus=record?{file:record.file_id,start:record.candidate_span[0],end:record.candidate_span[1]}:null;
+  scopeFile=focus?.file||scopeFile;overviewRelationships=null;draw();setPanel('inspector',true);
+}
+for(const record of outcomes)if(files[record.file_id])el('outcomes').add(new Option(record.outcome+' · '+record.name+' · '+record.file_id,record.candidate_id));
+el('outcomes').onchange=()=>chooseOutcome(outcomes.find(record=>record.candidate_id===el('outcomes').value));
+el('regions').onchange=()=>{
+  const entity=data.entities.find(entity=>entity.entity_id===el('regions').value);
+  if(entity)follow({file:entity.file_id,start:entity.decl_span[0],end:entity.decl_span[1]});
+};
+el('origin').onclick=()=>follow(selected?.from||focus,selected,selectedOutcome);el('target').onclick=()=>follow(selected?.to,selected);
 el('inspect').onclick=()=>setPanel('inspector',el('inspector').hidden);
 el('toggle-files').onclick=()=>setPanel('repository',el('repository').hidden);
 el('close-inspector').onclick=()=>{setPanel('inspector',false);el('inspect').focus();};
@@ -422,7 +503,7 @@ el('collapse').onclick=()=>{
 };
 el('back').onclick=()=>{
   const prior=history.pop();if(!prior)return;
-  ({camera,collapsed,selected,focus}=prior);
+  ({camera,collapsed,selected,focus,connectionMode,scopeFile,selectedOutcome}=prior);
   closedFolders.clear();for(const name of prior.closedFolders)closedFolders.add(name);
   expandedFiles.clear();for(const name of prior.expandedFiles)expandedFiles.add(name);layout();
   for(const node of el('tree').querySelectorAll('details'))node.open=prior.expanded.includes(node.dataset.directory);
@@ -444,7 +525,7 @@ mini.onclick=e=>{
   save();center({x:Math.min(maxX,Math.max(0,p.x)),y:Math.min(maxY+30,Math.max(0,p.y))},camera.k);draw();
 };
 map.onkeydown=e=>{
-  if(e.key==='Escape'){focus=null;selected=null;draw();}
+  if(e.key==='Escape'){focus=null;selected=null;selectedOutcome=null;draw();}
   if(e.key==='f'){el('fit').click();e.preventDefault();}
 };
 window.addEventListener('resize',draw);

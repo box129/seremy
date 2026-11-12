@@ -132,6 +132,7 @@ async function run() {
       const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight);
       assert.equal(overflow,false);
       for(const id of ['inspect','back','toggle-files','close-inspector','target']){
+        await page.locator('#'+id).scrollIntoViewIfNeeded();
         const rect=await page.locator('#'+id).boundingBox();
         assert.ok(rect&&rect.x>=0&&rect.y>=0&&rect.x+rect.width<=viewport.width&&rect.y+rect.height<=viewport.height);
       }

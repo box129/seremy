@@ -16,11 +16,15 @@ def render_map(bundle):
             continue
         for occurrence in edge["occurrences"]:
             edges.append({"id":occurrence["candidate_id"],"kind":edge["kind"],
+                "relation_id":json.dumps([edge["source"],edge["target"],edge["kind"]],separators=(",",":")),
                 "from":{"file":occurrence["file_id"],"start":occurrence["span"][0],"end":occurrence["span"][1]},
                 "to":{"file":target["file_id"],"start":target["name_span"][0],"end":target["name_span"][1]},
                 "origin":edge["origin"],"method":occurrence["evidence"]["method"]})
+    bound_ids={edge["id"] for edge in edges}
     fixture={"bundle":loader.meta,"files":sources,"hashes":{p:sha256_hex(t.encode()) for p,t in sources.items()},
              "edges":edges,"entities":list(entities.values()),"coverage":loader.contents["coverage"],
+             "outcomes":[record for record in loader.contents["s03"]["artifact"]["resolutions"]
+                         if record["candidate_id"] not in bound_ids],
              "repository":loader.contents["snapshot"]["repository_id"]}
     template=(Path(__file__).parent/"map/product-template.html").read_text(encoding="utf8")
     return template.replace("FIXTURE_JSON",json.dumps(fixture,ensure_ascii=False).replace("<",r"\u003c"))
