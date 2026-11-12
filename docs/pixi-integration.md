@@ -42,3 +42,7 @@ Keep SVG as the default. The complete-product three-trial comparison on this lap
 | Pydantic | PIXI | 3.79 | 355.1 | 68.3 | 92.3 | 30.8 |
 
 The history cache removes `save()` from the top sampled functions but did not improve total stress-selection latency in the repeated six-sample diagnosis. The remaining hotspot is controller `draw()`. The integrated preview retains SVG update costs; startup, overview and memory measurements do not support making it the default. Next, use renderer-neutral scene records, reuse overview objects and text textures, and quantify GPU allocation/release before repeating qualification.
+
+## Hosted rollout
+
+Runtime commit `e7fd16c` is live at https://seremy-analysis.onrender.com/ (12 November 2026, deploy `dep-dbr2imc9v7es73ehk3s0`). Public checks passed all five upload/download/history case groups in both default SVG and opt-in Pixi, with no page errors. The receipt records real Pixi objects and zero GL error. This hosted browser run used SwiftShader software WebGL; the timing benchmark used Intel UHD Direct3D11. Ten hosted groups are additional to 115 local browser groups. Runtime error logs were empty during the verification window. MCP remains local-launcher only.

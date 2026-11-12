@@ -25,6 +25,7 @@ async function run(){
     const frame=page.frameLocator('#map');
     await frame.locator('#status').filter({hasText:'source verified'}).waitFor({timeout:120000});
     await selectRenderer(frame);
+    const rendering=await frame.locator('body').evaluate(()=>window.__seremyRendererInfo());
     const status=await frame.locator('#status').innerText();assert.match(status,/4 files/);
     assert.match(await page.locator('#summary').innerText(),/2 distinct call relationships/);
     checks.push('ZIP upload runs Python and TypeScript analysis and opens the verified source map');
@@ -61,7 +62,7 @@ async function run(){
     assert.equal((await page.request.get(new URL('/api/jobs/'+'0'.repeat(64),url).href)).status(),404);
     assert.deepEqual(errors,[]);
     await page.screenshot({path:path.join(evidence,'hosted-workspace.png')});
-    const result={url,status:'passed',checks,page_errors:errors,verified_at:new Date().toISOString()};
+    const result={url,status:'passed',renderer:rendering,checks,page_errors:errors,verified_at:new Date().toISOString()};
     fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(result,null,2)+'\n');
     console.log(JSON.stringify(result));
   }finally{await browser.close();}
