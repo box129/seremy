@@ -41,6 +41,11 @@ async function run(){
     await frame.locator('#status').filter({hasText:'source verified'}).waitFor();
     assert.ok(await frame.locator('#files option').count()===4);
     assert.equal(await page.locator('#connect-dialog').isVisible(),false);
+    await frame.locator('#inspect').click();
+    await frame.locator('#edges').selectOption({index:1});
+    assert.equal(await frame.locator('#inspection-target').isVisible(),true);
+    assert.ok((await frame.locator('#source-excerpt').textContent()).length>0);
+    const selectedConnection=await frame.locator('#edges').inputValue();
     const camera=await frame.locator('#world').getAttribute('transform');
     const mapBounds=await page.locator('#map').boundingBox();
     assert.ok(mapBounds.height>=1000,'Map fills the workspace below its toolbar');
@@ -57,6 +62,8 @@ async function run(){
     await page.getByRole('button',{name:'Interactive map',exact:true}).click();
     assert.equal(await page.locator('#map').isVisible(),true);
     assert.equal(await frame.locator('#world').getAttribute('transform'),camera);
+    assert.equal(await frame.locator('#inspector').isVisible(),true);
+    assert.equal(await frame.locator('#edges').inputValue(),selectedConnection);
     await page.getByRole('button',{name:'Connect repository',exact:true}).click();
     await page.locator('#value').fill(path.join(evidence,'missing-repository'));
     await page.getByRole('button',{name:'Analyze repository',exact:true}).click();
@@ -74,6 +81,7 @@ async function run(){
       'Embedded interactive map verifies source bytes and provides file navigation',
       'Documentation contains package-scoped Preact and FastAPI evidence and structural relationships',
       'Map/documentation switching retains the same publication and camera',
+      'Selection evidence and the open inspector survive documentation switching',
       'Loaded canvas fills the workspace and a failed replacement keeps the existing map available'],page_errors:errors};
     fs.writeFileSync(path.join(evidence,'launcher-checks.json'),JSON.stringify(result,null,2));
     console.log(JSON.stringify(result));

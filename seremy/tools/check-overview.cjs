@@ -23,6 +23,7 @@ async function run(){
     checks.push('Overview groups represent every original source occurrence');
 
     const edge=data.edges.at(-1);
+    if (!await page.locator('#inspector').isVisible()) await page.locator('#inspect').click();
     await page.getByRole('combobox',{name:'Relationship',exact:true}).selectOption(edge.id);
     assert.equal(await page.locator('.wire.selected').getAttribute('data-edge'),edge.id);
     assert.equal(await page.locator('.wire.selected').getAttribute('data-overview'),'false');

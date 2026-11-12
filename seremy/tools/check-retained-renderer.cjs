@@ -25,8 +25,8 @@ async function run(){
     assert.ok(await page.locator('.wire[data-overview=false]').count()<data.edges.length);
     checks.push('Source zoom culls offscreen relationships');
     const bounds=await page.locator('#map').boundingBox();
-    await page.mouse.move(bounds.x+20,bounds.y+20);await page.mouse.down();
-    await page.mouse.move(bounds.x+50,bounds.y+40);
+    await page.mouse.move(bounds.x+bounds.width*.4,bounds.y+20);await page.mouse.down();
+    await page.mouse.move(bounds.x+bounds.width*.4+30,bounds.y+40);
     await page.mouse.move(bounds.x+200000,bounds.y+200000);await page.mouse.up();
     assert.equal(await page.locator('.wire').count(),0);
     assert.equal(await file.evaluate(node=>node.isConnected),false);
@@ -34,6 +34,7 @@ async function run(){
     assert.equal(await page.locator('.wire').count(),allEdges);
     checks.push('Leaving the scene evicts file and edge nodes, and Fit restores relationships');
     const edge=data.edges.find(edge=>edge.from.file==='src/utils/isAction.ts'&&edge.to.file==='src/utils/isPlainObject.ts');
+    if (!await page.locator('#inspector').isVisible()) await page.locator('#inspect').click();
     await page.getByRole('combobox',{name:'Relationship',exact:true}).selectOption(edge.id);
     await page.getByRole('button',{name:'Show source',exact:true}).click();
     assert.equal(await page.locator('.wire.selected').count(),1);

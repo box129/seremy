@@ -12,16 +12,36 @@ body{background:#141414;color:#ddd}main{display:flex;height:70vh}#map{flex:1;min
 body{height:100dvh;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto}
 main{height:auto;min-height:0}#map{height:100%}header,footer{padding:8px 12px;gap:8px;font-size:12px}button,input,select{padding:6px 8px}header b{display:none}#status{font-size:11px}#evidence{margin:0;padding:8px 12px;font-size:11px}#instructions{display:none}header #files{max-width:230px}#edges{max-width:320px}
 </style>
+<style>
+[hidden]{display:none!important}
+body{grid-template-rows:auto minmax(0,1fr) auto;font-family:'Segoe UI',system-ui,sans-serif}
+header{background:#202020;flex-wrap:wrap;min-height:44px}header input{width:180px}header #files{max-width:170px}
+button:hover:enabled{background:#363636}button[aria-expanded=true]{background:#353b45;border-color:#71809a}
+:focus-visible{outline:2px solid #a6bbde;outline-offset:3px}
+#repository{position:absolute;inset:0 auto 0 0;z-index:2;width:250px;box-shadow:8px 0 24px #0003}
+#inspector{position:absolute;inset:0 0 0 auto;z-index:3;width:320px;max-width:100%;overflow:auto;background:#202020;border-left:1px solid #383838;padding:16px;box-shadow:-8px 0 24px #0003;font-size:12px}
+main:has(#inspector:not([hidden])) #mini{right:332px}
+.panel-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.panel-heading h2{font-size:13px;font-weight:600;margin:0}.panel-heading button{border:0;background:transparent;font-size:18px;padding:2px 8px}
+#inspector label{display:grid;gap:8px;color:#aaa}#edges{width:100%;max-width:100%;margin-bottom:16px}#inspector h3{font-size:12px;font-weight:500;margin:20px 0 8px;color:#aab6c8}
+.source-location{overflow-wrap:anywhere;margin:0 0 8px;color:#ddd}.source-excerpt{margin:0 0 10px;background:#181818;padding:10px;overflow:auto;font:12px/1.7 Consolas,monospace;color:#bbb;tab-size:4}.source-excerpt mark{background:#635235;color:#ffe3a6}
+#evidence{padding:0;line-height:1.7;color:#999;overflow-wrap:anywhere}#inspection-empty{color:#aaa;line-height:1.7}#detail{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}footer{min-height:28px;padding:5px 12px;background:#202020;border-top:1px solid #383838}
+@media(max-width:700px){#repository{width:210px}header input{width:130px}header #files{max-width:130px}}
+</style>
 <header><b>SEREMY</b><span id="status">Verifying source…</span>
+<button id="toggle-files" aria-controls="repository" aria-expanded="true">Files</button>
 <input id="search" type="search" placeholder="Find a file or symbol" aria-label="Find file or symbol">
 <select id="files" aria-label="Open file"></select><button id="open">Open file</button>
 <button id="back" disabled>Back</button><button id="fit">Fit map</button>
 <button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button>
-<button id="collapse">Collapse folders</button></header>
-<main><nav id="repository" aria-label="Repository files"><h2>Files</h2><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg></main>
-<footer><div id="detail" aria-live="polite">Select a relationship or source region.</div><select id="edges" aria-label="Relationship"></select>
-<button id="origin">Show source</button><button id="target">Follow target</button></footer>
-<p id="evidence"></p><p id="instructions">Scroll to zoom. Drag to pan. Search files or symbols. Select a relationship, then follow it or return with Back. This map shows a scoped static analysis draft.</p>
+<button id="collapse">Collapse folders</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></header>
+<main><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
+<aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
+<label>Connection<select id="edges" aria-label="Relationship"><option value="">Choose a connection</option></select></label>
+<p id="inspection-empty">Select a symbol or connection to inspect its source evidence.</p>
+<section id="inspection-source" hidden><h3 id="source-heading">Caller</h3><p id="source-location" class="source-location"></p><pre id="source-excerpt" class="source-excerpt"></pre><button id="origin">Show source</button></section>
+<section id="inspection-target" hidden><h3>Target declaration</h3><p id="target-location" class="source-location"></p><pre id="target-excerpt" class="source-excerpt"></pre><button id="target">Follow target</button></section>
+<p id="evidence"></p></aside></main>
+<footer><div id="detail" aria-live="polite">Select a relationship or source region.</div></footer>
 <script id="fixture" type="application/json">FIXTURE_JSON</script>
 <script>
 (()=>{
@@ -191,7 +211,32 @@ function zoom(x,y,factor){
   const k=Math.min(4,Math.max(.001,camera.k*factor)),ratio=k/camera.k;
   camera={x:x-(x-camera.x)*ratio,y:y-(y-camera.y)*ratio,k};draw();
 }
-function select(edge,span=null){save();selected=edge;focus=span;draw();}
+function select(edge,span=null){save();selected=edge;focus=span;draw();setPanel('inspector',true);}
+function setPanel(id,open){
+  el(id).hidden=!open;
+  el(id==='inspector'?'inspect':'toggle-files').setAttribute('aria-expanded',String(open));
+}
+let inspectedSelection=null;
+function excerpt(span,id){
+  const file=files[span.file],location=position(span),container=el(id);
+  container.replaceChildren();
+  for(let line=Math.max(1,location.line-2);line<=Math.min(file.lines.length,location.line+2);line++){
+    const row=document.createElement(line===location.line?'mark':'span');
+    row.textContent=String(line).padStart(4)+'  '+file.lines[line-1]+'\n';container.append(row);
+  }
+}
+function inspection(){
+  const key=JSON.stringify([selected?.id,focus]);
+  if(key===inspectedSelection)return;
+  inspectedSelection=key;
+  const source=selected?.from||focus;
+  el('inspection-empty').hidden=!!source;
+  el('inspection-source').hidden=!source;
+  el('inspection-target').hidden=!selected;
+  el('source-heading').textContent=selected?'Caller':'Selected source';
+  if(source){el('source-location').textContent=source.file+':'+position(source).line;excerpt(source,'source-excerpt');}
+  if(selected){el('target-location').textContent=selected.to.file+':'+position(selected.to).line;excerpt(selected.to,'target-excerpt');}
+}
 function controls(){
   const active=selected&&bound;
   el('origin').disabled=el('target').disabled=!active;
@@ -205,6 +250,7 @@ function controls(){
     Object.keys(files).length+' source files · '+data.edges.length+' bound source occurrences';
   el('evidence').textContent=selected?'origin '+selected.origin+' · method '+selected.method+
     ' · source bytes ['+selected.from.start+', '+selected.from.end+') · target bytes ['+selected.to.start+', '+selected.to.end+') · bundle '+data.bundle.content_digest:'';
+  inspection();
 }
 function renderCode(line,node){
   for(const piece of line.replace(/\t/g,'    ').split(/(\/\/.*$|#.*$|\b(?:def|class|return|import|from|export|function|const|let|while|if|else|async|await)\b)/g))
@@ -360,7 +406,14 @@ el('open').onclick=()=>{
 };
 for(const edge of data.edges)el('edges').add(new Option(edge.kind+' · '+edge.from.file+':'+position(edge.from).line,edge.id));
 el('edges').onchange=()=>select(data.edges.find(e=>e.id===el('edges').value));
-el('origin').onclick=()=>follow(selected?.from,selected);el('target').onclick=()=>follow(selected?.to,selected);
+el('origin').onclick=()=>follow(selected?.from||focus,selected);el('target').onclick=()=>follow(selected?.to,selected);
+el('inspect').onclick=()=>setPanel('inspector',el('inspector').hidden);
+el('toggle-files').onclick=()=>setPanel('repository',el('repository').hidden);
+el('close-inspector').onclick=()=>{setPanel('inspector',false);el('inspect').focus();};
+el('close-files').onclick=()=>{setPanel('repository',false);el('toggle-files').focus();};
+for(const id of ['inspector','repository'])el(id).addEventListener('keydown',event=>{
+  if(event.key==='Escape'){event.stopPropagation();el(id==='inspector'?'close-inspector':'close-files').click();}
+});
 el('fit').onclick=()=>{save();fit();draw();};
 el('collapse').onclick=()=>{
   save();collapsed=!collapsed;closedFolders.clear();

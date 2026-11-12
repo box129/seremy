@@ -22,6 +22,7 @@ async function run(){
     checks.push('Full Redux source inventory loads and verifies all 17 source blobs');
     const edge=data.edges.find(e=>e.from.file==='src/utils/isAction.ts'&&e.to.file==='src/utils/isPlainObject.ts');
     assert.ok(edge);
+    if (!await page.locator('#inspector').isVisible()) await page.locator('#inspect').click();
     await page.getByRole('combobox',{name:'Relationship',exact:true}).selectOption(edge.id);
     await page.getByRole('button',{name:'Show source',exact:true}).click();
     assert.match(await page.locator('#detail').innerText(),/isAction\.ts:6/);
@@ -70,7 +71,7 @@ async function run(){
     try{
       await page.goto(pathToFileURL(tampered).href);
       await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('STALE'));
-      assert.equal(await page.getByRole('button',{name:'Follow target',exact:true}).isDisabled(),true);
+      assert.equal(await page.locator('#target').isDisabled(),true);
       checks.push('Changed embedded source disables relationship navigation');
     }finally{fs.unlinkSync(tampered);}
     assert.deepEqual(errors,[]);

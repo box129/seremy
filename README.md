@@ -45,6 +45,8 @@ node seremy/tools/check-launcher.cjs test-results/launcher
 
 The repository contains the standalone SEREMY implementation, fixtures, and tests. The original ArchDoc AI web application lives in the earlier local checkout. Third-party Redux fixture source retains its included MIT license.
 
+Selecting a symbol or connection opens an evidence inspector with caller and target source excerpts. Inspect and Files toggle their panels without changing the camera. See [selection inspector](docs/selection-inspector.md).
+
 Canvas directories contain their child directories and source files. Use a directory heading to collapse or expand it independently. Enter and Space also activate a focused heading. Following a call opens its target ancestors, and Back restores the previous canvas folder state. Collapsed folders show their source file count and receive boundary endpoints for relationships to hidden files.
 
 Files longer than 180 lines show an 80-line preview. Expand full file reveals the remaining source. Search and call navigation reveal lines beyond the preview automatically. Back restores the folded state.

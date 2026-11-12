@@ -2,18 +2,20 @@ const {chromium} = require('playwright');
 const {spawnSync} = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const {pathToFileURL} = require('node:url');
 const assert = require('node:assert/strict');
 
 async function run() {
   const redux = path.resolve(process.argv[2]);
   const evidence = path.resolve(process.argv[3]);
-  const input = path.join(evidence, 'many-lines-input');
-  fs.mkdirSync(input, {recursive:true});
+  const input = fs.mkdtempSync(path.join(os.tmpdir(), 'seremy-map-review-'));
+  fs.mkdirSync(evidence, {recursive:true});
   fs.writeFileSync(path.join(input, 'long.py'), '\n'.repeat(160000) + 'def main(): pass\nmain()\n');
   const result = spawnSync(process.env.PYTHON || 'python', [
     '-B', '-m', 'seremy', 'analyze', input, '--output', path.join(evidence, 'many-lines-output')
   ], {cwd:path.resolve(__dirname, '../..'), windowsHide:true, encoding:'utf8', timeout:60000});
+  fs.rmSync(input, {recursive:true, force:true});
   assert.equal(result.status, 0, result.stderr);
   const generated = JSON.parse(result.stdout);
   const browser = await chromium.launch(process.env.CHROME_BIN ? {executablePath:process.env.CHROME_BIN} : {});
@@ -47,6 +49,7 @@ async function run() {
         await page.getByRole('button',{name:'Fold file long.py',exact:true}).press('Space');
         assert.equal(await page.locator('.file').getAttribute('height'),foldedHeight);
         const data=JSON.parse(await page.locator('#fixture').textContent());
+        if (!await page.locator('#inspector').isVisible()) await page.locator('#inspect').click();
         await page.getByRole('combobox',{name:'Relationship',exact:true}).selectOption(data.edges[0].id);
         const beforeFollow=await page.locator('#world').getAttribute('transform');
         await page.getByRole('button',{name:'Follow target',exact:true}).click();

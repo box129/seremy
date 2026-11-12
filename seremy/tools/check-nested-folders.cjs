@@ -48,6 +48,7 @@ async function run(){
     const data=JSON.parse(await page.locator('#fixture').textContent());
     const edge=data.edges.find(edge=>!edge.from.file.startsWith('src/utils/')&&edge.to.file.startsWith('src/utils/'));
     assert.ok(edge);
+    if (!await page.locator('#inspector').isVisible()) await page.locator('#inspect').click();
     await page.getByRole('combobox',{name:'Relationship',exact:true}).selectOption(edge.id);
     const beforeFollow=await state(page);
     const anchor=await page.evaluate(id=>{

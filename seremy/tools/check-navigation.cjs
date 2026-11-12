@@ -49,11 +49,26 @@ async function run() {
     await page.getByRole('button', {name:'Zoom in',exact:true}).click();
     // Pan at blank canvas space, away from source hitboxes.
     const bounds = await page.locator('#map').boundingBox();
-    await page.mouse.move(bounds.x+20,bounds.y+20);
+    await page.mouse.move(bounds.x+bounds.width*.4,bounds.y+20);
     await page.mouse.down();
-    await page.mouse.move(bounds.x+67,bounds.y+51,{steps:4});
+    await page.mouse.move(bounds.x+bounds.width*.4+47,bounds.y+51,{steps:4});
     await page.mouse.up();
     const origin = await state(page);
+    assert.equal(await page.locator('#inspector').isVisible(),true);
+    assert.equal(await page.locator('#source-location').textContent(),'src/utils/isAction.ts:6');
+    assert.equal(await page.locator('#target-location').textContent(),'src/utils/isPlainObject.ts:5');
+    assert.match(await page.locator('#source-excerpt mark').textContent(),/isPlainObject/);
+    assert.match(await page.locator('#target-excerpt mark').textContent(),/export default function isPlainObject/);
+    await page.getByRole('button',{name:'Close inspector',exact:true}).press('Enter');
+    assert.equal(await page.locator('#inspector').isVisible(),false);
+    assert.deepEqual(await state(page),origin);
+    await page.locator('#inspect').press('Enter');
+    await page.getByRole('button',{name:'Close Files',exact:true}).press('Enter');
+    assert.equal(await page.locator('#repository').isVisible(),false);
+    assert.deepEqual(await state(page),origin);
+    await page.locator('#toggle-files').press('Enter');
+    assert.deepEqual(await state(page),origin);
+    checks.push('Selection inspector shows real caller and declaration lines, and keyboard panel toggles preserve navigation state');
     assert.deepEqual(origin.focus, [[edge.from.file,String(edge.from.start),String(edge.from.end)]]);
     const alignment = await page.evaluate(span => {
       const source = JSON.parse(document.querySelector('#fixture').textContent).files[span.file];
@@ -76,6 +91,9 @@ async function run() {
     await page.screenshot({path:path.join(evidence,'redux-declaration.png')});
     await page.getByRole('button', {name:'Back',exact:true}).click();
     assert.deepEqual(await state(page), origin);
+    await page.getByRole('button',{name:'Close inspector',exact:true}).press('Enter');
+    assert.deepEqual(await state(page),origin);
+    await page.locator('#inspect').press('Enter');
     checks.push('Click the call in source, zoom and pan, follow the declaration, and restore all navigation state with Back');
 
     await page.getByRole('button', {name:'Open src/createStore.ts',exact:true}).click();
@@ -97,6 +115,7 @@ async function run() {
     await page.getByRole('button', {name:'Open src/createStore.ts',exact:true}).click();
     // Following a relationship reveals its target directory, which Back must undo.
     await utils.locator(':scope > summary').click();
+    if (!await page.locator('#inspector').isVisible()) await page.locator('#inspect').click();
     await page.getByRole('combobox', {name:'Relationship',exact:true}).selectOption(edge.id);
     const beforeReveal = await state(page);
     assert.ok(!beforeReveal.expanded.includes('src/utils'));
@@ -105,6 +124,20 @@ async function run() {
     await page.getByRole('button', {name:'Back',exact:true}).click();
     assert.deepEqual(await state(page), beforeReveal);
     checks.push('Following reveals the target folder and Back restores the prior tree expansion');
+    for(const viewport of [{width:1440,height:900},{width:1280,height:800}]){
+      await page.setViewportSize(viewport);
+      await page.locator('#inspect').focus();
+      await page.keyboard.press('Enter');
+      await page.keyboard.press('Enter');
+      const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight);
+      assert.equal(overflow,false);
+      for(const id of ['inspect','back','toggle-files','close-inspector','target']){
+        const rect=await page.locator('#'+id).boundingBox();
+        assert.ok(rect&&rect.x>=0&&rect.y>=0&&rect.x+rect.width<=viewport.width&&rect.y+rect.height<=viewport.height);
+      }
+      await page.screenshot({path:path.join(evidence,'inspector-'+viewport.width+'x'+viewport.height+'.png')});
+    }
+    checks.push('Inspector actions remain reachable with no page scrolling at 1440x900 and 1280x800');
     assert.deepEqual(errors, []);
     const receipt = {status:'passed',browser:browser.version(),viewport:[1440,900],
       content_digest:data.bundle.content_digest,checks,origin,destination,page_errors:errors};
