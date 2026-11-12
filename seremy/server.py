@@ -14,6 +14,7 @@ import uuid
 from seremy.__main__ import input_root
 from seremy.product import analyze, publish
 from seremy.viewer import render_map
+from seremy.map_bridge import MapBridge
 
 
 class Cancelled(Exception):
@@ -26,6 +27,7 @@ class Application:
         self.jobs={}
         self.lock=threading.Lock()
         self.worker=ThreadPoolExecutor(max_workers=1,thread_name_prefix="seremy")
+        self.map_bridge=MapBridge(self.output)
 
     def start(self, request):
         kind=request.get("kind")
@@ -115,6 +117,8 @@ def handler_for(application):
             try:
                 if route=="/":
                     self.send(200,(Path(__file__).parent/"map/launcher.html").read_bytes(),"text/html; charset=utf-8")
+                elif route=="/api/mcp/views":
+                    self.send(200,application.map_bridge.list_views())
                 elif route.startswith("/api/jobs/"):
                     self.send(200,application.state(route.removeprefix("/api/jobs/")))
                 elif route.startswith("/reports/"):
@@ -143,12 +147,16 @@ def handler_for(application):
                     raise ValueError("JSON object required")
                 if self.path=="/api/jobs":
                     self.send(202,{"id":application.start(data)})
+                elif self.path=="/api/mcp/register":
+                    self.send(200,application.map_bridge.register(data))
+                elif self.path=="/api/mcp/tool":
+                    self.send(200,application.map_bridge.tool(data))
                 elif self.path.startswith("/api/cancel/"):
                     application.cancel(self.path.removeprefix("/api/cancel/"))
                     self.send(200,{"status":"cancellation_requested"})
                 else:
                     self.send(404,{"error":"not found"})
-            except (ValueError,KeyError) as error:
+            except (ValueError,KeyError,OSError) as error:
                 self.send(400,{"error":str(error)})
 
         def log_message(self,format,*args):

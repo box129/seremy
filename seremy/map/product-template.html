@@ -26,6 +26,7 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 .source-location{overflow-wrap:anywhere;margin:0 0 8px;color:#ddd}.source-excerpt{margin:0 0 10px;background:#181818;padding:10px;overflow:auto;font:12px/1.7 Consolas,monospace;color:#bbb;tab-size:4}.source-excerpt mark{background:#635235;color:#ffe3a6}
 .string{fill:#c4b28c}.literal{fill:#91b8be}.wire.faded{opacity:.2}#connection-count,#scope-label,#outcome-detail,#region-detail{padding:0;color:#aaa;line-height:1.6;overflow-wrap:anywhere}#inspector select{max-width:100%}.scope-controls{display:grid;gap:10px;margin-bottom:18px}
 #breadcrumbs{display:flex;gap:4px;align-items:center;overflow:auto;max-width:55%;font-size:11px;margin-left:auto}#breadcrumbs button{padding:2px 5px;border:0;background:transparent;white-space:nowrap}#arrangement{display:grid;gap:10px;margin:12px 0}#arrangement label{gap:5px}#arrangement-actions{display:flex;gap:6px;flex-wrap:wrap}#view-status{line-height:1.6;color:#aaa}.arranged-selection{fill:none;stroke:#a6bbde;stroke-width:2;pointer-events:none;vector-effect:non-scaling-stroke}.view-group{fill:#8198be0c;stroke:#8198be;stroke-dasharray:8 5;vector-effect:non-scaling-stroke}
+#mcp-tools{margin:12px 0}#mcp-tools p{padding:0;line-height:1.6;color:#aaa;overflow-wrap:anywhere}#agent-notes article{border-top:1px solid #444;margin-top:12px;padding-top:10px}#agent-notes p{white-space:pre-wrap}#agent-notes button{display:block;margin:6px 0;max-width:100%;overflow-wrap:anywhere;text-align:left}
 #evidence{padding:0;line-height:1.7;color:#999;overflow-wrap:anywhere}#inspection-empty{color:#aaa;line-height:1.7}#detail{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}footer{min-height:28px;padding:5px 12px;background:#202020;border-top:1px solid #383838}
 @media(max-width:700px){#repository{width:210px}header input{width:130px}header #files{max-width:130px}}
 </style>
@@ -38,6 +39,7 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 <button id="collapse">Collapse folders</button><button id="arrange" aria-pressed="false" title="Select and drag files or folders. Shift adds to the selection.">Arrange</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></header>
 <main><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
 <aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
+<details id="mcp-tools"><summary>MCP and agent notes</summary><p id="agent-status" role="status">Connect an agent through the local launcher.</p><button id="connect-agent">Share selection with agent</button><div id="agent-notes"></div></details>
 <details id="arrangement-tools"><summary>Arrangement and saved view</summary><div id="arrangement"><label>Layout<select id="layout-mode"><option value="packed">Packed</option><option value="columns">Columns</option></select></label><label>Group name<input id="group-name" maxlength="80" placeholder="Group name"></label><div id="arrangement-actions"><button id="group-selection">Group selection</button><button id="ungroup">Ungroup</button><button id="save-view">Save view</button><button id="restore-view">Restore view</button></div><div id="view-status" role="status">Use Arrange to move files or folders. Shift selects multiple items.</div></div></details>
 <div class="scope-controls"><label>Connections<select id="connection-mode"><option value="all">All files</option><option value="incoming">Incoming to selected file</option><option value="outgoing">Outgoing from selected file</option><option value="neighborhood">Selected file neighborhood</option></select></label><div id="scope-label"></div><div id="connection-count" role="status"></div></div>
 <label>Connection<select id="edges" aria-label="Relationship"><option value="">Choose a connection</option></select></label>
@@ -162,6 +164,9 @@ function layout(){
 layout();
 let camera={x:0,y:0,k:1},collapsed=false,selected=null,focus=null,bound=false;
 let connectionMode='all',scopeFile=null,selectedOutcome=null;
+let agentSharing=false,agentBusy=false,agentSyncNeeded=false,agentTimer=null,agentAck=0,agentNotes=[];
+const agentViewId=crypto.randomUUID();
+const agentPublication=location.protocol==='http:'&&['localhost','127.0.0.1'].includes(location.hostname)?location.pathname.match(/^\/reports\/([0-9a-f]{64})\/map.html$/)?.[1]:null;
 const outcomes=data.outcomes||[];
 function visibleEdges(){
   if(connectionMode==='all')return data.edges;
@@ -242,7 +247,7 @@ function saveView(){
   const state={schema:1,repository:data.repository,digest:data.bundle.content_digest,camera,arrangement:arrangementState(),
     closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],collapsed,focus,connectionMode,scopeFile,
     edge:selected?.id||null,outcome:selectedOutcome?.candidate_id||null,
-    tree:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),treeScroll:el('repository').scrollTop};
+    tree:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),treeScroll:el('repository').scrollTop,agentNotes};
   try{localStorage.setItem(viewKey,JSON.stringify(state));el('view-status').textContent='View saved on this browser for this snapshot.';}
   catch(error){el('view-status').textContent='Could not save this view. Browser storage is unavailable or full.';}
 }
@@ -272,6 +277,7 @@ function validView(state){
     if(!files[file]||!Number.isInteger(start)||!Number.isInteger(end)||start<0||end<start||end>files[file].raw.length)return false;
     try{const decoder=new TextDecoder('utf-8',{fatal:true});decoder.decode(files[file].raw.subarray(0,start));decoder.decode(files[file].raw.subarray(start,end));}catch{return false;}
   }
+  if(state.agentNotes!==undefined&&(!Array.isArray(state.agentNotes)||state.agentNotes.length>100||!state.agentNotes.every(validAgentNote)))return false;
   return true;
 }
 function restoreView(){
@@ -286,7 +292,7 @@ function restoreView(){
     closedFolders.clear();state.closedFolders.forEach(id=>closedFolders.add(id));
     expandedFiles.clear();state.expandedFiles.forEach(id=>expandedFiles.add(id));layout();
     for(const node of el('tree').querySelectorAll('details'))node.open=state.tree.includes(node.dataset.directory);
-    el('repository').scrollTop=state.treeScroll;draw();el('view-status').textContent='Saved view restored.';
+    el('repository').scrollTop=state.treeScroll;agentNotes=state.agentNotes||[];renderAgentNotes();draw();el('view-status').textContent='Saved view restored.';
   }catch(error){el('view-status').textContent='Could not read the saved view. Browser storage may be unavailable.';}
 }
 function revealFile(path){
@@ -375,6 +381,7 @@ function controls(){
   el('arrange').setAttribute('aria-pressed',String(arranging));el('layout-mode').value=layoutMode;
   el('group-selection').disabled=nodeSelection.size<2;el('ungroup').disabled=!selectedGroup;
   breadcrumbs();
+  scheduleAgentReport();
 }
 let breadcrumbKey=null;
 function breadcrumbs(){
@@ -618,6 +625,55 @@ el('group-selection').onclick=()=>{
 };
 el('ungroup').onclick=()=>{save();viewGroups=viewGroups.filter(group=>group.id!==selectedGroup);selectedGroup=null;draw();};
 el('save-view').onclick=saveView;el('restore-view').onclick=restoreView;
+function validAgentSpan(span){
+  if(!span||!files[span.file]||!Number.isInteger(span.start)||!Number.isInteger(span.end)||span.start<0||span.end<span.start||span.end>files[span.file].raw.length)return false;
+  try{const decoder=new TextDecoder('utf-8',{fatal:true});decoder.decode(files[span.file].raw.subarray(0,span.start));decoder.decode(files[span.file].raw.subarray(span.start,span.end));return true;}catch{return false;}
+}
+function validAgentNote(note){return note&&typeof note.note_id==='string'&&typeof note.text==='string'&&note.text.length<=4000&&Array.isArray(note.citations)&&note.citations.length>0&&note.citations.length<=8&&note.citations.every(validAgentSpan);}
+function renderAgentNotes(){
+  const container=el('agent-notes');container.replaceChildren();
+  for(const note of agentNotes){
+    const article=document.createElement('article'),label=document.createElement('strong'),text=document.createElement('p');
+    label.textContent='Agent annotation';text.textContent=note.text;article.append(label,text);
+    for(const citation of note.citations){const button=document.createElement('button');button.textContent=citation.file+':'+position(citation).line;button.onclick=()=>follow(citation);article.append(button);}
+    container.append(article);
+  }
+}
+function scheduleAgentReport(){
+  if(!agentSharing||agentTimer)return;
+  agentTimer=setTimeout(()=>{agentTimer=null;reportAgent();},150);
+}
+async function reportAgent(){
+  if(!agentPublication)return;
+  if(agentBusy){agentSyncNeeded=true;return;}
+  agentBusy=true;
+  try{
+    const response=await fetch('/api/mcp/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({publication:agentPublication,view_id:agentViewId,digest:data.bundle.content_digest,verified:bound&&agentSharing,ack:agentAck,
+      selection:{span:focus,occurrence:selected?.id||null,outcome:selectedOutcome?.candidate_id||null,nodes:[...nodeSelection]}})});
+    if(!response.ok)throw new Error('Bridge unavailable');
+    const state=await response.json();
+    if(!agentSharing)return;
+    for(const command of state.commands){
+      if(command.sequence<=agentAck)continue;
+      if(command.digest!==data.bundle.content_digest||!bound)throw new Error('Snapshot changed');
+      if(command.type==='focus'&&validAgentSpan(command.span))follow(command.span);
+      else if(command.type==='note'&&validAgentNote(command)){
+        if(!agentNotes.some(note=>note.note_id===command.note_id))agentNotes.push({note_id:command.note_id,text:command.text,citations:command.citations});
+        if(agentNotes.length>100)agentNotes.shift();renderAgentNotes();setPanel('inspector',true);el('mcp-tools').open=true;
+      }else throw new Error('Invalid agent command');
+      agentAck=command.sequence;
+    }
+    el('agent-status').textContent=bound?'Sharing this snapshot and selection with local MCP tools.':'Source verification failed. Agent navigation is disabled.';
+  }catch(error){el('agent-status').textContent='Agent bridge unavailable. Retrying while sharing is enabled.';}
+  finally{agentBusy=false;if(agentSyncNeeded){agentSyncNeeded=false;reportAgent();}}
+}
+el('connect-agent').disabled=!agentPublication;
+if(!agentPublication)el('agent-status').textContent='Live MCP connections use the local SEREMY launcher. Saved annotations remain available here.';
+el('connect-agent').onclick=()=>{
+  agentSharing=!agentSharing;el('connect-agent').textContent=agentSharing?'Stop sharing selection':'Share selection with agent';
+  el('agent-status').textContent=agentSharing?'Connecting to local MCP tools…':'Selection sharing stopped.';reportAgent();
+};
+setInterval(()=>{if(agentSharing)reportAgent();},1000);
 for(const id of ['inspector','repository'])el(id).addEventListener('keydown',event=>{
   if(event.key==='Escape'){event.stopPropagation();el(id==='inspector'?'close-inspector':'close-files').click();}
 });

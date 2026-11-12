@@ -51,6 +51,8 @@ The inspector filters incoming, outgoing and neighboring connections by the sele
 
 Arrange supports dragging files and folders, Shift selection, named visual groups and keyboard movement. The inspector switches layouts and saves a browser-local view for the current snapshot. Source breadcrumbs support directory navigation. See [arrangement and saved views](docs/arrangement.md).
 
+The local launcher's MCP bridge lets an agent read selected evidence and documentation, focus source and add cited annotations. Install the optional SDK and connect a stdio client using [the MCP setup](docs/mcp.md).
+
 Canvas directories contain their child directories and source files. Use a directory heading to collapse or expand it independently. Enter and Space also activate a focused heading. Following a call opens its target ancestors, and Back restores the previous canvas folder state. Collapsed folders show their source file count and receive boundary endpoints for relationships to hidden files.
 
 Files longer than 180 lines show an 80-line preview. Expand full file reveals the remaining source. Search and call navigation reveal lines beyond the preview automatically. Back restores the folded state.
