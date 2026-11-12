@@ -15,7 +15,9 @@ The source-view prototype supports real byte-range selection, target navigation,
 
 The production SVG viewer now caches repeated glyph measurements and avoids reading dropdown selection inside candidate-search callbacks. Its all-files picker preserves its options across source-file selection. The controlled stress startup comparison changed from 18.13 s to 0.78 s. Source panning also suppresses native browser text selection. The current viewer remains SVG.
 
-Pixi is the next migration target for large maps. Begin by removing forced layout from history capture, then extract a shared scene model and add a full-feature Pixi adapter alongside the SVG fallback. Profile Pixi startup and texture allocation on Pydantic before choosing the default. A compact-rail visual pass, bounded source-card framing, broader browser/hardware checks and hosted rollout remain ahead.
+Pixi is the next migration target for large maps. Begin by removing forced layout from history capture, then extract a shared scene model and add a full-feature Pixi adapter alongside the SVG fallback. Profile Pixi startup and texture allocation on Pydantic before choosing the default. A compact-rail visual pass, bounded source-card framing and broader browser/hardware checks remain ahead.
+
+The hosted application deployed commit `487ebbb` on 12 November 2026. Public checks verified ZIP analysis, documentation, downloads, refresh recovery, device history and the current inspector, filters and saved arrangements. The served HTML contains the performance corrections. Runtime error logs were clear during the verification window. Live MCP continues to use the local launcher.
 
 All 155 Python tests and 65 browser cases passed. Browser journeys covered Redux, fixed stress data and the 106-file Pydantic package at 1440×900, 1280×800 and DPR 2. Historical CodeCanvas captures have an unrecorded revision and camera. The new reference source capture aligns file and viewport, with source-card framing differences documented.
 
