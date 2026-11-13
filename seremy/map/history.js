@@ -68,6 +68,7 @@
     get('map').src=fileUrl(report.files['map.html'],'text/html');
     get('download-map').href=get('map').src;get('download-map').hidden=false;
     get('download').href=fileUrl(report.files['graph.json'],'application/json');
+    get('download-doc').href=fileUrl(report.files['architecture.md'],'text/markdown');
     get('checks').href=fileUrl(report.files['validation.json'],'application/json');
     get('map').hidden=false;get('doc').hidden=true;get('outputs').hidden=false;get('empty').hidden=true;
     document.body.classList.add('loaded');get('connect').textContent=report.name;
@@ -115,7 +116,7 @@
   const liveDocumentation=get('doc-tab').onclick;
   get('doc-tab').onclick=()=>{
     if(!active)return liveDocumentation();
-    get('doc').textContent=active.files['architecture.md'];get('doc').hidden=false;get('map').hidden=true;
+    showDocumentation(active.files['architecture.md']);get('doc').hidden=false;get('map').hidden=true;
     get('doc-tab').setAttribute('aria-pressed','true');get('map-tab').setAttribute('aria-pressed','false');
   };
   window.addEventListener('seremy-publication',()=>{active=null;save.disabled=false;release();});

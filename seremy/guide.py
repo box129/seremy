@@ -1,0 +1,118 @@
+"""Structured developer-guide projections of immutable analysis records."""
+import json
+from urllib.parse import quote
+
+
+def source_link(citation, binding):
+    payload = {"digest": binding["content_digest"], **citation}
+    return "map.html#seremy-source=" + quote(json.dumps(payload, separators=(",", ":")), safe="")
+
+
+def guide_sections(loader, claims):
+    contents = loader.contents
+    dependencies = {key: contents[key]["digest"] for key in ("s02", "s03", "s04", "s05", "s06") if key in contents}
+    dependencies["graph"] = loader.meta["content_digest"]
+    sections = []
+
+    def section(section_id, title):
+        result = {"section_id": section_id, "title": title, "claim_ids": [], "dependencies": dependencies}
+        sections.append(result)
+        return result
+
+    def add(section, text, subjects, witnesses, citations=()):
+        claim_id = f"guide-{len(claims):04d}"
+        claims.append({"claim_id": claim_id, "kind": "guide", "text": text,
+                       "subject": subjects, "citations": list(citations), "witnesses": witnesses,
+                       "dependencies": dependencies, "interpretation": "deterministic_projection"})
+        section["claim_ids"].append(claim_id)
+
+    overview = section("overview", "Repository overview")
+    add(overview, f"This guide describes {len(loader.entity_ids())} observed declarations and "
+        f"{len(loader.edges())} direct static relationships in the captured analysis. "
+        "Use the call walkthroughs to inspect source evidence and the coverage section to assess analysis limits.",
+        {"scope": "snapshot"}, [{"stage": "s03", "artifact_digest": contents["s03"]["digest"]}])
+
+    walkthroughs = section("walkthroughs", "Call walkthroughs")
+    for edge in loader.edges():
+        source = loader.lookup_entity(edge["source"]) if edge["source_type"] == "entity_ref" else None
+        target = loader.lookup_entity(edge["target"])
+        if not target:
+            continue
+        citations = []
+        for site in edge["occurrences"]:
+            citations.append({"file_id": site["file_id"], "span": site["span"],
+                              "blob_sha256": contents["snapshot"]["source_blobs"][site["file_id"]]["analysis_sha256"],
+                              "role": "call_site", "candidate_id": site["candidate_id"]})
+        citations.append({"file_id": target["file_id"], "span": target["name_span"],
+                          "blob_sha256": contents["snapshot"]["source_blobs"][target["file_id"]]["analysis_sha256"],
+                          "role": "target_declaration"})
+        caller = source["name"] if source else edge["source"]
+        add(walkthroughs, f"The analyzer connects `{caller}` to `{target['name']}` because "
+            f"the binding profile resolves {len(edge['occurrences'])} call site(s) to the declaration in "
+            f"`{target['file_id']}`. Open a call site, then the target declaration to follow the evidence. "
+            "This records a static call relationship. Runtime execution and business purpose require additional evidence.",
+            {"source": edge["source"], "target": edge["target"], "kind": edge["kind"]},
+            [{"stage": "s03", "artifact_digest": contents["s03"]["digest"],
+              "candidate_ids": [site["candidate_id"] for site in edge["occurrences"]]}], citations)
+
+    framework = section("frameworks", "Framework evidence")
+    if "s04" in contents:
+        artifact = contents["s04"]["artifact"]
+        if not artifact["frameworks"]:
+            add(framework, "No registered framework declarations or import syntax were found within the observed scope.",
+                {"scope": "snapshot"}, [{"stage": "s04", "artifact_digest": contents["s04"]["digest"]}])
+        for index, record in enumerate(artifact["frameworks"]):
+            add(framework, f"{record['framework']} in `{record['package_id']}`. Declared dependency "
+                f"{record['declared']}, import occurrences {len(record['usage'])}. Framework runtime semantics remain outside this profile.",
+                {"package_id": record["package_id"]},
+                [{"stage": "s04", "artifact_digest": contents["s04"]["digest"], "record_index": index,
+                  "manifest": record.get("evidence"), "imports": record["usage"]}], record["usage"])
+        for diagnostic in artifact["diagnostics"]:
+            add(framework, f"Manifest analysis failed for `{diagnostic['file_id']}`. {diagnostic['reason']}.",
+                {"file_id": diagnostic["file_id"]}, [{"stage": "s04", "diagnostic": diagnostic}])
+        add(framework, f"Unregistered dependencies {len(artifact['unregistered_dependencies'])}.",
+            {"scope": "snapshot"}, [{"stage": "s04", "artifact_digest": contents["s04"]["digest"]}])
+
+    groups = section("groups", "Structural components")
+    for view in contents.get("s05", {}).get("artifact", {}).get("views", []):
+        for group in view["groups"]:
+            count = sum(owner == group for owner in view["membership"].values())
+            add(groups, f"`{group}` contains {count} observed declarations under the `{view['target']}` view.",
+                {"group_id": group}, [{"stage": "s05", "membership_version": view["version"], "target": view["target"]}])
+
+    relationships = section("component-relations", "Component relationships")
+    for edge in contents.get("s06", {}).get("artifact", {}).get("view", {}).get("edges", []):
+        add(relationships, f"`{edge['source']}` → `{edge['target']}` · {edge['kind']} · "
+            f"{edge['distinct_edge_count']} distinct relationships · {edge['site_count']} source sites.",
+            {"source": edge["source"], "target": edge["target"]}, [{"stage": "s06", "edge_ids": edge["edge_ids"]}])
+
+    limits = section("limits", "Capability and coverage")
+    add(limits, "Directory and package membership describe structural views. Semantic ownership, architectural layers, "
+        "runtime behavior and route/DI/ORM semantics require additional profiles. Resolution outcomes "
+        + json.dumps(contents["coverage"]["s03"].get("outcome_counts", {}), sort_keys=True) + ".",
+        {"scope": "snapshot"}, [{"stage": "bundle", "content_digest": loader.meta["content_digest"]}])
+    candidates = {f"cand:{f['file_id']}#{c['kind']}:{c['name']}@{c['span'][0]}": c
+                  for f in contents["s02"]["artifact"]["files"] for c in f.get("candidates", [])}
+    for result in contents["s03"]["artifact"].get("resolutions", []):
+        candidate = candidates.get(result["candidate_id"], {})
+        if candidate.get("kind") != "jsx_tag":
+            continue
+        add(limits, f"JSX tag `{candidate.get('name', '')}` has outcome {result['outcome']}. "
+            "JSX runtime semantics are outside this profile. The tag supplies no accepted runtime call relationship.",
+            {"candidate_id": result["candidate_id"]}, [{"stage": "s03", "resolution": result}])
+    return sections, dependencies
+
+
+def render_guide(ir):
+    claims = {claim["claim_id"]: claim for claim in ir["claims"]}
+    lines = []
+    for section in ir.get("sections", []):
+        lines.extend([f"## {section['title']}", ""])
+        for claim_id in section["claim_ids"]:
+            claim = claims[claim_id]
+            lines.extend([claim["text"], ""])
+            for citation in claim["citations"]:
+                role = citation.get("role", "source").replace("_", " ")
+                label = f"{role} · {citation['file_id']} · bytes {citation['span']}"
+                lines.extend([f"[{label}]({source_link(citation, ir['binds'])})", ""])
+    return "\n".join(lines)

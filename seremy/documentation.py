@@ -1,23 +1,7 @@
-"""S08 documentation synthesis for the Milestone 1 slice (template only).
+"""Build and verify a deterministic developer guide from a bound graph.
 
-Generates one templated Markdown section from a loaded graph bundle.  No
-model-generated text and no free prose: every sentence traces to a claim
-with evidence, and every citation is validated against the exact bundle
-the document was generated from.
-
-Contract alignment:
-
-- The document binds the bundle's content and bundle digests in its
-  header; citations reference analysis-blob hashes and zero-based
-  end-exclusive byte spans under the identity-utf8-v1 position map.
-- The output is visibly labelled a coverage-limited draft of a bounded
-  slice; it is never represented as a fully accepted architecture.
-- Post-generation validation re-checks every claim against the loader:
-  citations must validate, subjects must exist, and relationship claims
-  must resolve to an actual stored edge.  A claim that fails is reported
-  per-claim, not silently dropped (failures stay visible).
-- Coverage is reported as counts before rates, with an explicit statement
-  that no sampling policy exists beyond the slice universe.
+Sections, claims, witnesses and source links are validated against the exact
+snapshot before publication. Independent explanation quality remains unqualified.
 """
 
 from __future__ import annotations
@@ -25,11 +9,12 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Tuple
 
 from seremy.bundle import BundleLoader
+from seremy.guide import guide_sections, render_guide
 from seremy.contracts import PROFILE_ID, canonical_bytes, sha256_hex
 from seremy.language_profiles import SOURCE_EXTENSIONS
 
 PRODUCER_DOCUMENTATION = "seremy.documentation/0.1"
-TEMPLATE_VERSION = "m1-slice-template-v0.1"
+TEMPLATE_VERSION = "developer-guide-v0.2"
 
 
 def build_document_ir(loader: BundleLoader) -> dict:
@@ -148,7 +133,10 @@ def build_document_ir(loader: BundleLoader) -> dict:
         }
     )
 
+    sections, dependencies = guide_sections(loader, claims)
     return {
+        "sections": sections,
+        "dependencies": dependencies,
         "profile": contents["s02"]["artifact"]["profile"],
         "producer": PRODUCER_DOCUMENTATION,
         "template_version": TEMPLATE_VERSION,
@@ -210,6 +198,9 @@ def validate_document(ir: dict, loader: BundleLoader) -> List[str]:
         errors.append("document coverage label disagrees with parser outcomes")
     if ir.get("claims") != expected["claims"]:
         errors.append("claim text, evidence or roster disagrees with the deterministic source projection")
+    for key in ("sections", "dependencies", "template_version", "producer", "profile"):
+        if ir.get(key) != expected[key]:
+            errors.append(f"document {key} differs from the current evidence projection")
     return errors
 
 
@@ -218,12 +209,13 @@ def render_markdown(ir: dict) -> str:
     meta = ir["binds"]
     label = ir["label"]
     lines: List[str] = []
-    lines.append("# Architecture document — SEREMY slice (templated)")
+    lines.append("# SEREMY developer guide")
     lines.append("")
     lines.append(
         f"> **{label['state'].replace('_', ' ').capitalize()}.** Slice scope: "
-        f"{label['slice_scope']}. This draft is pending validation and is not "
-        f"accepted output. Sampling policy: {label['sampling_policy']}"
+        f"{label['slice_scope']}. Graph and template check results accompany this draft in validation.json. "
+        f"Independent usefulness and semantic review remain pending validation; not accepted output. "
+        f"Sampling policy: {label['sampling_policy']}"
     )
     lines.append("")
     lines.append(
@@ -233,6 +225,7 @@ def render_markdown(ir: dict) -> str:
     )
     lines.append("")
 
+    lines.append(render_guide(ir))
     declarations = [c for c in ir["claims"] if c["kind"] == "declaration"]
     relationships = [c for c in ir["claims"] if c["kind"] == "relationship"]
     coverage_claims = [c for c in ir["claims"] if c["kind"] == "coverage"]

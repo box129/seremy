@@ -693,6 +693,19 @@ function validAgentSpan(span){
   try{const decoder=new TextDecoder('utf-8',{fatal:true});decoder.decode(files[span.file].raw.subarray(0,span.start));decoder.decode(files[span.file].raw.subarray(span.start,span.end));return true;}catch{return false;}
 }
 function validAgentNote(note){return note&&typeof note.note_id==='string'&&typeof note.text==='string'&&note.text.length<=4000&&Array.isArray(note.citations)&&note.citations.length>0&&note.citations.length<=8&&note.citations.every(validAgentSpan);}
+function openDocumentCitation(citation){
+  if(!bound||!citation||citation.digest!==data.bundle.content_digest||citation.blob_sha256!==data.hashes[citation.file_id]||!Array.isArray(citation.span))return;
+  const span={file:citation.file_id,start:citation.span[0],end:citation.span[1]};
+  if(validAgentSpan(span))follow(span);
+}
+window.addEventListener('message',event=>{
+  if(event.source===parent&&event.data?.type==='seremy-document-source')openDocumentCitation(event.data.citation);
+});
+function openDocumentHash(){
+  if(!location.hash.startsWith('#seremy-source='))return;
+  try{openDocumentCitation(JSON.parse(decodeURIComponent(location.hash.slice('#seremy-source='.length))));}catch{}
+}
+window.addEventListener('hashchange',openDocumentHash);
 function renderAgentNotes(){
   const container=el('agent-notes');container.replaceChildren();
   for(const note of agentNotes){
@@ -808,6 +821,7 @@ fit();draw();
     }
     bound=true;
   }catch(error){bound=false;el('status').textContent='STALE · source verification failed';}
+  openDocumentHash();
   syncSourceButtons();
   if(new URLSearchParams(location.search).get('renderer')==='pixi')await chooseRenderer('pixi');
   if(bound)el('status').textContent=Object.keys(files).length+' files · '+data.coverage.s03.direct_edge_count+' relationships · '+data.edges.length+' source sites · source verified · draft'+(data.coverage.s02.failed||data.coverage.s02.partial||data.coverage.s02.not_processed?' · parse limits':'');

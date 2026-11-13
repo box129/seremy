@@ -21,7 +21,7 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 </style>
 <header><button id="connect" aria-label="Connect repository" aria-haspopup="dialog">No folder <span aria-hidden="true">⌄</span></button>
 <nav id="outputs" aria-label="Workspace views" hidden><button id="map-tab" aria-pressed="true">Interactive map</button><button id="doc-tab" aria-pressed="false">Documentation</button>
-<a id="download" download>Graph JSON</a><a id="download-map" download="seremy-map.html" hidden>Download map</a><a id="checks" target="_blank" rel="noopener">Validation results</a></nav></header>
+<a id="download" download>Graph JSON</a><a id="download-doc" download="architecture.md">Markdown</a><a id="download-map" download="map.html" hidden>Download map</a><a id="checks" target="_blank" rel="noopener">Validation results</a></nav></header>
 <main><div id="empty"><button id="empty-connect">Connect repository</button><p>Local folder, ZIP or Git repository</p></div>
 <iframe id="map" title="Interactive source map" hidden></iframe><pre id="doc" tabindex="0" hidden></pre>
 <button id="docs" aria-haspopup="dialog">Docs</button></main>
@@ -75,6 +75,7 @@ async function poll(){
       get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');
       get('download').href='/reports/'+publication+'/graph.json';get('checks').href='/reports/'+publication+'/validation.json';
       get('download-map').href='/reports/'+publication+'/map.html';get('download-map').hidden=!hosted;
+      get('download-doc').href='/reports/'+publication+'/architecture.md';
       const c=state.coverage;
       get('summary').textContent=c.s02.parsed_file_records+' source files processed · '+c.s03.direct_edge_count+
         ' distinct call relationships · '+c.s03.attempted_count+' binding attempts · '+c.s02.complete+' complete, '+c.s02.partial+' partial, '+c.s02.failed+' failed, '+c.s02.not_processed+' not processed · Draft';
@@ -111,6 +112,25 @@ get('cancel').onclick=async()=>{
   if(job){await post('/api/cancel/'+job,{});status('Cancellation requested. Waiting for the current stage to finish.');}
 };
 get('map-tab').onclick=()=>{get('map').hidden=false;get('doc').hidden=true;get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');};
+function showDocumentation(markdown){
+  const doc=get('doc');doc.replaceChildren();
+  const links=/\[([^\n]*?)\]\((map\.html#seremy-source=[^\s)]+)\)/g;
+  let cursor=0;
+  for(const match of markdown.matchAll(links)){
+    doc.append(document.createTextNode(markdown.slice(cursor,match.index)));
+    const link=document.createElement('a');link.textContent=match[1];link.href=match[2];link.style.color='#8dc5ff';
+    link.onclick=event=>{
+      event.preventDefault();
+      try{
+        const citation=JSON.parse(decodeURIComponent(match[2].slice('map.html#seremy-source='.length)));
+        get('map').contentWindow.postMessage({type:'seremy-document-source',citation},'*');
+        get('map-tab').click();
+      }catch(error){status('This source citation could not be opened.');}
+    };
+    doc.append(link);cursor=match.index+match[0].length;
+  }
+  doc.append(document.createTextNode(markdown.slice(cursor)));
+}
 get('doc-tab').onclick=async()=>{
   try{
     const requestedPublication=publication;
@@ -118,7 +138,7 @@ get('doc-tab').onclick=async()=>{
     if(!response.ok)throw new Error('Documentation is unavailable or expired. Analyze the repository again.'+(hosted?' You can also open a report saved on this device.':''));
     const markdown=await response.text();
     if(publication!==requestedPublication)return;
-    get('doc').textContent=markdown;get('map').hidden=true;get('doc').hidden=false;
+    showDocumentation(markdown);get('map').hidden=true;get('doc').hidden=false;
     get('map-tab').setAttribute('aria-pressed','false');get('doc-tab').setAttribute('aria-pressed','true');
   }catch(error){status(error.message);}
 };

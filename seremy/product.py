@@ -93,16 +93,10 @@ def analyze(root, *, policy=None, snapshot_identity=None, use_git=True, progress
     pre_errors=validate_graph(loader)
     progress("S08 · documentation")
     ir=build_document_ir(loader)
-    # These sections are projections of versioned artifacts. Keep evidence IDs in the text.
-    extra=architecture_sections(contents)
-    ir["architecture_sections"]=extra
-    ir["dependencies"]={key:contents[key]["digest"] for key in ["s02","s03","s04","s05","s06"]}
-    markdown=render_markdown(ir)+"\n"+extra
+    markdown=render_markdown(ir)
     progress("S07 · generated output validation")
     post_errors=validate_document(ir,loader)
-    if ir["architecture_sections"]!=architecture_sections(contents):
-        post_errors.append("architecture section differs from its evidence")
-    if markdown!=render_markdown(ir)+"\n"+architecture_sections(contents):
+    if markdown!=render_markdown(ir):
         post_errors.append("rendered document differs from checked IR")
     # Detect file/config changes or additions after capture, including resolver-relevant new files.
     current, now, current_scope=collect_snapshot(root,snapshot_identity=snapshot_identity,use_git=use_git)
@@ -193,39 +187,6 @@ def validate_graph(loader):
     if c["policy"].get("reject_cycles") and component_cycles(cross):
         errors.append("cross-component cycle")
     return errors
-
-
-def architecture_sections(contents):
-    framework=contents["s04"]["artifact"]
-    view=contents["s05"]["artifact"]["views"][0]
-    graph=contents["s06"]["artifact"]["view"]
-    lines=["## Framework evidence",""]
-    if not framework["frameworks"]:
-        lines.append("No registered framework declarations or import syntax were found within the observed scope.")
-    for f in framework["frameworks"]:
-        lines.append(f"- {f['framework']} in {f['package_id']}. Declared dependency {f['declared']}, import occurrences {len(f['usage'])}.")
-        if "evidence" in f:
-            lines.append(f"  Evidence {f['evidence']['file_id']} · SHA-256 {f['evidence']['blob_sha256']}.")
-        for site in f["usage"]:
-            lines.append(f"  Import {site['file_id']} bytes {site['span']} · SHA-256 {site['blob_sha256']}.")
-    for diagnostic in framework["diagnostics"]:
-        lines.append(f"- Manifest analysis failed for {diagnostic['file_id']}. {diagnostic['reason']}.")
-    lines.append(f"Unregistered dependencies {len(framework['unregistered_dependencies'])}. These receive no framework classification.")
-    lines+=["","## Structural components",""]
-    for group in view["groups"]:
-        count=sum(owner==group for owner in view["membership"].values())
-        lines.append(f"- {group} contains {count} observed declarations. Membership {view['version']}.")
-    lines+=["","## Component relationships",""]
-    for e in graph["edges"]:
-        lines.append(f"- {e['source']} → {e['target']} · {e['kind']} · {e['distinct_edge_count']} distinct relationships · {e['site_count']} source sites.")
-        lines.append("  Backing edge IDs "+", ".join(e["edge_ids"])+".")
-    lines+=["","## Capability and coverage","",
-            "Directory membership is structural. Semantic components, architectural layers, history analysis, runtime behavior and route/DI/ORM semantics await their own profiles.",
-            "The graph reflects the declared static-analysis profiles. Unresolved and unsupported candidates remain in the graph bundle.",
-            "Resolution outcomes "+json.dumps(contents["coverage"]["s03"]["outcome_counts"],sort_keys=True)+".",
-            "This output is a draft. Product-wide acceptance, large-map performance and independent semantic evaluation remain unrun.",
-            "", "Scope "+json.dumps(contents["scope"],sort_keys=True),""]
-    return "\n".join(lines)
 
 
 def publish(output, bundle, ir, markdown, report, map_html, *, fail_at=None):

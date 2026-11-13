@@ -46,6 +46,8 @@ def test_exact_independent_relationship_truth_and_no_jsx_runtime_edges(observed)
     assert validation['pre_generation']['status']==validation['post_generation']['status']=='pass'
     assert ir['profile']==ECMASCRIPT_PROFILE and '5 source files' in ir['label']['slice_scope']
     assert 'original' in markdown
+    assert 'JSX tag `Child` has outcome NOT_PROCESSED' in markdown
+    assert 'tag supplies no accepted runtime call relationship' in markdown
 
 
 def test_jsx_tags_and_limitations_match_independent_truth(observed):
