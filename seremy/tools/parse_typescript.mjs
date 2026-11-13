@@ -34,8 +34,9 @@ if (!rootArg || !filesArg) {
 }
 
 const root = resolve(rootArg);
-const { files } = JSON.parse(readFileSync(filesArg, "utf-8"));
-const snapshotProgram = createSnapshotProgram(root, files);
+const { files,profile=null } = JSON.parse(readFileSync(filesArg, "utf-8"));
+const snapshotProgram = createSnapshotProgram(root, files,profile);
+const scriptKinds=new Map(snapshotProgram.context.script_kinds||[]);
 
 // UTF-16 code-unit index -> UTF-8 byte offset table for one text.
 // Surrogate pairs occupy two UTF-16 units and four UTF-8 bytes.
@@ -94,6 +95,7 @@ function identifierRecord(kind, name, node, sourceFile, map, extra = {}) {
 }
 
 function extractFile(relPath) {
+  const languageCoverage=snapshotProgram.extended?{language_profile:'seremy-ecmascript-static-v0.1',script_kind:scriptKinds.get(relPath),typescript_version:ts.version,semantic_diagnostics:'not_run'}:{};
   const absolute = resolve(root, relPath);
   const raw = snapshotProgram.inputs.get(absolute).raw;
   const contentSha256 = createHash("sha256").update(raw).digest("hex");
@@ -113,12 +115,13 @@ function extractFile(relPath) {
       parse_diagnostics: [],
       declarations: [],
       candidates: [],
-      construct_coverage: { extracted_counts: {}, unhandled_statement_kinds: {} },
+      construct_coverage: { extracted_counts: {}, unhandled_statement_kinds: {},...languageCoverage },
     };
   }
 
   const map = buildUtf16ToByteMap(text);
   const sourceFile = snapshotProgram.program.getSourceFile(absolute);
+  if(!sourceFile)return {...base,decode:{status:'ok',encoding:'utf-8',utf16_length:text.length},analysis_failure:'compiler_program_input_omitted',parse_diagnostics:[],declarations:[],candidates:[],construct_coverage:{extracted_counts:{},unhandled_statement_kinds:{},...languageCoverage}};
 
   const declarations = [];
   const candidates = [];
@@ -130,6 +133,10 @@ function extractFile(relPath) {
   };
 
   const visit = (node) => {
+    if(snapshotProgram.extended&&(ts.isJsxOpeningElement(node)||ts.isJsxSelfClosingElement(node))){
+      bump(extractedCounts,'jsx_tag');candidates.push(identifierRecord('jsx_tag',node.tagName.getText(sourceFile),node.tagName,sourceFile,map));
+      ts.forEachChild(node,visit);return;
+    }
     if (ts.isFunctionDeclaration(node) && node.name) {
       bump(extractedCounts, "function_declaration");
       const nameNode = node.name;
@@ -256,7 +263,7 @@ function extractFile(relPath) {
 
   ts.forEachChild(sourceFile, visit);
 
-  const parseDiagnostics = sourceFile.parseDiagnostics.map((diagnostic) => {
+  const parseDiagnostics = snapshotProgram.syntaxDiagnostics(sourceFile).map((diagnostic) => {
     const start = diagnostic.start ?? 0;
     const end = start + (diagnostic.length ?? 0);
     return {
@@ -278,6 +285,7 @@ function extractFile(relPath) {
     declarations,
     candidates,
     construct_coverage: {
+      ...languageCoverage,
       extracted_counts: extractedCounts,
       unhandled_statement_kinds: unhandled,
     },
@@ -285,7 +293,7 @@ function extractFile(relPath) {
 }
 
 const output = {
-  profile: PROFILE_ID,
+  profile: snapshotProgram.extended?'seremy-ecmascript-static-v0.1':PROFILE_ID,
   producer: PRODUCER,
   position_map: POSITION_MAP,
   typescript_version: ts.version,

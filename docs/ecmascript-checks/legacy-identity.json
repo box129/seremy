@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "canonical_before": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+  "canonical_after": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+  "s02_unchanged": true,
+  "s03_unchanged": true,
+  "manifest_unchanged": true,
+  "same_saved_view_identity": true,
+  "files": 17
+}

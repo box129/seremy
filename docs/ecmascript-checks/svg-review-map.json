@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "checks": [
+    "Redux reports 25 distinct relationships separately from 30 source sites",
+    "160,001st-line declaration opens through search and call navigation, restores folding through Back, and supports keyboard expansion"
+  ]
+}

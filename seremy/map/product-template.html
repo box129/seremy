@@ -77,7 +77,9 @@ function coverageView(){
   };
   if(!a){paragraph('This older export has no embedded analysis profile details. Consult its graph and validation report.');return;}
   paragraph('Profile: '+a.profile+' · parser '+a.parsing_profile+' · binder '+(a.binding_profile||'not recorded'));
-  paragraph('Source inputs: lowercase .py and .ts. JavaScript, JSX and TSX are excluded by this profile. JSON and TOML supply selected manifest/configuration evidence.');
+  const extensions=a.source_extensions||['.py','.ts'];
+  paragraph('Source inputs in this snapshot: lowercase '+extensions.join(', ')+'. JSON and TOML supply selected manifest/configuration evidence.');
+  paragraph(extensions.includes('.jsx')?'JSX tags are syntax observations with NOT_PROCESSED runtime semantics. Arrow/callback owners, member/callable-value targets and reassigned bindings remain unsupported; semantic type diagnostics are not run.':'This snapshot uses the legacy TS/Python profile. Reanalyzing a repository containing .js, .jsx or .tsx selects the extended static profile.');
   paragraph(c.inventory.input_count+' enumerated entries · '+c.inventory.eligible_count+' eligible entries · '+c.inventory.excluded_count+' excluded entries. Discovery scope: '+(a.scope.mode||'not recorded')+'.');
   paragraph(c.s02.source_file_count+' eligible source files · '+c.s02.parsed_file_records+' parse records: '+c.s02.complete+' complete, '+c.s02.partial+' partial, '+c.s02.failed+' failed; '+c.s02.not_processed+' not processed. Complete refers to syntax extraction within this profile.');
   paragraph(Object.keys(data.files).length+' displayable source files are embedded in this map. Files that could not be decoded remain in the parse outcomes.');
@@ -93,7 +95,7 @@ function coverageView(){
   if(!Object.keys(data.files).length){
     const section=document.createElement('section'),heading=document.createElement('h2'),text=document.createElement('p'),button=document.createElement('button');
     section.id='map-empty';heading.textContent=c.s02.source_file_count?'No displayable source':'No supported source files';
-    text.textContent='This profile reads lowercase Python (.py) and TypeScript (.ts). Review exclusions and parse outcomes, or analyze a repository containing supported source.';
+    text.textContent='Source extensions in this snapshot: '+extensions.join(', ')+'. Review exclusions and parse outcomes, or analyze a repository containing supported source.';
     button.textContent='Review analysis coverage';button.onclick=()=>el('show-coverage').click();section.append(heading,text,button);map.after(section);mini.setAttribute('hidden','');
   }else if(!data.edges.length){el('inspection-empty').textContent='No bound call relationships were extracted. You can still explore source files and recorded outcomes. Review coverage before interpreting this graph.';}
 }

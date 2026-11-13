@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 from seremy.bundle import BundleLoader
 from seremy.contracts import sha256_hex
+from seremy.language_profiles import SOURCE_EXTENSIONS, LEGACY_SOURCE_EXTENSIONS, ECMASCRIPT_PRODUCT_PROFILE
 
 
 def render_map(bundle):
@@ -26,6 +27,7 @@ def render_map(bundle):
              "outcomes":[record for record in loader.contents["s03"]["artifact"]["resolutions"]
                          if record["candidate_id"] not in bound_ids],
              "analysis":{"profile":loader.contents["profile"],
+                         "source_extensions":list(SOURCE_EXTENSIONS if loader.contents["profile"]==ECMASCRIPT_PRODUCT_PROFILE else LEGACY_SOURCE_EXTENSIONS),
                          "parsing_profile":loader.contents["s02"]["artifact"]["profile"],
                          "binding_profile":loader.contents["s03"]["artifact"].get("binding_profile"),
                          "scope":loader.contents.get("scope",{}),

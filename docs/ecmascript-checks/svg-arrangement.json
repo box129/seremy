@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "checks": [
+    "Dragging moves the selected file in world coordinates, preserves siblings and supports Back",
+    "Dragging a nested folder moves its descendants together and Back restores their positions",
+    "Shift selection creates a named group and keyboard movement moves its members together",
+    "Layout changes, source navigation, breadcrumbs, collapse and reload preserve saved positions and canonical evidence",
+    "Mismatched snapshots, damaged coordinates and unavailable storage leave the current view usable"
+  ],
+  "page_errors": []
+}

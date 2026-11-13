@@ -22,6 +22,7 @@ from seremy.parsing import (
     ParsedFileResult,
     artifact_digest as s02_artifact_digest,
 )
+from seremy.language_profiles import ECMASCRIPT_BINDING_PROFILE, ECMASCRIPT_PROFILE, parsed_profile
 
 PRODUCER_RESOLVER = "seremy.resolver/0.2"
 BINDING_PROFILE = "typescript-checker-v0.2"
@@ -192,10 +193,11 @@ def _enclosing_declaration(
 class Resolver:
     """Static binder for the Milestone 1 slice."""
 
-    def __init__(self, results: List[ParsedFileResult], *, expected_s02_digest: str):
+    def __init__(self, results: List[ParsedFileResult], *, expected_s02_digest: str, profile_id: Optional[str] = None):
         if not results:
             raise ValueError("resolver requires at least one parsed file result")
-        digest = s02_artifact_digest(results)
+        self.profile_id=profile_id or parsed_profile(results)
+        digest = s02_artifact_digest(results,profile_id=self.profile_id)
         if digest != expected_s02_digest:
             raise ValueError(
                 "S02 artifact digest mismatch: results digest "
@@ -204,6 +206,7 @@ class Resolver:
         self.results = results
         self.by_file: Dict[str, ParsedFileResult] = {r.file_id: r for r in results}
         self.universe = frozenset(self.by_file)
+        self.script_binding_profile=ECMASCRIPT_BINDING_PROFILE if self.profile_id==ECMASCRIPT_PROFILE else BINDING_PROFILE
 
     # -- helpers ------------------------------------------------------------
 
@@ -225,7 +228,7 @@ class Resolver:
                 candidate_kind=candidate.kind, name=candidate.name, candidate_span=candidate.span,
                 outcome=BINDER_FAILED, reason="missing_compiler_observation", attempted=True)
         context = observation.get("context", {})
-        method = PYTHON_BINDING_PROFILE if file_id.endswith(".py") else BINDING_PROFILE
+        method = PYTHON_BINDING_PROFILE if file_id.endswith(".py") else self.script_binding_profile
         expected = sorted([r.file_id, r.analysis_sha256] for r in self.results
                           if r.file_id.endswith(".py") == file_id.endswith(".py"))
         if context.get("method") != method or context.get("snapshot_files") != expected:
@@ -254,7 +257,7 @@ class Resolver:
         record.target_type = "entity_ref"
         evidence = EvidenceRef(
             blob_sha256=self.by_file[file_id].analysis_sha256, span=candidate.span,
-            producer=PRODUCER_RESOLVER, method=method, method_version="0.1" if method==PYTHON_BINDING_PROFILE else "0.2")
+            producer=PRODUCER_RESOLVER, method=method, method_version="0.2" if method==BINDING_PROFILE else "0.1")
         record.occurrence = Occurrence(
             candidate_id=record.candidate_id, file_id=file_id, span=candidate.span, evidence=evidence)
         return record
@@ -279,7 +282,7 @@ class Resolver:
                             name=candidate.name,
                             candidate_span=candidate.span,
                             outcome=NOT_PROCESSED,
-                            reason="not_attempted_calls_only_profile",
+                            reason="jsx_runtime_semantics_outside_profile" if candidate.kind=="jsx_tag" else "not_attempted_calls_only_profile",
                             attempted=False,
                         )
                     )
@@ -339,8 +342,8 @@ class Resolver:
             )
             edge.occurrences.append(record.occurrence)
 
-        profiles={PYTHON_BINDING_PROFILE if r.file_id.endswith(".py") else BINDING_PROFILE for r in self.results}
-        profile=next(iter(profiles)) if len(profiles)==1 else "mixed-static-v0.1"
+        profiles={PYTHON_BINDING_PROFILE if r.file_id.endswith(".py") else self.script_binding_profile for r in self.results}
+        profile=next(iter(profiles)) if len(profiles)==1 else "mixed-ecmascript-static-v0.1" if ECMASCRIPT_BINDING_PROFILE in profiles else "mixed-static-v0.1"
         return ResolutionSet(
             entities=entities,
             resolutions=resolutions,
@@ -349,6 +352,7 @@ class Resolver:
                 key=lambda e: (e.source, e.kind, e.target),
             ),
             binding_profile=profile,
+            profile_id=self.profile_id,
         )
 
 
@@ -360,6 +364,7 @@ class ResolutionSet:
     resolutions: List[ResolutionRecord]
     edges: List[DirectRelation]
     binding_profile: str
+    profile_id: str = PROFILE_ID
 
     def outcome_counts(self) -> Dict[str, int]:
         counts: Dict[str, int] = {}
@@ -373,7 +378,7 @@ class ResolutionSet:
     def to_artifact(self, *, manifest_digest: str, s02_digest: str) -> dict:
         return {
             "artifact": "s03-relations-slice",
-            "profile": PROFILE_ID,
+            "profile": self.profile_id,
             "producer": PRODUCER_RESOLVER,
             "binding_profile": self.binding_profile,
             "binds": {"inventory_manifest_digest": manifest_digest, "s02_artifact_digest": s02_digest},

@@ -5,8 +5,13 @@ import { resolve, relative, dirname, isAbsolute } from "node:path";
 import { createHash } from "node:crypto";
 
 const hash = data => createHash("sha256").update(data).digest("hex");
-export function createSnapshotProgram(root, fileIds) {
+export function createSnapshotProgram(root, fileIds, profile=null) {
   if (ts.version !== "5.9.3") throw new Error("unsupported TypeScript version: " + ts.version);
+  if(profile!==null&&!['seremy-m1-profile-v0.1','seremy-ecmascript-static-v0.1'].includes(profile))throw new Error('unsupported source profile');
+  const extended=profile==='seremy-ecmascript-static-v0.1'||fileIds.some(id=>/\.(js|jsx|tsx)$/.test(id));
+  if(extended&&profile==='seremy-m1-profile-v0.1')throw new Error('extended source cannot use the legacy profile');
+  const method=extended?"typescript-ecmascript-checker-v0.1":"typescript-checker-v0.2";
+  const scriptKind=path=>path.endsWith('.tsx')?ts.ScriptKind.TSX:path.endsWith('.jsx')?ts.ScriptKind.JSX:path.endsWith('.js')?ts.ScriptKind.JS:ts.ScriptKind.TS;
   const inputs = new Map();
   for (const id of fileIds) {
     const path = resolve(root, id);
@@ -36,7 +41,7 @@ export function createSnapshotProgram(root, fileIds) {
   const options = {
     target: ts.ScriptTarget.ESNext, module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler, strict: true,
-    ...optionsResult.options, noEmit: true
+    ...optionsResult.options, ...(extended?{allowJs:true,checkJs:false,jsx:ts.JsxEmit.Preserve}:{}), noEmit: true
   };
   const host = ts.createCompilerHost(options, true);
   const originalRead = host.readFile;
@@ -53,22 +58,57 @@ export function createSnapshotProgram(root, fileIds) {
   host.getSourceFile = (path, languageVersion) => {
     let text;
     try { text = host.readFile(path); } catch { return undefined; }
-    return text === undefined ? undefined : ts.createSourceFile(path, text, languageVersion, true);
+    return text === undefined ? undefined : ts.createSourceFile(path, text, languageVersion, true, scriptKind(path));
   };
   host.realpath = path => path;
   const program = ts.createProgram([...inputs.keys()], options, host);
   const checker = program.getTypeChecker();
   const context = {
-    method: "typescript-checker-v0.2", typescript_version: ts.version,
+    method, typescript_version: ts.version,
     config_sha256: configHash,
     compiler_options: JSON.parse(JSON.stringify(options, (key,value) =>
       typeof value === "string" ? value.replaceAll(root,"$SNAPSHOT_ROOT").replaceAll(root.replaceAll("\\","/"),"$SNAPSHOT_ROOT") : value)),
     snapshot_files: [...inputs.values()].map(i => [i.id, hash(i.raw)]).sort()
   };
+  if(extended)context.script_kinds=[...inputs.values()].map(i=>[i.id,ts.ScriptKind[scriptKind(i.id)]]).sort();
+  const syntaxCache=new Map();
+  function syntaxDiagnostics(source){
+    if(!syntaxCache.has(source))syntaxCache.set(source,extended?program.getSyntacticDiagnostics(source):source.parseDiagnostics);
+    return syntaxCache.get(source);
+  }
+  function unalias(symbol){
+    const seen=new Set();
+    while(symbol&&(symbol.flags&ts.SymbolFlags.Alias)&&!seen.has(symbol)){seen.add(symbol);symbol=checker.getImmediateAliasedSymbol(symbol);}
+    return symbol;
+  }
+  const writtenSymbols=new Set();
+  if(extended){
+    const record=node=>{
+      if(ts.isPropertyAccessExpression(node)||ts.isElementAccessExpression(node))return;
+      if(ts.isIdentifier(node)){
+        const symbol=ts.isShorthandPropertyAssignment(node.parent)?checker.getShorthandAssignmentValueSymbol(node.parent):checker.getSymbolAtLocation(node);
+        if(symbol)writtenSymbols.add(unalias(symbol));
+      }
+      ts.forEachChild(node,record);
+    };
+    const visit=node=>{
+      if(ts.isBinaryExpression(node)&&node.operatorToken.kind>=ts.SyntaxKind.FirstAssignment&&node.operatorToken.kind<=ts.SyntaxKind.LastAssignment)record(node.left);
+      if((ts.isPrefixUnaryExpression(node)||ts.isPostfixUnaryExpression(node))&&[ts.SyntaxKind.PlusPlusToken,ts.SyntaxKind.MinusMinusToken].includes(node.operator))record(node.operand);
+      ts.forEachChild(node,visit);
+    };
+    for(const path of inputs.keys()){const source=program.getSourceFile(path);if(source)visit(source);}
+  }
 
   function bind(sourceFile, call, mapRange) {
     const missing = reason => ({ outcome: "MISSING", reason, context });
-    if (sourceFile.parseDiagnostics.length) return {outcome:"UNSUPPORTED", reason:"syntax_diagnostics",context};
+    if (syntaxDiagnostics(sourceFile).length) return {outcome:"UNSUPPORTED", reason:"syntax_diagnostics",context};
+    if(extended)for(let parent=call.parent;parent&&!ts.isSourceFile(parent);parent=parent.parent){
+      if(ts.isClassDeclaration(parent)||ts.isClassExpression(parent))return {outcome:"UNSUPPORTED",reason:"source_owner_not_established",context};
+      if(ts.isFunctionLike(parent)){
+        if(!ts.isFunctionDeclaration(parent)||!parent.name)return {outcome:"UNSUPPORTED",reason:"source_owner_not_established",context};
+        break;
+      }
+    }
     const expression = call.expression;
     if (!ts.isIdentifier(expression)) return {outcome:"UNSUPPORTED",reason:"receiver_unbound_no_type_information",context};
     let symbol = checker.getSymbolAtLocation(expression);
@@ -84,7 +124,11 @@ export function createSnapshotProgram(root, fileIds) {
       }
       symbol = checker.getImmediateAliasedSymbol(symbol);
     }
-    const declarations = symbol?.declarations || [];
+    // JS expando writes add the property's receiver identifier as an auxiliary
+    // declaration. They do not replace the function's lexical binding.
+    const declarations = (symbol?.declarations || []).filter(d=>!(extended&&ts.isIdentifier(d)&&
+      (ts.isPropertyAccessExpression(d.parent)||ts.isElementAccessExpression(d.parent))&&d.parent.expression===d));
+    if(extended&&writtenSymbols.has(symbol))return {outcome:"UNSUPPORTED",reason:"binding_reassigned_in_snapshot",context};
     if (!declarations.length) {
       const specifier = importNode?.moduleSpecifier?.text;
       const mapped = Object.keys(options.paths || {}).some(pattern => {
@@ -107,12 +151,12 @@ export function createSnapshotProgram(root, fileIds) {
     const declaration = bodies[0], targetSource = declaration.getSourceFile();
     if (!declaration.name) return {outcome:"UNSUPPORTED",reason:"anonymous_function_identity_not_supported",context};
     const input = inputs.get(resolve(targetSource.fileName));
-    if (!input || targetSource.parseDiagnostics.length) return {outcome:"UNSUPPORTED",reason:"target_outside_valid_snapshot",context};
+    if (!input || syntaxDiagnostics(targetSource).length) return {outcome:"UNSUPPORTED",reason:"target_outside_valid_snapshot",context};
     return {
       outcome:"RESOLVED_SINGLE", context,
       target: { file_id:input.id, content_sha256:hash(input.raw), name:declaration.name.text,
         kind:"function_declaration", name_byte:mapRange(targetSource.text,[declaration.name.getStart(targetSource),declaration.name.end]) }
     };
   }
-  return { inputs, program, context, bind };
+  return { inputs, program, context, bind, syntaxDiagnostics, extended };
 }

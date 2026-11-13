@@ -31,6 +31,7 @@ from seremy.contracts import PROFILE_ID, canonical_bytes, sha256_hex
 from seremy.discovery import InventoryManifest
 from seremy.parsing import PRODUCER_PARSING, ParsedFileResult, artifact_digest as s02_results_digest
 from seremy.resolver import ResolutionSet, artifact_digest as s03_set_digest
+from seremy.language_profiles import SOURCE_EXTENSIONS, ECMASCRIPT_PROFILE, parsed_profile
 
 PRODUCER_BUNDLE = "seremy.bundle/0.1"
 BUNDLE_FORMAT = "seremy-graph-bundle-v0.1"
@@ -53,8 +54,9 @@ def build_bundle(
     manifest_digest = manifest.manifest_digest()
     manifest.reconcile()
 
+    profile_id=ECMASCRIPT_PROFILE if manifest.profile_id==ECMASCRIPT_PROFILE else parsed_profile(results)
     s02_artifact = {
-        "profile": PROFILE_ID,
+        "profile": profile_id,
         "producer": PRODUCER_PARSING,
         "position_map": "identity-utf8-v1",
         "files": sorted(
@@ -64,7 +66,7 @@ def build_bundle(
     s02_digest = _digest_artifact(s02_artifact)
     # Cross-check: the embedded S02 digest must equal the digest computed
     # from the in-memory results (the value S03 bound).
-    if s02_digest != s02_results_digest(results):
+    if s02_digest != s02_results_digest(results,profile_id=profile_id):
         raise AssertionError("embedded S02 projection disagrees with S02 digest")
 
     s03_artifact = resolution_set.to_artifact(
@@ -95,7 +97,7 @@ def build_bundle(
 
     contents = {
         "format": BUNDLE_FORMAT,
-        "profile": PROFILE_ID,
+        "profile": profile_id,
         "snapshot": {
             "repository_id": repository_id or manifest.repository_id,
             "declared_root": manifest.declared_root,
@@ -137,8 +139,8 @@ def build_bundle(
             },
             "s02": {
                 "parsed_file_records": len(results),
-                "source_file_count": sum(r.file_id.endswith((".ts", ".py")) for r in manifest.eligible),
-                "not_processed": sum(r.file_id.endswith((".ts", ".py")) and
+                "source_file_count": sum(r.file_id.endswith(SOURCE_EXTENSIONS) for r in manifest.eligible),
+                "not_processed": sum(r.file_id.endswith(SOURCE_EXTENSIONS) and
                                      r.file_id not in {p.file_id for p in results} for r in manifest.eligible),
                 "complete": sum(1 for r in results if r.bucket == "complete"),
                 "partial": sum(1 for r in results if r.bucket == "partial"),
@@ -160,7 +162,7 @@ def build_bundle(
     return {
         "bundle": {
             "format": BUNDLE_FORMAT,
-            "profile": PROFILE_ID,
+            "profile": profile_id,
             "producer": PRODUCER_BUNDLE,
             "content_digest": content_digest,
             "checks": checks,

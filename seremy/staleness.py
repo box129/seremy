@@ -23,6 +23,7 @@ from typing import List, Optional, Tuple
 
 from seremy.bundle import BundleLoader
 from seremy.contracts import sha256_hex
+from seremy.language_profiles import ECMASCRIPT_PRODUCT_PROFILE, ECMASCRIPT_BINDING_PROFILE
 
 
 def current_source_hashes(loader: BundleLoader, root: Path) -> dict:
@@ -59,11 +60,13 @@ def check_staleness(loader: BundleLoader, root: Path) -> dict:
 def _compiler_config_changed(loader: BundleLoader, root: Path) -> bool:
     config = Path(root) / "tsconfig.json"
     config_hash = sha256_hex(config.read_bytes()) if config.is_file() else None
+    if loader.contents.get("profile")==ECMASCRIPT_PRODUCT_PROFILE:
+        return loader.contents["snapshot"].get("metadata_blobs",{}).get("tsconfig.json")!=config_hash
     return any(
         candidate.get("binding", {}).get("context", {}).get("config_sha256") != config_hash
         for parsed in loader.contents["s02"]["artifact"]["files"]
         for candidate in parsed["candidates"]
-        if candidate.get("binding",{}).get("context",{}).get("method")=="typescript-checker-v0.2"
+        if candidate.get("binding",{}).get("context",{}).get("method") in {"typescript-checker-v0.2",ECMASCRIPT_BINDING_PROFILE}
     )
 
 

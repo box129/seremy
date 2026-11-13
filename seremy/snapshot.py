@@ -5,6 +5,7 @@ import subprocess
 from seremy.discovery import InventoryManifest, DiscoveryPolicy, ExclusionRecord
 from seremy.contracts import EligibleFileRecord, sha256_hex
 from seremy.git_input import run_git
+from seremy.language_profiles import SOURCE_EXTENSIONS, LEGACY_SOURCE_EXTENSIONS, has_ecmascript, syntax_profile
 
 MAX_FILES=5000
 MAX_TOTAL_BYTES=64*1024*1024
@@ -41,10 +42,7 @@ def collect_snapshot(root, *, snapshot_identity=None, use_git=True):
     root=Path(root).resolve()
     if not root.is_dir():
         raise ValueError("repository folder does not exist")
-    policy=DiscoveryPolicy(included_extensions=frozenset({".ts",".py",".json",".toml"}),excluded_dirs=frozenset(EXCLUDED))
     identity=snapshot_identity or {}
-    manifest=InventoryManifest(identity.get("repository_id", "local:"+root.name),
-                               identity.get("declared_root", root.as_posix()),policy)
     diagnostics=[]
     candidates=[]
     try:
@@ -79,6 +77,11 @@ def collect_snapshot(root, *, snapshot_identity=None, use_git=True):
             if len(candidates)>MAX_FILES:
                 diagnostics.append({"status":"partial","reason":"file_limit"})
                 break
+    selected=[path for path in candidates if not set(Path(path).parts)&EXCLUDED]
+    extensions=SOURCE_EXTENSIONS if has_ecmascript(selected) else LEGACY_SOURCE_EXTENSIONS
+    policy=DiscoveryPolicy(included_extensions=frozenset((*extensions,".json",".toml")),excluded_dirs=frozenset(EXCLUDED))
+    manifest=InventoryManifest(identity.get("repository_id", "local:"+root.name),
+                               identity.get("declared_root", root.as_posix()),policy,profile_id=syntax_profile(selected))
     contents={}
     total=0
     for index,relative in enumerate(candidates):

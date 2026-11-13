@@ -1,0 +1,51 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "renderers": [
+    {
+      "engine": "svg",
+      "scene": {
+        "created": 142,
+        "removed": 0
+      }
+    },
+    {
+      "engine": "pixi",
+      "version": "8.22.0",
+      "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x00009B41) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "created": 73,
+      "destroyed": 0,
+      "text_updates": 56,
+      "graphics_updates": 9,
+      "style_objects": 6,
+      "width_cache": 27,
+      "objects": 73,
+      "text_objects": 56,
+      "gl_error": 0,
+      "scene": {
+        "created": 142,
+        "removed": 0
+      }
+    }
+  ],
+  "checks": [
+    "svg: file hiding preserves sibling/target folders, tri-state subtree controls and exact collapsed relationship/site counts",
+    "svg: keyboard file toggling and Follow target reveal only the target; one Back restores visibility, selection, camera and folders",
+    "svg: whole subtrees, hidden-folder breadcrumbs, empty-map recovery, hidden-file Find and Restore all all preserve Back history",
+    "svg: saved visibility survives reload; unknown, duplicate and malformed paths are rejected atomically; older views restore all files",
+    "svg: three desktop sizes retain working-set controls and both renderers keep canonical graph/source bytes unchanged",
+    "pixi: file hiding preserves sibling/target folders, tri-state subtree controls and exact collapsed relationship/site counts",
+    "pixi: keyboard file toggling and Follow target reveal only the target; one Back restores visibility, selection, camera and folders",
+    "pixi: whole subtrees, hidden-folder breadcrumbs, empty-map recovery, hidden-file Find and Restore all all preserve Back history",
+    "pixi: saved visibility survives reload; unknown, duplicate and malformed paths are rejected atomically; older views restore all files",
+    "pixi: three desktop sizes retain working-set controls and both renderers keep canonical graph/source bytes unchanged"
+  ],
+  "page_errors": [],
+  "publication": {
+    "publication": "C:\\Users\\LENOVO T14\\Documents\\Codex\\2026-11-10\\i-need-you-to-help-me\\outputs\\SEREMY-Codebase\\test-results\\ecmascript\\visibility\\publication\\versions\\f4122afba80751518c48609865847b3e775711e7b748d3cb060235d1c1632924",
+    "acceptance": "draft",
+    "map": "C:\\Users\\LENOVO T14\\Documents\\Codex\\2026-11-10\\i-need-you-to-help-me\\outputs\\SEREMY-Codebase\\test-results\\ecmascript\\visibility\\publication\\versions\\f4122afba80751518c48609865847b3e775711e7b748d3cb060235d1c1632924\\map.html",
+    "documentation": "C:\\Users\\LENOVO T14\\Documents\\Codex\\2026-11-10\\i-need-you-to-help-me\\outputs\\SEREMY-Codebase\\test-results\\ecmascript\\visibility\\publication\\versions\\f4122afba80751518c48609865847b3e775711e7b748d3cb060235d1c1632924\\architecture.md"
+  }
+}

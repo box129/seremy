@@ -1,0 +1,20 @@
+{
+  "relationships": [
+    {"source_file":"App.tsx","source_name":"App","target_file":"helper.js","target_name":"original","token":"chosen","line":4},
+    {"source_file":"App.tsx","source_name":"invoke","target_file":"App.tsx","target_name":"App","token":"App","line":6},
+    {"source_file":"Child.jsx","source_name":"Child","target_file":"helper.js","target_name":"original","token":"chosen","line":3}
+  ],
+  "jsx_tags": [
+    {"file":"App.tsx","name":"main","line":4},
+    {"file":"App.tsx","name":"Child","line":4},
+    {"file":"Child.jsx","name":"span","line":3}
+  ],
+  "limitations": [
+    {"name":"callable","line":7,"outcome":"UNSUPPORTED","reason":"callable_value_target_not_established"},
+    {"name":"fetch","line":8,"outcome":"UNSUPPORTED","reason":"receiver_unbound_no_type_information"},
+    {"name":"external","line":9,"outcome":"EXTERNAL","reason":"bare_specifier"},
+    {"name":"unknown","line":10,"outcome":"MISSING","reason":"unresolved_import"},
+    {"name":"stable","line":11,"outcome":"UNSUPPORTED","reason":"binding_reassigned_in_snapshot"},
+    {"name":"stable","line":13,"outcome":"UNSUPPORTED","reason":"source_owner_not_established"}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "checks": [
+    "Visible source file retains its DOM node during zoom",
+    "Source zoom culls offscreen relationships",
+    "Leaving the scene evicts file and edge nodes, and Fit restores relationships",
+    "Selected relationship remains available and navigable after culling and restoration"
+  ],
+  "page_errors": []
+}

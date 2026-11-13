@@ -42,7 +42,7 @@ The result supplies static edge witnesses, zero-depth results, no-path and trunc
 | Stage | Implemented profile |
 |---|---|
 | S01 | Git tracked plus nonignored enumeration, or a bounded plain-folder walk with explicit directory exclusions. Content hashes and skipped reads are retained. |
-| S02 | Python functions/classes/imports/calls and TypeScript declarations/imports/call candidates, with original UTF-8 source positions and parse-failure records. |
+| S02 | Python functions/classes/imports/calls and TypeScript/JavaScript/JSX/TSX declarations/imports/call candidates, with original UTF-8 source positions and parse-failure records. |
 | S03 | TypeScript symbol/alias binding with a direct root tsconfig, and Python lexical/module binding. A supported direct call targets an observed function implementation. Unsupported dynamic targets retain explicit outcomes. |
 | S04 | Exact dependency declarations in every observed package.json and pyproject.toml project.dependencies. Registry-scoped import syntax is independently labelled. Failed manifests and unregistered dependencies are recorded. |
 | S05 | Directory membership and nearest observed package membership with versioned mappings and unassigned records. |
@@ -56,7 +56,7 @@ The framework registry currently names React, Preact, Express, Next.js, Vue, Sve
 
 ## Boundaries and budgets
 
-The initial file profile selects lowercase .ts, .py, .json and .toml paths. Git scope uses the tracked and nonignored file universe. The plain-folder profile applies named directory exclusions and reports pruned subtrees. General plain-folder gitignore parity and file-replacement races across supported platforms remain qualification work.
+The product selects lowercase .ts, .py, .js, .jsx, .tsx, .json and .toml paths. A versioned extended profile is selected when JS/JSX/TSX enters the scheduled source universe; TS/Python-only inputs retain their legacy profile and identities. See [the qualified language profile](../docs/ecmascript-profile.md). Git scope uses the tracked and nonignored file universe. The plain-folder profile applies named directory exclusions and reports pruned subtrees. General plain-folder gitignore parity and file-replacement races across supported platforms remain qualification work.
 
 The initial scan reads up to 5,000 enumerated entries, 1 MiB per file and 64 MiB in total. Skipped source inputs remain visible. Archive extraction has a 5,000-entry, 1 MiB-per-file and 64 MiB-total limit. The browser upload limit is 10 MiB compressed. Unsafe paths, duplicate paths, device paths and archive symlinks are rejected. Embedded Git metadata is skipped and archive discovery uses plain-folder scope. Archive identity uses the original ZIP hash so repeated imports have stable graph identities. Input Git commands disable filesystem-monitor hooks, templates and inherited Git configuration. Git acquisition uses a shallow HTTPS clone, a 120-second timeout and optional branch/tag selection. Automated tests cover local Git scope and ZIP extraction. The hosted public GitHub import has also been exercised against commit-pinned public input, with refresh and saved-device recovery; see docs/hosted-analysis.md. Arbitrary remote hosts and authentication remain outside that hosted qualification.
 

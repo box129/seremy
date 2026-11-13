@@ -41,7 +41,7 @@ async function run(){
     assert.match(await frame.locator('#analysis-coverage').innerText(),/seremy-local-product-v0.1/);
     assert.match(await frame.locator('#analysis-coverage').innerText(),/4 eligible source files/);
     assert.deepEqual(JSON.parse(await frame.locator('#fixture').textContent()).analysis.skipped_inputs,[]);
-    assert.match(await frame.locator('#analysis-coverage').innerText(),/JavaScript, JSX and TSX are excluded/);
+    assert.match(await frame.locator('#analysis-coverage').innerText(),/legacy TS\/Python profile/);
     await frame.locator('#close-inspector').click();
     await page.screenshot({path:path.join(evidence,'hosted-workspace.png')});
     checks.push('The deployed coverage panel identifies the supported language profile and snapshot-specific parse counts');
@@ -94,12 +94,12 @@ async function run(){
     await page.unroute('**/reports/**');await page.unroute('**/api/jobs/**');
     assert.equal((await page.request.get(new URL('/api/jobs/'+'0'.repeat(64),url).href)).status(),404);
     const unsupported=execFileSync(process.env.PYTHON||'python',['-B','-c',
-      'import io,sys,zipfile\nb=io.BytesIO()\nwith zipfile.ZipFile(b,"w") as z: z.writestr("entry.js","export function start() {}")\nsys.stdout.buffer.write(b.getvalue())']);
+      'import io,sys,zipfile\nb=io.BytesIO()\nwith zipfile.ZipFile(b,"w") as z: z.writestr("entry.rs","fn start() {}")\nsys.stdout.buffer.write(b.getvalue())']);
     await page.locator('#connect').click();await page.locator('#zip').setInputFiles({name:'unsupported.zip',mimeType:'application/zip',buffer:unsupported});await page.locator('#start').click();
     const empty=page.frameLocator('#map');await empty.locator('#map-empty').filter({hasText:'No supported source files'}).waitFor({timeout:120000});
     assert.match(await page.locator('#status').innerText(),/No supported source files/);
     assert.doesNotMatch(await empty.locator('#status').innerText(),/source verified/);
-    await empty.locator('#show-coverage').click();await empty.getByText('Excluded entries and reasons',{exact:true}).click();assert.match(await empty.locator('#analysis-coverage').innerText(),/entry.js.*excluded_by_product_profile/);
+    await empty.locator('#show-coverage').click();await empty.getByText('Excluded entries and reasons',{exact:true}).click();assert.match(await empty.locator('#analysis-coverage').innerText(),/entry.rs.*excluded_by_product_profile/);
     const previous=await page.locator('#map').getAttribute('src');
     await page.locator('#connect').click();await page.locator('#zip').setInputFiles({name:'broken.zip',mimeType:'application/zip',buffer:Buffer.from('invalid ZIP')});await page.locator('#start').click();
     await page.waitForFunction(()=>!document.querySelector('#start').disabled);assert.equal(await page.locator('#connect-dialog').isVisible(),true);assert.ok((await page.locator('#connection-status').innerText()).length);

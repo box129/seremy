@@ -1,0 +1,170 @@
+{
+  "status": "local_passed",
+  "python": {
+    "command": "python -B -m pytest -q -p no:cacheprovider seremy/tests",
+    "passed": 180,
+    "new_profile_cases": 25,
+    "elapsed_seconds": 128.88,
+    "exit_code": 0
+  },
+  "local_browser_case_groups": 147,
+  "suites": [
+    {
+      "name": "svg-product-map",
+      "case_groups": 7,
+      "receipt": "ecmascript-checks/svg-product-map.json"
+    },
+    {
+      "name": "svg-navigation",
+      "case_groups": 7,
+      "receipt": "ecmascript-checks/svg-navigation.json"
+    },
+    {
+      "name": "svg-nested-folders",
+      "case_groups": 4,
+      "receipt": "ecmascript-checks/svg-nested-folders.json"
+    },
+    {
+      "name": "svg-retained-renderer",
+      "case_groups": 4,
+      "receipt": "ecmascript-checks/svg-retained-renderer.json"
+    },
+    {
+      "name": "svg-overview",
+      "case_groups": 5,
+      "receipt": "ecmascript-checks/svg-overview.json"
+    },
+    {
+      "name": "svg-review-map",
+      "case_groups": 2,
+      "receipt": "ecmascript-checks/svg-review-map.json"
+    },
+    {
+      "name": "svg-arrangement",
+      "case_groups": 5,
+      "receipt": "ecmascript-checks/svg-arrangement.json"
+    },
+    {
+      "name": "svg-connections",
+      "case_groups": 4,
+      "receipt": "ecmascript-checks/svg-connections.json"
+    },
+    {
+      "name": "svg-launcher",
+      "case_groups": 8,
+      "receipt": "ecmascript-checks/svg-launcher.json"
+    },
+    {
+      "name": "svg-mcp",
+      "case_groups": 3,
+      "receipt": "ecmascript-checks/svg-mcp.json"
+    },
+    {
+      "name": "pixi-product-map",
+      "case_groups": 7,
+      "receipt": "ecmascript-checks/pixi-product-map.json"
+    },
+    {
+      "name": "pixi-navigation",
+      "case_groups": 7,
+      "receipt": "ecmascript-checks/pixi-navigation.json"
+    },
+    {
+      "name": "pixi-nested-folders",
+      "case_groups": 4,
+      "receipt": "ecmascript-checks/pixi-nested-folders.json"
+    },
+    {
+      "name": "pixi-retained-renderer",
+      "case_groups": 4,
+      "receipt": "ecmascript-checks/pixi-retained-renderer.json"
+    },
+    {
+      "name": "pixi-overview",
+      "case_groups": 5,
+      "receipt": "ecmascript-checks/pixi-overview.json"
+    },
+    {
+      "name": "pixi-review-map",
+      "case_groups": 2,
+      "receipt": "ecmascript-checks/pixi-review-map.json"
+    },
+    {
+      "name": "pixi-arrangement",
+      "case_groups": 5,
+      "receipt": "ecmascript-checks/pixi-arrangement.json"
+    },
+    {
+      "name": "pixi-connections",
+      "case_groups": 4,
+      "receipt": "ecmascript-checks/pixi-connections.json"
+    },
+    {
+      "name": "pixi-launcher",
+      "case_groups": 8,
+      "receipt": "ecmascript-checks/pixi-launcher.json"
+    },
+    {
+      "name": "pixi-mcp",
+      "case_groups": 3,
+      "receipt": "ecmascript-checks/pixi-mcp.json"
+    },
+    {
+      "name": "edge-profile",
+      "case_groups": 8,
+      "receipt": "ecmascript-checks/edge-profile.json"
+    },
+    {
+      "name": "chromium-profile",
+      "case_groups": 8,
+      "receipt": "ecmascript-checks/chromium-profile.json"
+    },
+    {
+      "name": "coverage",
+      "case_groups": 7,
+      "receipt": "ecmascript-checks/coverage.json"
+    },
+    {
+      "name": "visibility",
+      "case_groups": 10,
+      "receipt": "ecmascript-checks/visibility.json"
+    },
+    {
+      "name": "long-lines",
+      "case_groups": 10,
+      "receipt": "ecmascript-checks/long-lines.json"
+    },
+    {
+      "name": "webgl",
+      "case_groups": 6,
+      "receipt": "ecmascript-checks/webgl.json"
+    }
+  ],
+  "legacy_identity": {
+    "status": "passed",
+    "canonical_before": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+    "canonical_after": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+    "s02_unchanged": true,
+    "s03_unchanged": true,
+    "manifest_unchanged": true,
+    "same_saved_view_identity": true,
+    "files": 17
+  },
+  "language_profiles": {
+    "snapshot_syntax": "seremy-ecmascript-static-v0.1",
+    "product": "seremy-local-ecmascript-v0.1",
+    "script_binding": "typescript-ecmascript-checker-v0.1",
+    "typescript": "5.9.3",
+    "extensions": [
+      ".py",
+      ".ts",
+      ".js",
+      ".jsx",
+      ".tsx"
+    ]
+  },
+  "browser_scope": "Edge 157.0.4341.42 and Chromium 158.0.8127.18; both use Chromium. Hardware WebGL Intel UHD Direct3D11. Other engines/devices and comprehensive accessibility remain unqualified.",
+  "performance": "No new standalone timing benchmark. SVG remains default.",
+  "counts_note": "Browser case groups contain multiple assertions and are not independent unit-test counts. Suites are counted once.",
+  "hosted": "pending rollout"
+}

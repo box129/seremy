@@ -7,7 +7,7 @@ const assert=require('node:assert/strict');
 async function run(){
   const evidence=path.resolve(process.argv[2]);fs.mkdirSync(evidence,{recursive:true});
   const input=fs.mkdtempSync(path.join(os.tmpdir(),'seremy-coverage-'));
-  const fixtures={unsupported:{'entry.js':'export function start() {}','view.tsx':'export const view = <div/>;','README.md':'An unsupported-only repository'},
+  const fixtures={unsupported:{'entry.rs':'fn start() {}','view.TSX':'export const view = <div/>;','README.md':'An unsupported-only repository'},
     limited:{'valid.py':'def start(client):\n    return client.fetch()\n','broken.py':'def broken(:\n','partial.ts':'export function partial() { return missing( ; }','encoding.py':Buffer.from([255,254])},
     isolated:{'single.py':'def identity(value):\n    return value\n'},unreadable:{'encoding.py':Buffer.from([255,254])},skipped:{'oversized.py':'#'+'x'.repeat(1024*1024)},empty:{}};
   for(const [name,files] of Object.entries(fixtures)){
@@ -26,7 +26,7 @@ async function run(){
     browser=await chromium.launch(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{});
     const page=await browser.newPage({viewport:{width:1280,height:800}});page.on('pageerror',error=>errors.push(error.message));await page.goto(url);
     async function analyze(name){
-      await page.locator('#connect').click();assert.match(await page.locator('#input-profile').innerText(),/JavaScript, JSX and TSX are excluded/);
+      await page.locator('#connect').click();assert.match(await page.locator('#input-profile').innerText(),/\.js, \.jsx and \.tsx/);
       await page.locator('#value').fill(path.join(input,name));await page.locator('#start').click();
       await page.waitForFunction(()=>!document.querySelector('#start').disabled);
       assert.equal(await page.locator('#connect-dialog').isVisible(),false);
@@ -44,10 +44,10 @@ async function run(){
     assert.match(await frame.locator('#map-empty').innerText(),/No supported source files/);
     assert.equal(await frame.locator('#mini').isVisible(),false);assert.doesNotMatch(await frame.locator('#status').innerText(),/source verified/);
     await frame.getByText('Excluded entries and reasons',{exact:true}).click();
-    assert.match(await frame.locator('#analysis-coverage').innerText(),/entry.js.*excluded_by_product_profile/);
-    assert.match(await frame.locator('#analysis-coverage').innerText(),/view.tsx.*excluded_by_product_profile/);
+    assert.match(await frame.locator('#analysis-coverage').innerText(),/entry.rs.*excluded_by_product_profile/);
+    assert.match(await frame.locator('#analysis-coverage').innerText(),/view.TSX.*excluded_by_product_profile/);
     await page.screenshot({path:path.join(evidence,'unsupported-only.png')});
-    checks.push('Unsupported-only JS/TSX input shows an explicit empty state, language scope and snapshot-matched exclusions');
+    checks.push('Unsupported-only Rust/uppercase-TSX input shows an explicit empty state, language scope and snapshot-matched exclusions');
     ({frame,data}=await analyze('limited'));assert.equal(data.coverage.s02.failed,2);assert.equal(data.coverage.s02.complete,1);assert.equal(data.coverage.s02.partial,1);
     assert.match(await page.locator('#status').innerText(),/parse limits/);assert.match(await page.locator('#summary').innerText(),/1 complete, 1 partial, 2 failed/);
     await frame.getByText('Parse limitations by file',{exact:true}).click();

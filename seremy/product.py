@@ -15,13 +15,14 @@ from seremy.resolver import Resolver
 from seremy.bundle import build_bundle, BundleLoader
 from seremy.documentation import build_document_ir, validate_document, render_markdown
 from seremy.architecture import framework_evidence, structural_views, aggregate, component_cycles
+from seremy.language_profiles import SCRIPT_EXTENSIONS, SOURCE_EXTENSIONS, ECMASCRIPT_PROFILE, ECMASCRIPT_PRODUCT_PROFILE
 
 PROFILE="seremy-local-product-v0.1"
 
 
 def seal(contents):
     digest=sha256_hex(canonical_bytes(contents))
-    return {"bundle":{"format":"seremy-graph-bundle-v0.1","profile":PROFILE,"producer":"seremy.pipeline/0.1",
+    return {"bundle":{"format":"seremy-graph-bundle-v0.1","profile":contents.get("profile",PROFILE),"producer":"seremy.pipeline/0.1",
             "content_digest":digest,"checks":{"status":"not_run","roster":[]},"acceptance_state":"pending_validation",
             "bundle_digest":sha256_hex(canonical_bytes({"content_digest":digest,"checks":{"status":"not_run","roster":[]}}))},
             "contents":contents}
@@ -39,7 +40,8 @@ def analyze(root, *, policy=None, snapshot_identity=None, use_git=True, progress
                 raise ValueError("forbidden rules require source and target, with optional kind")
     progress("S01 · snapshot")
     manifest, frozen, scope=collect_snapshot(root,snapshot_identity=snapshot_identity,use_git=use_git)
-    ts_inputs={p:raw for p,raw in frozen.items() if p.endswith(".ts")}
+    profile=ECMASCRIPT_PRODUCT_PROFILE if manifest.profile_id==ECMASCRIPT_PROFILE else PROFILE
+    ts_inputs={p:raw for p,raw in frozen.items() if p.endswith(SCRIPT_EXTENSIONS)}
     py_inputs={p:raw for p,raw in frozen.items() if p.endswith(".py")}
     metadata={p:raw for p,raw in frozen.items() if Path(p).name in {"package.json","pyproject.toml","tsconfig.json"}}
     progress("S02 · parsing")
@@ -56,17 +58,17 @@ def analyze(root, *, policy=None, snapshot_identity=None, use_git=True, progress
                 path=temp/p
                 path.parent.mkdir(parents=True,exist_ok=True)
                 path.write_bytes(raw)
-            results+=build_parsed_results(run_adapter(temp,list(ts_inputs)),blobs)
+            results+=build_parsed_results(run_adapter(temp,list(ts_inputs),language_profile=manifest.profile_id),blobs,language_profile=manifest.profile_id)
     results.sort(key=lambda r:r.file_id)
     progress("S03 · binding")
     if results:
-        resolutions=Resolver(results,expected_s02_digest=artifact_digest(results)).resolve()
+        resolutions=Resolver(results,expected_s02_digest=artifact_digest(results,profile_id=manifest.profile_id),profile_id=manifest.profile_id).resolve()
     else:
         from seremy.resolver import ResolutionSet
-        resolutions=ResolutionSet({},[],[],"no_source_inputs")
+        resolutions=ResolutionSet({},[],[],"no_source_inputs",profile_id=manifest.profile_id)
     document=build_bundle(manifest,results,resolutions)
     contents=document["contents"]
-    contents["profile"]=PROFILE
+    contents["profile"]=profile
     contents["scope"]=scope
     contents["snapshot"]["metadata_blobs"]={p:sha256_hex(raw) for p,raw in sorted(metadata.items())}
     contents["metadata_bytes"]={p:base64.b64encode(raw).decode("ascii") for p,raw in sorted(metadata.items())}
@@ -106,7 +108,7 @@ def analyze(root, *, policy=None, snapshot_identity=None, use_git=True, progress
     current, now, current_scope=collect_snapshot(root,snapshot_identity=snapshot_identity,use_git=use_git)
     if current.manifest_digest()!=manifest.manifest_digest() or current_scope!=scope:
         pre_errors.append("repository changed during analysis")
-    report={"profile":PROFILE,"pre_generation":{"status":"pass" if not pre_errors else "fail","errors":pre_errors},
+    report={"profile":profile,"pre_generation":{"status":"pass" if not pre_errors else "fail","errors":pre_errors},
             "post_generation":{"status":"pass" if not post_errors else "fail","errors":post_errors},
             "coverage":contents["coverage"],"scope":scope,
             "production_acceptance":"not_run","browser_acceptance":"not_run","performance":"not_run"}
@@ -137,7 +139,7 @@ def validate_graph(loader):
                          for r in c["s02"]["artifact"]["files"] for x in r["candidates"]}
     if set(resolutions)!=expected_candidates or len(resolutions)!=len(c["s03"]["artifact"]["resolutions"]):
         errors.append("candidate conservation mismatch")
-    source_ids={r["file_id"] for r in c["inventory"]["eligible"] if r["file_id"].endswith((".ts",".py"))}
+    source_ids={r["file_id"] for r in c["inventory"]["eligible"] if r["file_id"].endswith(SOURCE_EXTENSIONS)}
     parsed_files=c["s02"]["artifact"]["files"]
     parse_counts={bucket:sum(r["bucket"]==bucket for r in parsed_files)
                   for bucket in ["complete","partial","failed"]}
@@ -240,7 +242,7 @@ def publish(output, bundle, ir, markdown, report, map_html, *, fail_at=None):
         for name,raw in artifacts.items():
             with (staging/name).open("wb") as f:
                 f.write(raw);f.flush();os.fsync(f.fileno())
-        manifest={"content_digest":digest,"files":hashes,"acceptance":"draft","profile":PROFILE}
+        manifest={"content_digest":digest,"files":hashes,"acceptance":"draft","profile":bundle.get("bundle",{}).get("profile",PROFILE)}
         manifest_bytes=canonical_bytes(manifest)
         with (staging/"manifest.json").open("wb") as handle:
             handle.write(manifest_bytes);handle.flush();os.fsync(handle.fileno())

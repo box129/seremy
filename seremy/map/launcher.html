@@ -28,7 +28,7 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 <footer><div id="status" role="status" aria-live="polite">Ready</div><p id="summary"></p></footer>
 <dialog id="connect-dialog" aria-labelledby="connect-title"><button class="close" id="close-connect" aria-label="Close connection">×</button><h2 id="connect-title">Connect repository</h2>
 <form id="form">
-<p id="input-profile">Source analysis supports lowercase Python (.py) and TypeScript (.ts). JavaScript, JSX and TSX are excluded. Open Coverage on the map for parsing, binding and framework limits.</p>
+<p id="input-profile">Source analysis supports lowercase .py, .ts, .js, .jsx and .tsx. JSX syntax is recorded separately from runtime relationships. Open Coverage on the map for the active profile and analysis limits.</p>
 <label>Repository input<select id="kind"><option value="folder">Local folder</option><option value="zip">ZIP file</option><option value="git">Git HTTPS URL</option></select></label>
 <label id="value-label"><span id="value-title">Folder path</span><input id="value" required placeholder="C:\path\to\repository"></label>
 <label id="zip-label" hidden>ZIP file<input id="zip" type="file" accept=".zip"></label>
@@ -127,7 +127,7 @@ if(hosted){
   get('kind').querySelector('[value=git]').textContent='Public GitHub repository';
   get('kind').value='zip';get('kind').onchange();
   get('empty').querySelector('p').textContent='Repository ZIP or public GitHub repository';
-  get('help-dialog').querySelector('li').textContent='Upload a repository ZIP or enter a public GitHub repository URL. Python and TypeScript source are supported.';
+  get('help-dialog').querySelector('li').textContent='Upload a repository ZIP or enter a public GitHub repository URL. Python, TypeScript, JavaScript, JSX and TSX source are supported within the declared static profiles.';
   const notice=document.createElement('p');
   notice.textContent='Up to 1,000 ZIP entries and 8 MiB extracted. Results expire after one hour and may disappear when the free service restarts. Download your map and graph to keep them. Keep result links private because they include source code.';
   get('form').prepend(notice);

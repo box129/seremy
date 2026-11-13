@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "viewport": [
+    1500,
+    1000
+  ],
+  "content_digest": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+  "checks": [
+    "Full Redux source inventory loads and verifies all 17 source blobs",
+    "Real call navigation and Back preserve source span and camera",
+    "Folder collapse hides source files and expansion preserves camera",
+    "File/symbol search supports keyboard opening of source",
+    "Pointer zoom retains source position within one CSS pixel",
+    "Minimap center navigation accounts for SVG aspect ratio",
+    "Changed embedded source disables relationship navigation"
+  ],
+  "page_errors": [],
+  "performance": "not_run",
+  "production_acceptance": "not_run"
+}

@@ -30,7 +30,6 @@ from typing import Dict, List, Optional, Tuple
 
 from seremy.contracts import (
     POSITION_MAP_ID,
-    PROFILE_ID,
     AnalysisTextBlob,
     Span,
     canonical_bytes,
@@ -39,11 +38,13 @@ from seremy.contracts import (
     slice_bytes,
 )
 
+from seremy.language_profiles import syntax_profile, parsed_profile
+
 PRODUCER_PARSING = "seremy.parsing/0.2"
 ADAPTER_SCRIPT = "parse_typescript.mjs"
 EXPECTED_PRODUCER = "seremy.parse_typescript/0.1"
 
-NAME_BEARING_CANDIDATE_KINDS = frozenset({"call", "member_call", "import_name", "import_specifier"})
+NAME_BEARING_CANDIDATE_KINDS = frozenset({"call", "member_call", "import_name", "import_specifier", "jsx_tag"})
 
 
 @dataclass(frozen=True)
@@ -137,6 +138,7 @@ def run_adapter(
     file_ids: List[str],
     *,
     tools_dir: Optional[Path] = None,
+    language_profile: Optional[str] = None,
     node_executable: str = "node",
 ) -> dict:
     """Run the TypeScript adapter over the given files and return its JSON."""
@@ -152,7 +154,7 @@ def run_adapter(
     with tempfile.NamedTemporaryFile(
         "w", suffix=".json", delete=False, encoding="utf-8"
     ) as handle:
-        json.dump({"files": list(file_ids)}, handle)
+        json.dump({"files": list(file_ids),**({"profile":language_profile} if language_profile else {})}, handle)
         files_path = handle.name
     try:
         completed = subprocess.run(
@@ -241,6 +243,8 @@ def _validate_and_convert_file(
     decode_status = file_payload.get("decode", {}).get("status", "failed")
     if decode_status != "ok":
         bucket, reason, utf16_length = "failed", "not_utf8", None
+    elif file_payload.get("analysis_failure"):
+        bucket, reason, utf16_length = "failed", file_payload["analysis_failure"], file_payload["decode"].get("utf16_length")
     elif diagnostics:
         bucket, reason, utf16_length = "partial", "syntax_diagnostics", file_payload["decode"].get("utf16_length")
     else:
@@ -264,12 +268,15 @@ def _validate_and_convert_file(
 def build_parsed_results(
     adapter_output: dict,
     blobs: Dict[str, Tuple[AnalysisTextBlob, bytes]],
+    *, language_profile: Optional[str] = None,
 ) -> List[ParsedFileResult]:
     """Bind adapter output to S01 blob identities and validate every record."""
     if adapter_output.get("producer") != EXPECTED_PRODUCER:
         raise ValueError(f"unexpected adapter producer: {adapter_output.get('producer')!r}")
     if adapter_output.get("position_map") != POSITION_MAP_ID:
         raise ValueError("adapter position map does not match the declared profile")
+    if adapter_output.get("profile") != (language_profile or syntax_profile(blobs)):
+        raise ValueError("adapter language profile does not match the requested source universe")
 
     results: List[ParsedFileResult] = []
     for file_payload in adapter_output.get("files", []):
@@ -287,9 +294,9 @@ def build_parsed_results(
     return results
 
 
-def artifact_digest(results: List[ParsedFileResult]) -> str:
+def artifact_digest(results: List[ParsedFileResult], *, profile_id: Optional[str] = None) -> str:
     payload = {
-        "profile": PROFILE_ID,
+        "profile": profile_id or parsed_profile(results),
         "producer": PRODUCER_PARSING,
         "position_map": POSITION_MAP_ID,
         "files": sorted((r.to_artifact_record() for r in results), key=lambda r: r["file_id"]),

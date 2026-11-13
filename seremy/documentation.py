@@ -26,6 +26,7 @@ from typing import Dict, List, Optional, Tuple
 
 from seremy.bundle import BundleLoader
 from seremy.contracts import PROFILE_ID, canonical_bytes, sha256_hex
+from seremy.language_profiles import SOURCE_EXTENSIONS
 
 PRODUCER_DOCUMENTATION = "seremy.documentation/0.1"
 TEMPLATE_VERSION = "m1-slice-template-v0.1"
@@ -122,7 +123,7 @@ def build_document_ir(loader: BundleLoader) -> dict:
     # beyond the slice universe.
     coverage = contents["coverage"]
     source_ids={record["file_id"] for record in contents["inventory"]["eligible"]
-                if record["file_id"].endswith((".ts", ".py"))}
+                if record["file_id"].endswith(SOURCE_EXTENSIONS)}
     parsed_sources={record["file_id"]:record for record in contents["s02"]["artifact"]["files"]
                     if record["file_id"] in source_ids}
     parse_counts={bucket:sum(record["bucket"]==bucket for record in parsed_sources.values())
@@ -148,7 +149,7 @@ def build_document_ir(loader: BundleLoader) -> dict:
     )
 
     return {
-        "profile": PROFILE_ID,
+        "profile": contents["s02"]["artifact"]["profile"],
         "producer": PRODUCER_DOCUMENTATION,
         "template_version": TEMPLATE_VERSION,
         "binds": {

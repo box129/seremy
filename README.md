@@ -4,6 +4,8 @@ SEREMY turns a source repository into a graph of observed declarations and stati
 
 The hosted entry point accepts repository ZIP uploads or public GitHub URLs and provides an interactive map, documentation and downloads. Visitors can save reports on their device and reopen them after server results expire. Its Docker image contains both language runtimes. See [hosted analysis](docs/hosted-analysis.md) for limits, device history, temporary server storage and deployment commands.
 
+Lowercase `.py`, `.ts`, `.js`, `.jsx` and `.tsx` source is supported within the [versioned static language profiles](docs/ecmascript-profile.md). JSX tags retain explicit non-runtime outcomes; arrow/callable/member targets remain limited.
+
 Python 3.12 or newer and Node.js 22 are required. The TypeScript compiler is pinned to 5.9.3. Python analysis uses the standard-library AST. Run these commands from this repository's root.
 
 ```powershell

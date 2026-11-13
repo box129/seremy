@@ -1,0 +1,50 @@
+{
+  "status": "passed",
+  "url": "http://127.0.0.1:65374",
+  "hosted": false,
+  "browser": "158.0.8127.18",
+  "executable": "playwright-chromium",
+  "renderers": [
+    {
+      "engine": "svg",
+      "scene": {
+        "created": 42,
+        "removed": 0
+      }
+    },
+    {
+      "engine": "pixi",
+      "version": "8.22.0",
+      "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x00009B41) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "created": 18,
+      "destroyed": 0,
+      "text_updates": 5,
+      "graphics_updates": 13,
+      "style_objects": 1,
+      "width_cache": 5,
+      "objects": 18,
+      "text_objects": 5,
+      "gl_error": 0,
+      "scene": {
+        "created": 42,
+        "removed": 0
+      }
+    }
+  ],
+  "digests": [
+    "e3134a5fe05c548d42dab50d846425b864102e89616b0fb82a35705b6f99b920",
+    "e3134a5fe05c548d42dab50d846425b864102e89616b0fb82a35705b6f99b920"
+  ],
+  "checks": [
+    "svg: actual local/ZIP ingestion selects the named profile, five sources and exactly the independently specified three direct-call sites",
+    "svg: TSX-to-JS alias navigation aligns exact Unicode-prefixed source bytes; Back, docs and graph downloads retain the same evidence and working set",
+    "svg: JSX component tags and reassigned call targets expose their recorded limits and cannot invent target navigation or runtime edges",
+    "svg: the extended-profile snapshot restores its saved working set and exact selection after refresh at both desktop sizes",
+    "pixi: actual local/ZIP ingestion selects the named profile, five sources and exactly the independently specified three direct-call sites",
+    "pixi: TSX-to-JS alias navigation aligns exact Unicode-prefixed source bytes; Back, docs and graph downloads retain the same evidence and working set",
+    "pixi: JSX component tags and reassigned call targets expose their recorded limits and cannot invent target navigation or runtime edges",
+    "pixi: the extended-profile snapshot restores its saved working set and exact selection after refresh at both desktop sizes"
+  ],
+  "page_errors": [],
+  "verified_at": "2026-11-13T18:11:13.631Z"
+}
