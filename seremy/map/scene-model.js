@@ -3,11 +3,13 @@ const folders=Object.create(null),files=Object.create(null);
 const root={name:'',children:[]};
 const closedFolders=new Set();
 const expandedFiles=new Set();
+const hiddenFiles=new Set();
 let layoutMode='packed',placements={packed:{},columns:{}},viewGroups=[],nodeSelection=new Set(),selectedGroup=null,arranging=false;
 const nodeId=node=>(node.path?'file:':'folder:')+(node.path||node.name);
 function sceneNode(id){return id.startsWith('file:')?files[id.slice(5)]:id.startsWith('folder:')?folders[id.slice(7)]:null;}
 let maxY=500,maxX=800;
 let overviewRelationships=null;
+let projectedEdges=null;
 function folderFor(name){
   if(!name)return root;
   if(folders[name])return folders[name];
@@ -30,21 +32,29 @@ for(const path of Object.keys(data.files).sort()){
 }
 function layout(){
   overviewRelationships=null;
+  projectedEdges=null;
+  root.visibleCount=0;
+  for(const folder of Object.values(folders))folder.visibleCount=0;
   for(const file of Object.values(files)){
     file.displayLines=file.lines.length>foldThreshold&&!expandedFiles.has(file.path)?previewLines:file.lines.length;
     file.height=file.displayLines*lineHeight+100;
+    if(!hiddenFiles.has(file.path)){
+      root.visibleCount++;
+      for(let folder=folderFor(file.dir);folder!==root;folder=folderFor(folder.parent))folder.visibleCount++;
+    }
   }
+  const included=node=>node.children?node.visibleCount>0:!hiddenFiles.has(node.path);
   for(const node of [...Object.values(folders),...Object.values(files)])node.hidden=true;
   function measure(folder){
     if(closedFolders.has(folder.name)){folder.width=320;folder.height=90;return;}
     let area=0,widest=320;
-    for(const child of folder.children){
+    for(const child of folder.children.filter(included)){
       if(child.children)measure(child);
       area+=(child.width+40)*(child.height+40);widest=Math.max(widest,child.width);
     }
     const rowWidth=layoutMode==='columns'?Number.MAX_SAFE_INTEGER:Math.max(widest,Math.sqrt(area*1.4));
     let x=24,y=52,rowHeight=0,right=320,bottom=52;
-    for(const child of folder.children){
+    for(const child of folder.children.filter(included)){
       if(x>24&&x+child.width>rowWidth+24){x=24;y+=rowHeight+40;rowHeight=0;}
       const placed=placements[layoutMode][nodeId(child)];
       child.offsetX=placed?.x??x;child.offsetY=placed?.y??y;
@@ -56,7 +66,7 @@ function layout(){
   function place(folder,x,y){
     folder.x=x;folder.y=y;folder.hidden=false;
     if(closedFolders.has(folder.name))return;
-    for(const child of folder.children){
+    for(const child of folder.children.filter(included)){
       if(child.children)place(child,x+child.offsetX,y+child.offsetY);
       else{child.x=x+child.offsetX;child.y=y+child.offsetY;child.hidden=false;}
     }

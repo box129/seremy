@@ -1,0 +1,149 @@
+{
+  "status": "local_passed",
+  "python": {
+    "command": "python -B -m pytest -q -p no:cacheprovider seremy/tests",
+    "exit_code": 0,
+    "passed": 155,
+    "elapsed_seconds": 114.51
+  },
+  "local_browser_case_groups": 141,
+  "suites": [
+    {
+      "name": "svg-product-map",
+      "case_groups": 7,
+      "receipt": "file-visibility-checks/svg-product-map.json"
+    },
+    {
+      "name": "svg-navigation",
+      "case_groups": 7,
+      "receipt": "file-visibility-checks/svg-navigation.json"
+    },
+    {
+      "name": "svg-nested-folders",
+      "case_groups": 4,
+      "receipt": "file-visibility-checks/svg-nested-folders.json"
+    },
+    {
+      "name": "svg-retained-renderer",
+      "case_groups": 4,
+      "receipt": "file-visibility-checks/svg-retained-renderer.json"
+    },
+    {
+      "name": "svg-overview",
+      "case_groups": 5,
+      "receipt": "file-visibility-checks/svg-overview.json"
+    },
+    {
+      "name": "svg-review-map",
+      "case_groups": 2,
+      "receipt": "file-visibility-checks/svg-review-map.json"
+    },
+    {
+      "name": "svg-arrangement",
+      "case_groups": 5,
+      "receipt": "file-visibility-checks/svg-arrangement.json"
+    },
+    {
+      "name": "svg-connections",
+      "case_groups": 4,
+      "receipt": "file-visibility-checks/svg-connections.json"
+    },
+    {
+      "name": "svg-launcher",
+      "case_groups": 8,
+      "receipt": "file-visibility-checks/svg-launcher.json"
+    },
+    {
+      "name": "svg-mcp",
+      "case_groups": 3,
+      "receipt": "file-visibility-checks/svg-mcp.json"
+    },
+    {
+      "name": "pixi-product-map",
+      "case_groups": 7,
+      "receipt": "file-visibility-checks/pixi-product-map.json"
+    },
+    {
+      "name": "pixi-navigation",
+      "case_groups": 7,
+      "receipt": "file-visibility-checks/pixi-navigation.json"
+    },
+    {
+      "name": "pixi-nested-folders",
+      "case_groups": 4,
+      "receipt": "file-visibility-checks/pixi-nested-folders.json"
+    },
+    {
+      "name": "pixi-retained-renderer",
+      "case_groups": 4,
+      "receipt": "file-visibility-checks/pixi-retained-renderer.json"
+    },
+    {
+      "name": "pixi-overview",
+      "case_groups": 5,
+      "receipt": "file-visibility-checks/pixi-overview.json"
+    },
+    {
+      "name": "pixi-review-map",
+      "case_groups": 2,
+      "receipt": "file-visibility-checks/pixi-review-map.json"
+    },
+    {
+      "name": "pixi-arrangement",
+      "case_groups": 5,
+      "receipt": "file-visibility-checks/pixi-arrangement.json"
+    },
+    {
+      "name": "pixi-connections",
+      "case_groups": 4,
+      "receipt": "file-visibility-checks/pixi-connections.json"
+    },
+    {
+      "name": "pixi-launcher",
+      "case_groups": 8,
+      "receipt": "file-visibility-checks/pixi-launcher.json"
+    },
+    {
+      "name": "pixi-mcp",
+      "case_groups": 3,
+      "receipt": "file-visibility-checks/pixi-mcp.json"
+    },
+    {
+      "name": "edge-visibility",
+      "case_groups": 10,
+      "receipt": "file-visibility-checks/edge-visibility.json"
+    },
+    {
+      "name": "chromium-visibility",
+      "case_groups": 10,
+      "receipt": "file-visibility-checks/chromium-visibility.json"
+    },
+    {
+      "name": "long-lines",
+      "case_groups": 10,
+      "receipt": "file-visibility-checks/long-lines.json"
+    },
+    {
+      "name": "coverage",
+      "case_groups": 7,
+      "receipt": "file-visibility-checks/coverage.json"
+    },
+    {
+      "name": "webgl",
+      "case_groups": 6,
+      "receipt": "file-visibility-checks/webgl.json"
+    }
+  ],
+  "browser_qualification": {
+    "core": "Microsoft Edge 157.0.4341.42",
+    "dedicated_visibility": [
+      "Microsoft Edge 157.0.4341.42",
+      "Playwright Chromium 158.0.8127.18"
+    ],
+    "hardware_webgl": "Intel UHD Direct3D11",
+    "limit": "Both browser products use Chromium; this does not qualify Firefox/WebKit, touch/mobile or comprehensive assistive technology."
+  },
+  "counts_note": "Browser case groups contain multiple assertions and are not independent unit-test counts. Suites are counted once.",
+  "performance": "No new standalone timing comparison in this milestone. SVG remains default.",
+  "hosted": "pending rollout"
+}

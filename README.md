@@ -66,3 +66,5 @@ At readable source zoom the SVG renderer reuses unchanged scene nodes and remove
 Outputs remain scoped drafts. Direct calls have qualified language profiles. Unsupported dynamic targets retain explicit outcomes. Semantic component detection, architectural layers, route/DI/ORM rules, comprehensive accessibility and broader renderer/hardware qualification remain implementation work. See [the detailed profile](seremy/README.md) and [the fix record](docs/review-fixes.md).
 
 The map now exposes the active profile, parse limits, exclusions and resolution coverage through Coverage. Empty and unsupported-only repositories have explicit guidance. See the [feature ledger, eight-stage boundaries and next implementation task](docs/implementation-readiness.md).
+
+Files now has per-file and subtree visibility checkboxes, a visible/total count and Restore all. Hidden sources remain searchable and evidence stays intact; navigation reveals targets, while Back and saved views restore visibility. See [file visibility and working sets](docs/file-visibility.md).

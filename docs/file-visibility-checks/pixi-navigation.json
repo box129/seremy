@@ -1,0 +1,55 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "viewport": [
+    1440,
+    900
+  ],
+  "content_digest": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
+  "checks": [
+    "Expand src and utils, then open a real Redux file from the tree",
+    "Selection inspector shows real caller and declaration lines, and keyboard panel toggles preserve navigation state",
+    "Click the call in source, zoom and pan, follow the declaration, and restore all navigation state with Back",
+    "Opening a file through tree, search, or canvas title clears the relationship and Back recovers it",
+    "Following reveals the target folder and Back restores the prior tree expansion",
+    "History restores an actually scrolled tree without reading layout during capture",
+    "Inspector actions remain reachable with no page scrolling at 1440x900 and 1280x800"
+  ],
+  "origin": {
+    "camera": "translate(-4043.272216796875 -4405.25) scale(1.875)",
+    "detail": "src/utils/isAction.ts:6 · isPlainObject",
+    "edge": "cand:src/utils/isAction.ts#call:isPlainObject@185",
+    "focus": [
+      [
+        "src/utils/isAction.ts",
+        "185",
+        "198"
+      ]
+    ],
+    "file": "src/utils/isAction.ts",
+    "expanded": [
+      "src",
+      "src/utils"
+    ],
+    "scroll": 0
+  },
+  "destination": {
+    "camera": "translate(-3596.1279296875 -2920) scale(1.25)",
+    "detail": "src/utils/isPlainObject.ts:5 · isPlainObject",
+    "edge": "cand:src/utils/isAction.ts#call:isPlainObject@185",
+    "focus": [
+      [
+        "src/utils/isPlainObject.ts",
+        "132",
+        "145"
+      ]
+    ],
+    "file": "src/utils/isPlainObject.ts",
+    "expanded": [
+      "src",
+      "src/utils"
+    ],
+    "scroll": 0
+  },
+  "page_errors": []
+}

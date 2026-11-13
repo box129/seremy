@@ -69,6 +69,8 @@ async function run(){
     await second.locator('#inspect').click();await second.locator('#mcp-tools summary').click();await second.locator('#connect-agent').click();
     const otherCamera=await second.locator('#world').getAttribute('transform');
     const span=context.citations[1],source=context.citations[0];
+    const targetVisibility=map.getByRole('checkbox',{name:'Show '+span.file+' on map',exact:true});
+    await targetVisibility.uncheck();assert.equal(await targetVisibility.isChecked(),false);
     const commands=sdk([{tool:'read_source',arguments:{...identity,file:source.file,start:source.start,end:source.end}},
       {tool:'get_selection',arguments:{...identity,digest:'stale-snapshot'}},
       {tool:'focus_source',arguments:{...identity,file:span.file,start:span.start,end:span.end}}]);
@@ -80,9 +82,11 @@ async function run(){
     await page.waitForFunction(async({id,sequence})=>{
       const views=await (await fetch('/api/mcp/views')).json();return views.some(view=>view.view_id===id&&view.last_applied_command>=sequence);
     },{id:active.view_id,sequence:queued.sequence});
+    assert.equal(await targetVisibility.isChecked(),true);
     assert.equal(await second.locator('#world').getAttribute('transform'),otherCamera);
     await map.locator('#back').click();assert.equal(await map.locator('#edges').inputValue(),edge.id);
-    checks.push('Source reading, stale-snapshot rejection and acknowledged focus commands affect only the intended browser view');
+    assert.equal(await targetVisibility.isChecked(),false);
+    checks.push('Source reading and stale-snapshot rejection work; acknowledged focus reveals a hidden target only in the intended view and Back restores visibility');
 
     const text='isAction calls isPlainObject on the action value. The recorded call is statically bound, with caller and declaration evidence cited below.';
     result(sdk([{tool:'add_agent_note',arguments:{...identity,text,citations:context.citations}}])[0]);

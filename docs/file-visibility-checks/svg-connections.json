@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "checks": [
+    "Direction filters, empty results, relationship/site counts, arrowheads and Back use the selected file scope",
+    "Unicode, CRLF and tab offsets align with source; nested parser regions highlight exact byte ranges and restore with Back",
+    "Missing or unsupported calls and external imports expose recorded reasons and retain source navigation without a target",
+    "Stale embedded sources expose verification failure and disable all evidence navigation"
+  ],
+  "page_errors": []
+}

@@ -1,0 +1,53 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "renderers": [
+    {
+      "engine": "svg",
+      "scene": {
+        "created": 112,
+        "removed": 0
+      }
+    },
+    {
+      "engine": "pixi",
+      "version": "8.22.0",
+      "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x00009B41) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "created": 61,
+      "destroyed": 0,
+      "text_updates": 50,
+      "graphics_updates": 5,
+      "style_objects": 4,
+      "width_cache": 28,
+      "objects": 61,
+      "text_objects": 50,
+      "gl_error": 0,
+      "scene": {
+        "created": 112,
+        "removed": 0
+      }
+    }
+  ],
+  "checks": [
+    "svg: compact controls and Find keyboard/focus behavior fit three desktop viewports without moving the camera",
+    "svg: bounded cards automatically reveal distant caller/declaration columns with exact Unicode/tab/CRLF alignment and Back restoration",
+    "svg: the range and per-file keyboard controls move source horizontally and Back restores the offset",
+    "svg: saved offsets survive reload, invalid values are rejected and older views reveal long-line evidence",
+    "svg: a call beyond 20,000 characters renders only a visible source slice without changing canonical evidence or losing the renderer",
+    "pixi: compact controls and Find keyboard/focus behavior fit three desktop viewports without moving the camera",
+    "pixi: bounded cards automatically reveal distant caller/declaration columns with exact Unicode/tab/CRLF alignment and Back restoration",
+    "pixi: the range and per-file keyboard controls move source horizontally and Back restores the offset",
+    "pixi: saved offsets survive reload, invalid values are rejected and older views reveal long-line evidence",
+    "pixi: a call beyond 20,000 characters renders only a visible source slice without changing canonical evidence or losing the renderer"
+  ],
+  "clipping": [
+    {
+      "keyword_pixels_in_padding": 0,
+      "opaque": 225,
+      "pixels": 225,
+      "error": 0
+    }
+  ],
+  "page_errors": []
+}

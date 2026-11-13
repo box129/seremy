@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "checks": [
+    "Redux types and utils folders are geometrically contained by src",
+    "Keyboard collapse hides only utils and expansion restores the original layout and camera",
+    "Cross-folder relationship ends at the collapsed boundary, Follow reveals its source, and Back restores collapse",
+    "Collapsing a parent preserves the independent collapsed state of its child"
+  ],
+  "page_errors": []
+}
