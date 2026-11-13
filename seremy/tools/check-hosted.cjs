@@ -40,6 +40,7 @@ async function run(){
     await frame.locator('#show-coverage').click();
     assert.match(await frame.locator('#analysis-coverage').innerText(),/seremy-local-product-v0.1/);
     assert.match(await frame.locator('#analysis-coverage').innerText(),/4 eligible source files/);
+    assert.deepEqual(JSON.parse(await frame.locator('#fixture').textContent()).analysis.skipped_inputs,[]);
     assert.match(await frame.locator('#analysis-coverage').innerText(),/JavaScript, JSX and TSX are excluded/);
     await frame.locator('#close-inspector').click();
     await page.screenshot({path:path.join(evidence,'hosted-workspace.png')});
