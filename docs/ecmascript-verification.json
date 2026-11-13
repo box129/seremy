@@ -1,5 +1,5 @@
 {
-  "status": "local_passed",
+  "status": "passed",
   "python": {
     "command": "python -B -m pytest -q -p no:cacheprovider seremy/tests",
     "passed": 180,
@@ -166,5 +166,38 @@
   "browser_scope": "Edge 157.0.4341.42 and Chromium 158.0.8127.18; both use Chromium. Hardware WebGL Intel UHD Direct3D11. Other engines/devices and comprehensive accessibility remain unqualified.",
   "performance": "No new standalone timing benchmark. SVG remains default.",
   "counts_note": "Browser case groups contain multiple assertions and are not independent unit-test counts. Suites are counted once.",
-  "hosted": "pending rollout"
+  "hosted": "passed",
+  "hosted_suites": [
+    {
+      "name": "hosted-svg",
+      "browser": "157.0.4341.42",
+      "case_groups": 9,
+      "receipt": "ecmascript-checks/hosted-svg.json",
+      "verified_at": "2026-11-13T18:26:05.416Z"
+    },
+    {
+      "name": "hosted-pixi",
+      "browser": "157.0.4341.42",
+      "case_groups": 9,
+      "receipt": "ecmascript-checks/hosted-pixi.json",
+      "verified_at": "2026-11-13T18:27:06.907Z"
+    },
+    {
+      "name": "hosted-profile",
+      "browser": "157.0.4341.42",
+      "case_groups": 8,
+      "receipt": "ecmascript-checks/hosted-profile.json",
+      "verified_at": "2026-11-13T18:28:22.440Z"
+    }
+  ],
+  "hosted_browser_case_groups": 26,
+  "total_browser_case_groups": 173,
+  "deployment": {
+    "url": "https://seremy-analysis.onrender.com/",
+    "runtime_commit": "ff554852ce9dc7478fa67fa9566ffe4900b2e94c",
+    "deploy_id": "dep-dbrlavgae00c73fubddg",
+    "finished_at": "2026-11-13T18:23:18.255302Z",
+    "plan": "free",
+    "runtime_error_count": 0
+  }
 }
