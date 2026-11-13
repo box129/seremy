@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "gpu": {
+    "engine": "pixi",
+    "version": "8.22.0",
+    "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x00009B41) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "created": 87,
+    "destroyed": 0,
+    "text_updates": 38,
+    "graphics_updates": 49,
+    "style_objects": 2,
+    "width_cache": 28,
+    "objects": 87,
+    "text_objects": 38,
+    "gl_error": 0,
+    "scene": {
+      "created": 168,
+      "removed": 0
+    }
+  },
+  "checks": [
+    "WebGL paints nontransparent scene pixels while the semantic SVG layer is visually hidden",
+    "Switching renderers preserves the existing scene and camera",
+    "Saved views restore the renderer and camera after reload",
+    "A real lost WebGL context falls back to usable SVG without losing evidence",
+    "Unavailable WebGL falls back to SVG with working source and target navigation",
+    "A Python-only export without the optional Pixi runtime remains usable in SVG"
+  ],
+  "page_errors": []
+}

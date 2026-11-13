@@ -1,0 +1,73 @@
+{
+  "status": "local_passed",
+  "python": {
+    "command": "python -B -m pytest -q -p no:cacheprovider seremy/tests",
+    "exit_code": 0,
+    "passed": 155,
+    "elapsed_seconds": 140.61
+  },
+  "local_browser_case_groups": 58,
+  "suites": [
+    {
+      "name": "edge-navigation",
+      "status": "passed",
+      "browser": "157.0.4341.42",
+      "case_groups": 7,
+      "receipt": "readiness-checks/edge-navigation.json"
+    },
+    {
+      "name": "edge-source-integrity",
+      "status": "passed",
+      "browser": "157.0.4341.42",
+      "case_groups": 7,
+      "receipt": "readiness-checks/edge-source-integrity.json"
+    },
+    {
+      "name": "edge-long-lines",
+      "status": "passed",
+      "browser": "157.0.4341.42",
+      "case_groups": 10,
+      "receipt": "readiness-checks/edge-long-lines.json"
+    },
+    {
+      "name": "edge-webgl",
+      "status": "passed",
+      "browser": "157.0.4341.42",
+      "case_groups": 6,
+      "receipt": "readiness-checks/edge-webgl.json"
+    },
+    {
+      "name": "edge-coverage",
+      "status": "passed",
+      "browser": "157.0.4341.42",
+      "case_groups": 6,
+      "receipt": "readiness-checks/edge-coverage.json"
+    },
+    {
+      "name": "edge-launcher",
+      "status": "passed",
+      "browser": "157.0.4341.42",
+      "case_groups": 8,
+      "receipt": "readiness-checks/edge-launcher.json"
+    },
+    {
+      "name": "chromium-coverage",
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "case_groups": 6,
+      "receipt": "readiness-checks/chromium-coverage.json"
+    },
+    {
+      "name": "chromium-launcher",
+      "status": "passed",
+      "browser": "158.0.8127.18",
+      "case_groups": 8,
+      "receipt": "readiness-checks/chromium-launcher.json"
+    }
+  ],
+  "counts_note": "Browser groups contain multiple assertions; they are not independent unit-test counts. Historical suites are not counted again.",
+  "browser_limit": "Edge 157 and Playwright Chromium 158 share the Chromium engine. Firefox/WebKit, touch/mobile and broad assistive technologies remain unqualified.",
+  "performance": "not rerun in this audit",
+  "hosted": "pending current rollout",
+  "previous_runtime": "aa8387bc7d043b8eed6149f3deef1c0736789279"
+}

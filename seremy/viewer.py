@@ -25,6 +25,13 @@ def render_map(bundle):
              "edges":edges,"entities":list(entities.values()),"coverage":loader.contents["coverage"],
              "outcomes":[record for record in loader.contents["s03"]["artifact"]["resolutions"]
                          if record["candidate_id"] not in bound_ids],
+             "analysis":{"profile":loader.contents["profile"],
+                         "parsing_profile":loader.contents["s02"]["artifact"]["profile"],
+                         "binding_profile":loader.contents["s03"]["artifact"].get("binding_profile"),
+                         "scope":loader.contents.get("scope",{}),
+                         "exclusions":loader.contents["inventory"]["exclusions"],
+                         "parse_files":[{key:record.get(key) for key in ("file_id","bucket","reason","diagnostics")}
+                                        for record in loader.contents["s02"]["artifact"]["files"]]},
              "repository":loader.contents["snapshot"]["repository_id"]}
     assets=Path(__file__).parent/"map"
     template=(assets/"product-template.html").read_text(encoding="utf8")

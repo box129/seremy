@@ -9,8 +9,8 @@ async function run(){
   const root=path.resolve(process.argv[2]),evidence=path.resolve(process.argv[3]);
   fs.mkdirSync(evidence,{recursive:true});
   const url=pathToFileURL(path.join(root,'map.html'));url.searchParams.set('renderer','pixi');
-  const browser=await chromium.launch({args:['--use-angle=d3d11','--enable-webgl','--ignore-gpu-blocklist']});
-  const checks=[],errors=[];let gpu;
+  const browser=await chromium.launch({...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--use-angle=d3d11','--enable-webgl','--ignore-gpu-blocklist']});
+  const version=browser.version(),checks=[],errors=[];let gpu;
   async function open(browser,url){
     const page=await browser.newPage({viewport:{width:1440,height:900}});
     page.on('pageerror',error=>errors.push(error.message));
@@ -52,7 +52,7 @@ async function run(){
     checks.push('A real lost WebGL context falls back to usable SVG without losing evidence');
     await page.close();
   }finally{await browser.close();}
-  const unavailable=await chromium.launch({args:['--disable-webgl']});
+  const unavailable=await chromium.launch({...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--disable-webgl']});
   try{
     const page=await open(unavailable,url);
     assert.equal(await page.evaluate(()=>window.__seremyRendererInfo().engine),'svg');
@@ -73,7 +73,7 @@ async function run(){
     checks.push('A Python-only export without the optional Pixi runtime remains usable in SVG');
   }finally{await unavailable.close();}
   assert.deepEqual(errors,[]);
-  const report={status:'passed',gpu,checks,page_errors:errors};
+  const report={status:'passed',browser:version,executable:process.env.CHROME_BIN||'playwright-chromium',gpu,checks,page_errors:errors};
   fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

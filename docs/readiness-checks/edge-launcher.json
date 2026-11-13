@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "checks": [
+    "First visit shows No folder, centered Docs, and a keyboard-dismissable connection dialog",
+    "Local folder submission runs both language adapters through all eight stages",
+    "Four files and two direct relationships reach the shared graph",
+    "Embedded interactive map verifies source bytes and provides file navigation",
+    "Documentation contains package-scoped Preact and FastAPI evidence and structural relationships",
+    "Map/documentation switching retains the same publication and camera",
+    "Selection evidence and the open inspector survive documentation switching",
+    "Loaded canvas fills the workspace and a failed replacement keeps the existing map available"
+  ],
+  "page_errors": []
+}

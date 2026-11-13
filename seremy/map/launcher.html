@@ -28,6 +28,7 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 <footer><div id="status" role="status" aria-live="polite">Ready</div><p id="summary"></p></footer>
 <dialog id="connect-dialog" aria-labelledby="connect-title"><button class="close" id="close-connect" aria-label="Close connection">×</button><h2 id="connect-title">Connect repository</h2>
 <form id="form">
+<p id="input-profile">Source analysis supports lowercase Python (.py) and TypeScript (.ts). JavaScript, JSX and TSX are excluded. Open Coverage on the map for parsing, binding and framework limits.</p>
 <label>Repository input<select id="kind"><option value="folder">Local folder</option><option value="zip">ZIP file</option><option value="git">Git HTTPS URL</option></select></label>
 <label id="value-label"><span id="value-title">Folder path</span><input id="value" required placeholder="C:\path\to\repository"></label>
 <label id="zip-label" hidden>ZIP file<input id="zip" type="file" accept=".zip"></label>
@@ -40,7 +41,7 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 <script>
 const get=id=>document.getElementById(id);
 const hosted=window.SEREMY_HOSTED===true;
-let job=null,publication=null,repositoryName='';
+let job=null,publication=null,repositoryName='',pendingRepositoryName='';
 function status(message){get('status').textContent=get('connection-status').textContent=message;}
 function connect(){get('connect-dialog').showModal();}
 get('connect').onclick=get('empty-connect').onclick=connect;
@@ -65,6 +66,7 @@ async function poll(){
     status(state.error||state.stage);
     if(state.status==='completed'){
       publication=state.publication;
+      repositoryName=pendingRepositoryName;
       get('map').src='/reports/'+publication+'/map.html';
       get('map').hidden=false;get('doc').hidden=true;get('outputs').hidden=false;
       document.body.classList.add('loaded');get('empty').hidden=true;
@@ -75,7 +77,10 @@ async function poll(){
       get('download-map').href='/reports/'+publication+'/map.html';get('download-map').hidden=!hosted;
       const c=state.coverage;
       get('summary').textContent=c.s02.parsed_file_records+' source files processed · '+c.s03.direct_edge_count+
-        ' distinct call relationships · '+c.s03.attempted_count+' binding attempts · Draft';
+        ' distinct call relationships · '+c.s03.attempted_count+' binding attempts · '+c.s02.complete+' complete, '+c.s02.partial+' partial, '+c.s02.failed+' failed, '+c.s02.not_processed+' not processed · Draft';
+      get('summary').title=get('summary').textContent;
+      if(!c.s02.source_file_count)status('Draft ready · No supported source files. Open Coverage for exclusions.');
+      else if(c.s02.failed||c.s02.partial||c.s02.not_processed)status('Draft ready with parse limits. Open Coverage for file outcomes.');
       window.dispatchEvent(new Event('seremy-publication'));
     }
     if(['completed','failed','cancelled'].includes(state.status)){
@@ -95,10 +100,10 @@ get('form').onsubmit=async event=>{
       for(let i=0;i<raw.length;i+=8192)binary+=String.fromCharCode(...raw.subarray(i,i+8192));
       value=btoa(binary);
     }
-    repositoryName=kind==='zip'?get('zip').files[0].name:value.replace(/[\\/]+$/,'').split(/[\\/]/).pop();
+    pendingRepositoryName=kind==='zip'?get('zip').files[0].name:value.replace(/[\\/]+$/,'').split(/[\\/]/).pop();
     const result=await post('/api/jobs',{kind,value,revision:get('revision').value||null});
     job=result.id;
-    if(hosted)try{sessionStorage.setItem('seremy-job',JSON.stringify({job,repositoryName}));}catch(error){}
+    if(hosted)try{sessionStorage.setItem('seremy-job',JSON.stringify({job,repositoryName:pendingRepositoryName}));}catch(error){}
     get('cancel').hidden=false;poll();
   }catch(error){status(error.message);get('start').disabled=false;}
 };
@@ -110,7 +115,7 @@ get('doc-tab').onclick=async()=>{
   try{
     const requestedPublication=publication;
     const response=await fetch('/reports/'+requestedPublication+'/architecture.md');
-    if(!response.ok)throw new Error('Documentation could not be loaded.');
+    if(!response.ok)throw new Error('Documentation is unavailable or expired. Analyze the repository again.'+(hosted?' You can also open a report saved on this device.':''));
     const markdown=await response.text();
     if(publication!==requestedPublication)return;
     get('doc').textContent=markdown;get('map').hidden=true;get('doc').hidden=false;
@@ -129,7 +134,7 @@ if(hosted){
   try{
     const saved=JSON.parse(sessionStorage.getItem('seremy-job'));
     if(saved&&/^[0-9a-f]{64}$/.test(saved.job)){
-      job=saved.job;repositoryName=saved.repositoryName;get('start').disabled=true;poll();
+      job=saved.job;pendingRepositoryName=saved.repositoryName;get('start').disabled=true;poll();
     }
   }catch(error){}
 }

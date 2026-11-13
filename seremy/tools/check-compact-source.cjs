@@ -21,8 +21,8 @@ async function run(){
     assert.equal(path.dirname(input),path.resolve(os.tmpdir()));assert.match(path.basename(input),/^seremy-source-window-/);
     fs.rmSync(input,{recursive:true,force:true});
   }
-  const browser=await chromium.launch({args:['--use-angle=d3d11','--enable-webgl','--ignore-gpu-blocklist']});
-  const checks=[],errors=[],clipping=[];
+  const browser=await chromium.launch({...(process.env.CHROME_BIN?{executablePath:process.env.CHROME_BIN}:{}),args:['--use-angle=d3d11','--enable-webgl','--ignore-gpu-blocklist']});
+  const checks=[],errors=[],clipping=[],renderers=[];
   async function state(page){return page.evaluate(()=>({camera:document.querySelector('#world').getAttribute('transform'),edge:document.querySelector('#edges').value,offset:document.querySelector('#source-scroll').value,focus:[...document.querySelectorAll('.source-focus')].map(node=>[node.dataset.file,node.dataset.start,node.dataset.end])}));}
   async function alignment(page,span){
     const error=await page.evaluate(span=>{
@@ -40,7 +40,7 @@ async function run(){
       const page=await browser.newPage({viewport:{width:1440,height:900}});page.on('pageerror',error=>errors.push(error.message));
       const url=pathToFileURL(publication.map);url.searchParams.set('renderer',renderer);await page.goto(url.href);
       await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('source verified'));
-      assert.equal(await page.evaluate(()=>window.__seremyRendererInfo().engine),renderer);
+      const rendering=await page.evaluate(()=>window.__seremyRendererInfo());assert.equal(rendering.engine,renderer);renderers.push(rendering);
       assert.ok(await page.getByRole('button',{name:/^Reveal later columns in/}).count()>=3);
       assert.ok(await page.getByRole('button',{name:/^Reveal later columns in/}).evaluateAll(nodes=>nodes.every(node=>node.getAttribute('aria-disabled')==='false'&&node.getAttribute('tabindex')==='0')));
       const canonical=await page.locator('#fixture').textContent(),data=JSON.parse(canonical);
@@ -111,7 +111,7 @@ async function run(){
       checks.push(renderer+': a call beyond 20,000 characters renders only a visible source slice without changing canonical evidence or losing the renderer');
       await page.close();
     }
-    assert.deepEqual(errors,[]);const result={status:'passed',browser:browser.version(),checks,clipping,page_errors:errors};fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+    assert.deepEqual(errors,[]);const result={status:'passed',browser:browser.version(),executable:process.env.CHROME_BIN||'playwright-chromium',renderers,checks,clipping,page_errors:errors};fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
   }finally{await browser.close();}
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

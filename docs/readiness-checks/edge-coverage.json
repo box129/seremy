@@ -1,0 +1,159 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "checks": [
+    "Unsupported-only JS/TSX input shows an explicit empty state, language scope and snapshot-matched exclusions",
+    "Partial TypeScript syntax, Python failure, invalid encoding and dynamic-target outcomes remain visible with exact file and outcome counts",
+    "A parsed file without bound calls stays explorable and zero edges do not imply complete dependency analysis",
+    "Failed replacement and unavailable documentation preserve the current map and identify the recovery action",
+    "An encoding-only failure is distinguished from unsupported input and makes no source-verification claim",
+    "An empty directory has a stable camera, visible guidance and disabled empty Find action"
+  ],
+  "cases": [
+    {
+      "name": "unsupported",
+      "coverage": {
+        "units": "per-stage declared units (files; parsed-file records; candidate IDs)",
+        "inventory": {
+          "input_count": 3,
+          "excluded_count": 3,
+          "eligible_count": 0
+        },
+        "s02": {
+          "parsed_file_records": 0,
+          "source_file_count": 0,
+          "not_processed": 0,
+          "complete": 0,
+          "partial": 0,
+          "failed": 0
+        },
+        "s03": {
+          "candidate_count": 0,
+          "attempted_count": 0,
+          "outcome_counts": {},
+          "direct_edge_count": 0
+        }
+      },
+      "profile": "seremy-local-product-v0.1",
+      "source_files": []
+    },
+    {
+      "name": "limited",
+      "coverage": {
+        "units": "per-stage declared units (files; parsed-file records; candidate IDs)",
+        "inventory": {
+          "input_count": 4,
+          "excluded_count": 0,
+          "eligible_count": 4
+        },
+        "s02": {
+          "parsed_file_records": 4,
+          "source_file_count": 4,
+          "not_processed": 0,
+          "complete": 1,
+          "partial": 1,
+          "failed": 2
+        },
+        "s03": {
+          "candidate_count": 2,
+          "attempted_count": 2,
+          "outcome_counts": {
+            "UNSUPPORTED": 2
+          },
+          "direct_edge_count": 0
+        }
+      },
+      "profile": "seremy-local-product-v0.1",
+      "source_files": [
+        "partial.ts",
+        "broken.py",
+        "valid.py"
+      ]
+    },
+    {
+      "name": "isolated",
+      "coverage": {
+        "units": "per-stage declared units (files; parsed-file records; candidate IDs)",
+        "inventory": {
+          "input_count": 1,
+          "excluded_count": 0,
+          "eligible_count": 1
+        },
+        "s02": {
+          "parsed_file_records": 1,
+          "source_file_count": 1,
+          "not_processed": 0,
+          "complete": 1,
+          "partial": 0,
+          "failed": 0
+        },
+        "s03": {
+          "candidate_count": 0,
+          "attempted_count": 0,
+          "outcome_counts": {},
+          "direct_edge_count": 0
+        }
+      },
+      "profile": "seremy-local-product-v0.1",
+      "source_files": [
+        "single.py"
+      ]
+    },
+    {
+      "name": "unreadable",
+      "coverage": {
+        "units": "per-stage declared units (files; parsed-file records; candidate IDs)",
+        "inventory": {
+          "input_count": 1,
+          "excluded_count": 0,
+          "eligible_count": 1
+        },
+        "s02": {
+          "parsed_file_records": 1,
+          "source_file_count": 1,
+          "not_processed": 0,
+          "complete": 0,
+          "partial": 0,
+          "failed": 1
+        },
+        "s03": {
+          "candidate_count": 0,
+          "attempted_count": 0,
+          "outcome_counts": {},
+          "direct_edge_count": 0
+        }
+      },
+      "profile": "seremy-local-product-v0.1",
+      "source_files": []
+    },
+    {
+      "name": "empty",
+      "coverage": {
+        "units": "per-stage declared units (files; parsed-file records; candidate IDs)",
+        "inventory": {
+          "input_count": 0,
+          "excluded_count": 0,
+          "eligible_count": 0
+        },
+        "s02": {
+          "parsed_file_records": 0,
+          "source_file_count": 0,
+          "not_processed": 0,
+          "complete": 0,
+          "partial": 0,
+          "failed": 0
+        },
+        "s03": {
+          "candidate_count": 0,
+          "attempted_count": 0,
+          "outcome_counts": {},
+          "direct_edge_count": 0
+        }
+      },
+      "profile": "seremy-local-product-v0.1",
+      "source_files": []
+    }
+  ],
+  "page_errors": []
+}

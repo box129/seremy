@@ -40,6 +40,7 @@ header{flex-wrap:nowrap;min-height:44px;padding:6px 12px;gap:12px;overflow-x:aut
 <div class="rail-group rail-secondary"><button id="collapse">Collapse folders</button><button id="arrange" aria-pressed="false" title="Select and drag files or folders. Shift adds to the selection.">Arrange</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></div></header>
 <main><section id="file-finder" role="search" aria-label="Find source" hidden><div class="panel-heading"><h2>Find source</h2><button id="close-search" aria-label="Close Find">×</button></div><input id="search" type="search" placeholder="File path or symbol" aria-label="Find file or symbol"><div class="finder-result"><select id="files" aria-label="Open file"></select><button id="open">Open file</button></div><p id="finder-status" role="status"></p><p>Enter opens a result · Esc returns to the map</p></section><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
 <aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
+<details id="coverage-tools"><summary>Analysis coverage and limits</summary><div id="analysis-coverage"></div></details>
 <details id="mcp-tools"><summary>MCP and agent notes</summary><p id="agent-status" role="status">Connect an agent through the local launcher.</p><button id="connect-agent">Share selection with agent</button><div id="agent-notes"></div></details>
 <details id="arrangement-tools"><summary>Arrangement and saved view</summary><div id="arrangement"><label>Renderer<select id="renderer"><option value="svg">SVG</option><option value="pixi">Pixi / WebGL preview</option></select></label><div id="renderer-status" role="status">SVG active</div><label>Layout<select id="layout-mode"><option value="packed">Packed</option><option value="columns">Columns</option></select></label><label>Group name<input id="group-name" maxlength="80" placeholder="Group name"></label><div id="arrangement-actions"><button id="group-selection">Group selection</button><button id="ungroup">Ungroup</button><button id="save-view">Save view</button><button id="restore-view">Restore view</button></div><div id="view-status" role="status">Use Arrange to move files or folders. Shift selects multiple items.</div></div></details>
 <section id="source-columns" hidden><label>Long-line position<input id="source-scroll" type="range" min="0" max="0" step="1" value="0" aria-label="Horizontal source position"></label><p id="source-scroll-status"></p><button id="source-start">First columns</button></section><div class="scope-controls"><label>Connections<select id="connection-mode"><option value="all">All files</option><option value="incoming">Incoming to selected file</option><option value="outgoing">Outgoing from selected file</option><option value="neighborhood">Selected file neighborhood</option></select></label><div id="scope-label"></div><div id="connection-count" role="status"></div></div>
@@ -50,7 +51,12 @@ header{flex-wrap:nowrap;min-height:44px;padding:6px 12px;gap:12px;overflow-x:aut
 <section id="inspection-source" hidden><h3 id="source-heading">Caller</h3><p id="source-location" class="source-location"></p><pre id="source-excerpt" class="source-excerpt"></pre><button id="origin">Show source</button></section>
 <section id="inspection-target" hidden><h3>Target declaration</h3><p id="target-location" class="source-location"></p><pre id="target-excerpt" class="source-excerpt"></pre><button id="target">Follow target</button></section>
 <p id="evidence"></p></aside></main>
-<footer><span id="status" role="status">Verifying source…</span><div id="detail" aria-live="polite">Select a relationship or source region.</div><nav id="breadcrumbs" aria-label="Source breadcrumbs"></nav></footer>
+<footer><span id="status" role="status">Verifying source…</span><button id="show-coverage" aria-controls="coverage-tools">Coverage</button><div id="detail" aria-live="polite">Select a relationship or source region.</div><nav id="breadcrumbs" aria-label="Source breadcrumbs"></nav></footer>
+<style>
+#show-coverage{padding:1px 5px;font-size:11px;background:transparent;border-color:transparent;color:#aab6c8}
+#coverage-tools{margin-bottom:16px}#analysis-coverage p{padding:0;line-height:1.7;overflow-wrap:anywhere;color:#bbb}#analysis-coverage ul{padding-left:18px;line-height:1.7;overflow-wrap:anywhere}#analysis-coverage details{margin:12px 0}#analysis-coverage pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;color:#aaa}
+#map-empty{position:absolute;inset:80px 24px auto;max-width:460px;margin:auto;padding:24px;border:1px solid #444;border-radius:8px;background:#232323;color:#bbb;z-index:1;text-align:center;line-height:1.7}#map-empty h2{font-size:16px;color:#ddd;margin-top:0}#map-empty p{padding:0;color:inherit}
+</style>
 <script id="fixture" type="application/json">FIXTURE_JSON</script>
 <script id="pixi-runtime" type="text/plain">PIXI_RUNTIME_JS</script>
 <script>PIXI_SURFACE_JS</script>
@@ -59,6 +65,36 @@ header{flex-wrap:nowrap;min-height:44px;padding:6px 12px;gap:12px;overflow-x:aut
 'use strict';
 const data=JSON.parse(document.querySelector('#fixture').textContent);
 const el=id=>document.getElementById(id),map=el('map'),world=el('world'),mini=el('mini');
+function coverageView(){
+  const area=el('analysis-coverage'),c=data.coverage,a=data.analysis;
+  const paragraph=text=>{const node=document.createElement('p');node.textContent=text;area.append(node);};
+  const records=(title,rows)=>{
+    const details=document.createElement('details'),summary=document.createElement('summary'),text=document.createElement('pre');
+    summary.textContent=title;text.textContent=rows.length?rows.join('\n'):'None recorded.';details.append(summary,text);area.append(details);
+  };
+  if(!a){paragraph('This older export has no embedded analysis profile details. Consult its graph and validation report.');return;}
+  paragraph('Profile: '+a.profile+' · parser '+a.parsing_profile+' · binder '+(a.binding_profile||'not recorded'));
+  paragraph('Source inputs: lowercase .py and .ts. JavaScript, JSX and TSX are excluded by this profile. JSON and TOML supply selected manifest/configuration evidence.');
+  paragraph(c.inventory.input_count+' enumerated entries · '+c.inventory.eligible_count+' eligible entries · '+c.inventory.excluded_count+' excluded entries. Discovery scope: '+(a.scope.mode||'not recorded')+'.');
+  paragraph(c.s02.source_file_count+' eligible source files · '+c.s02.parsed_file_records+' parse records: '+c.s02.complete+' complete, '+c.s02.partial+' partial, '+c.s02.failed+' failed; '+c.s02.not_processed+' not processed. Complete refers to syntax extraction within this profile.');
+  paragraph(Object.keys(data.files).length+' displayable source files are embedded in this map. Files that could not be decoded remain in the parse outcomes.');
+  paragraph(c.s03.direct_edge_count+' distinct call relationships · '+data.edges.length+' bound source sites · '+c.s03.attempted_count+' binding attempts / '+c.s03.candidate_count+' extracted candidates.');
+  records('Resolution outcome counts',Object.entries(c.s03.outcome_counts).map(([name,count])=>name+': '+count));
+  paragraph('Outcome counts include non-call candidates such as imports. Zero relationships do not establish that a repository has no dependencies. Source hash verification checks embedded bytes; it does not establish analysis completeness or accuracy.');
+  records('Parse limitations by file',a.parse_files.filter(row=>row.bucket!=='complete').map(row=>row.file_id+' · '+row.bucket+' · '+(row.reason||'see diagnostics')+'\n'+JSON.stringify(row.diagnostics||[])));
+  records('Excluded entries and reasons',a.exclusions.map(row=>row.path+' · '+row.reason));
+  records('Discovery limits and diagnostics',[JSON.stringify(a.scope,null,2)]);
+  paragraph('Static direct-function binding only. Dynamic dispatch, TypeScript member/callable-value targets and multi-project tsconfig resolution remain limited or unsupported. Recorded outcomes explain individual candidates.');
+  paragraph('Components are structural directory/package groups. Framework manifests/imports do not establish routes, dependency injection, ORM or runtime behavior. Documentation uses cited templates; independent semantic and generated-prose acceptance is not established.');
+  if(!Object.keys(data.files).length){
+    const section=document.createElement('section'),heading=document.createElement('h2'),text=document.createElement('p'),button=document.createElement('button');
+    section.id='map-empty';heading.textContent=c.s02.source_file_count?'No displayable source':'No supported source files';
+    text.textContent='This profile reads lowercase Python (.py) and TypeScript (.ts). Review exclusions and parse outcomes, or analyze a repository containing supported source.';
+    button.textContent='Review analysis coverage';button.onclick=()=>el('show-coverage').click();section.append(heading,text,button);map.after(section);mini.setAttribute('hidden','');
+  }else if(!data.edges.length){el('inspection-empty').textContent='No bound call relationships were extracted. You can still explore source files and recorded outcomes. Review coverage before interpreting this graph.';}
+}
+coverageView();
+el('show-coverage').onclick=()=>{setPanel('inspector',true);el('coverage-tools').open=true;el('coverage-tools').querySelector('summary').focus();el('coverage-tools').scrollIntoView({block:'nearest'});};
 const ns='http://www.w3.org/2000/svg',lineHeight=20,codeTop=70,foldThreshold=180,previewLines=80;
 SCENE_RECORDS_JS
 const sceneAdapter=createSceneAdapter(ns);
@@ -732,7 +768,9 @@ fit();draw();
   }catch(error){bound=false;el('status').textContent='STALE · source verification failed';}
   syncSourceButtons();
   if(new URLSearchParams(location.search).get('renderer')==='pixi')await chooseRenderer('pixi');
-  if(bound)el('status').textContent=Object.keys(files).length+' files · '+data.coverage.s03.direct_edge_count+' relationships · '+data.edges.length+' source sites · source verified · draft';
+  if(bound)el('status').textContent=Object.keys(files).length+' files · '+data.coverage.s03.direct_edge_count+' relationships · '+data.edges.length+' source sites · source verified · draft'+(data.coverage.s02.failed||data.coverage.s02.partial||data.coverage.s02.not_processed?' · parse limits':'');
+  if(bound&&!Object.keys(files).length)el('status').textContent='No embedded source · draft · review coverage';
+  el('status').title=el('status').textContent;
   controls();
 })();
 })();
