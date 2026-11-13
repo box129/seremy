@@ -83,6 +83,7 @@ function coverageView(){
   paragraph('Outcome counts include non-call candidates such as imports. Zero relationships do not establish that a repository has no dependencies. Source hash verification checks embedded bytes; it does not establish analysis completeness or accuracy.');
   records('Parse limitations by file',a.parse_files.filter(row=>row.bucket!=='complete').map(row=>row.file_id+' · '+row.bucket+' · '+(row.reason||'see diagnostics')+'\n'+JSON.stringify(row.diagnostics||[])));
   records('Excluded entries and reasons',a.exclusions.map(row=>row.path+' · '+row.reason));
+  records('Inputs not processed',(a.skipped_inputs||[]).map(row=>row.file_id+' · '+row.bucket+' · '+row.reason));
   records('Discovery limits and diagnostics',[JSON.stringify(a.scope,null,2)]);
   paragraph('Static direct-function binding only. Dynamic dispatch, TypeScript member/callable-value targets and multi-project tsconfig resolution remain limited or unsupported. Recorded outcomes explain individual candidates.');
   paragraph('Components are structural directory/package groups. Framework manifests/imports do not establish routes, dependency injection, ORM or runtime behavior. Documentation uses cited templates; independent semantic and generated-prose acceptance is not established.');

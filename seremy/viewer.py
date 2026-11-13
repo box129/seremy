@@ -30,6 +30,8 @@ def render_map(bundle):
                          "binding_profile":loader.contents["s03"]["artifact"].get("binding_profile"),
                          "scope":loader.contents.get("scope",{}),
                          "exclusions":loader.contents["inventory"]["exclusions"],
+                         "skipped_inputs":[record for record in loader.contents["inventory"]["eligible"]
+                                           if record["bucket"]!="complete"],
                          "parse_files":[{key:record.get(key) for key in ("file_id","bucket","reason","diagnostics")}
                                         for record in loader.contents["s02"]["artifact"]["files"]]},
              "repository":loader.contents["snapshot"]["repository_id"]}

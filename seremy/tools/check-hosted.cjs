@@ -95,7 +95,7 @@ async function run(){
     checks.push('Unsupported-only ZIP shows explicit coverage guidance and a failed replacement retains that publication');
     assert.deepEqual(errors,[]);
     await page.screenshot({path:path.join(evidence,'hosted-empty-state.png')});
-    const result={url,status:'passed',renderer:rendering,ui,checks,page_errors:errors,verified_at:new Date().toISOString()};
+    const result={url,status:'passed',browser:browser.version(),executable:process.env.CHROME_BIN||'playwright-chromium',renderer:rendering,ui,checks,page_errors:errors,verified_at:new Date().toISOString()};
     fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(result,null,2)+'\n');
     console.log(JSON.stringify(result));
   }finally{await browser.close();}

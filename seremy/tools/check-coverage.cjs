@@ -9,7 +9,7 @@ async function run(){
   const input=fs.mkdtempSync(path.join(os.tmpdir(),'seremy-coverage-'));
   const fixtures={unsupported:{'entry.js':'export function start() {}','view.tsx':'export const view = <div/>;','README.md':'An unsupported-only repository'},
     limited:{'valid.py':'def start(client):\n    return client.fetch()\n','broken.py':'def broken(:\n','partial.ts':'export function partial() { return missing( ; }','encoding.py':Buffer.from([255,254])},
-    isolated:{'single.py':'def identity(value):\n    return value\n'},unreadable:{'encoding.py':Buffer.from([255,254])},empty:{}};
+    isolated:{'single.py':'def identity(value):\n    return value\n'},unreadable:{'encoding.py':Buffer.from([255,254])},skipped:{'oversized.py':'#'+'x'.repeat(1024*1024)},empty:{}};
   for(const [name,files] of Object.entries(fixtures)){
     fs.mkdirSync(path.join(input,name));for(const [filename,text] of Object.entries(files))fs.writeFileSync(path.join(input,name,filename),text);
   }
@@ -74,6 +74,12 @@ async function run(){
     ({frame,data}=await analyze('unreadable'));assert.equal(data.coverage.s02.source_file_count,1);assert.equal(data.coverage.s02.failed,1);
     assert.match(await frame.locator('#map-empty').innerText(),/No displayable source/);assert.doesNotMatch(await frame.locator('#status').innerText(),/source verified/);
     checks.push('An encoding-only failure is distinguished from unsupported input and makes no source-verification claim');
+    ({frame,data}=await analyze('skipped'));assert.equal(data.coverage.s02.source_file_count,1);assert.equal(data.coverage.s02.not_processed,1);assert.equal(data.coverage.s02.parsed_file_records,0);
+    assert.equal(data.analysis.skipped_inputs[0].file_id,'oversized.py');assert.equal(data.analysis.skipped_inputs[0].bucket,'not_processed');
+    await frame.getByText('Inputs not processed',{exact:true}).click();assert.match(await frame.locator('#analysis-coverage').innerText(),/oversized.py.*not_processed/);
+    assert.ok((await frame.locator('#analysis-coverage').innerText()).includes(data.analysis.skipped_inputs[0].reason));
+    assert.match(await frame.locator('#map-empty').innerText(),/No displayable source/);
+    checks.push('A source input skipped at the byte limit exposes its exact filename and read-boundary reason without inventing parse records');
     ({frame,data}=await analyze('empty'));assert.equal(data.coverage.inventory.input_count,0);assert.match(await frame.locator('#map-empty').innerText(),/No supported source files/);
     await frame.locator('#fit').click();assert.doesNotMatch(await frame.locator('#world').getAttribute('transform'),/NaN|Infinity/);
     await frame.locator('#toggle-search').click();assert.equal(await frame.locator('#open').isDisabled(),true);

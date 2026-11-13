@@ -8,6 +8,7 @@
     "A parsed file without bound calls stays explorable and zero edges do not imply complete dependency analysis",
     "Failed replacement and unavailable documentation preserve the current map and identify the recovery action",
     "An encoding-only failure is distinguished from unsupported input and makes no source-verification claim",
+    "A source input skipped at the byte limit exposes its exact filename and read-boundary reason without inventing parse records",
     "An empty directory has a stable camera, visible guidance and disabled empty Find action"
   ],
   "cases": [
@@ -116,6 +117,33 @@
           "complete": 0,
           "partial": 0,
           "failed": 1
+        },
+        "s03": {
+          "candidate_count": 0,
+          "attempted_count": 0,
+          "outcome_counts": {},
+          "direct_edge_count": 0
+        }
+      },
+      "profile": "seremy-local-product-v0.1",
+      "source_files": []
+    },
+    {
+      "name": "skipped",
+      "coverage": {
+        "units": "per-stage declared units (files; parsed-file records; candidate IDs)",
+        "inventory": {
+          "input_count": 1,
+          "excluded_count": 0,
+          "eligible_count": 1
+        },
+        "s02": {
+          "parsed_file_records": 0,
+          "source_file_count": 1,
+          "not_processed": 1,
+          "complete": 0,
+          "partial": 0,
+          "failed": 0
         },
         "s03": {
           "candidate_count": 0,

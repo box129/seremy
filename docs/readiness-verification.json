@@ -6,7 +6,7 @@
     "passed": 155,
     "elapsed_seconds": 140.61
   },
-  "local_browser_case_groups": 58,
+  "local_browser_case_groups": 60,
   "suites": [
     {
       "name": "edge-navigation",
@@ -40,7 +40,7 @@
       "name": "edge-coverage",
       "status": "passed",
       "browser": "157.0.4341.42",
-      "case_groups": 6,
+      "case_groups": 7,
       "receipt": "readiness-checks/edge-coverage.json"
     },
     {
@@ -54,7 +54,7 @@
       "name": "chromium-coverage",
       "status": "passed",
       "browser": "158.0.8127.18",
-      "case_groups": 6,
+      "case_groups": 7,
       "receipt": "readiness-checks/chromium-coverage.json"
     },
     {
@@ -68,6 +68,7 @@
   "counts_note": "Browser groups contain multiple assertions; they are not independent unit-test counts. Historical suites are not counted again.",
   "browser_limit": "Edge 157 and Playwright Chromium 158 share the Chromium engine. Firefox/WebKit, touch/mobile and broad assistive technologies remain unqualified.",
   "performance": "not rerun in this audit",
-  "hosted": "pending current rollout",
-  "previous_runtime": "aa8387bc7d043b8eed6149f3deef1c0736789279"
+  "hosted": "pending final rollout",
+  "previous_runtime": "aa8387bc7d043b8eed6149f3deef1c0736789279",
+  "canonical_content_digest": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289"
 }
