@@ -10,7 +10,7 @@ window.createSeremyPixiSurface=async function(map,world,recordFor){
   const scene=new PIXI.Container(),highlight=new PIXI.Graphics();app.stage.addChild(scene);scene.addChild(highlight);
   const cache=new Map(),widths=new Map(),ascents=new Map(),styles=new Map();
   const counters={created:0,destroyed:0,text_updates:0,graphics_updates:0};
-  let used=new Set(),usedStyles=new Set(),order=0,scale=1,hover=null,focused=null;
+  let used=new Set(),usedStyles=new Set(),orders=new Map(),parent=scene,scale=1,hover=null,focused=null;
   const palette={file:{fill:'#1e1e1e',stroke:'#606773'},folder:{fill:'#33333333',stroke:'#555555'},
     'source-focus':{fill:'#d7ac452b',stroke:'#edc96c',width:1.5},
     'view-group':{fill:'#8198be0c',stroke:'#8198be',dash:true},
@@ -23,8 +23,9 @@ window.createSeremyPixiSurface=async function(map,world,recordFor){
   }
   function object(key,create){
     used.add(key);let record=cache.get(key);
-    if(!record){record={node:create(),signature:null};counters.created++;cache.set(key,record);scene.addChild(record.node);}
-    if(scene.children[order]!==record.node)scene.setChildIndex(record.node,order);order++;
+    if(!record){record={node:create(),signature:null};counters.created++;cache.set(key,record);parent.addChild(record.node);}
+    if(record.node.parent!==parent)parent.addChild(record.node);
+    const order=orders.get(parent)||0;if(parent.children[order]!==record.node)parent.setChildIndex(record.node,order);orders.set(parent,order+1);
     return record;
   }
   function path(graphics,value){
@@ -107,6 +108,7 @@ window.createSeremyPixiSurface=async function(map,world,recordFor){
         const fontKey=named?'name':'code';
         if(!ascents.has(fontKey))ascents.set(fontKey,PIXI.CanvasTextMetrics.measureText('M',style).fontProperties);
         const metrics=ascents.get(fontKey),ascent=metrics.ascent*factor;
+        record.node.anchor.set((node===element&&element.attrs['text-anchor']==='middle')?0.5:0,0);
         record.node.scale.set(factor);record.node.position.set(x,y-ascent);
         const widthKey=fontKey+'|'+value;
         if(!widths.has(widthKey)){
@@ -122,13 +124,15 @@ window.createSeremyPixiSurface=async function(map,world,recordFor){
       }
     }
     visit(element,named?colors.name:colors.code);
-    element.bounds={x:left,y:top,width:x-left,height:bottom-top};
+    element.bounds={x:left-(element.attrs['text-anchor']==='middle'?(x-left)/2:0),y:top,width:x-left,height:bottom-top};
   }
   function outline(){
     highlight.clear();const element=focused||hover;
     if(!element?.isConnected||!world.contains(element))return;
-    const record=recordFor(element),box=record.tag==='rect'?record.attrs:record.bounds;
-    if(!box)return;highlight.rect(box.x-1,box.y-1,box.width+2,box.height+2).stroke({color:0x9cb9e5,width:1.5/scale});
+    const record=recordFor(element);let box=record.tag==='rect'?record.attrs:record.bounds;
+    if(!box)return;
+    if(record.clip){const c=record.clip,x=Math.max(box.x,c.x),y=Math.max(box.y,c.y);box={x,y,width:Math.max(0,Math.min(box.x+box.width,c.x+c.width)-x),height:Math.max(0,Math.min(box.y+box.height,c.y+c.height)-y)};}
+    highlight.rect(box.x-1,box.y-1,box.width+2,box.height+2).stroke({color:0x9cb9e5,width:1.5/scale});
   }
   const gl=app.renderer.gl,debug=gl.getExtension('WEBGL_debug_renderer_info');
   function render(){if(gl.isContextLost())return;outline();scene.setChildIndex(highlight,scene.children.length-1);app.render();}
@@ -139,8 +143,9 @@ window.createSeremyPixiSurface=async function(map,world,recordFor){
     focusout(){focused=null;if(!canvas.hidden)render();}
   };
   for(const [name,handler] of Object.entries(events))map.addEventListener(name,handler);
+  function dispose(record){if(record.node instanceof PIXI.Container)record.node.mask=null;record.node.destroy();counters.destroyed++;}
   function release(){
-    for(const record of cache.values()){record.node.destroy();counters.destroyed++;}
+    for(const record of cache.values())dispose(record);
     cache.clear();for(const style of styles.values())style.destroy();styles.clear();widths.clear();
     PIXI.TexturePool.clear();
   }
@@ -152,15 +157,29 @@ window.createSeremyPixiSurface=async function(map,world,recordFor){
       if(!map.clientWidth||!map.clientHeight)return;
       if(gl.isContextLost())throw new Error('WebGL context lost');
       if(app.screen.width!==map.clientWidth||app.screen.height!==map.clientHeight)app.renderer.resize(map.clientWidth,map.clientHeight);
-      scale=camera.k;scene.position.set(camera.x,camera.y);scene.scale.set(scale);used=new Set();usedStyles=new Set();order=0;
-      function visit(element){
+      scale=camera.k;scene.position.set(camera.x,camera.y);scene.scale.set(scale);used=new Set();usedStyles=new Set();orders=new Map();parent=scene;
+      function visit(element,clip=null){
+        element.clip=clip;
         if(element.tag==='text')sourceText(element);
-        else if(element.tag==='rect'||element.tag==='path')shape(element);
-        else if(element.tag==='g')for(const child of element.children)visit(child);
+        else if(element.tag==='rect'||element.tag==='path'){
+          if(clip&&has(element,'source-focus')){
+            const a=element.attrs,x=Math.max(a.x,clip.x),y=Math.max(a.y,clip.y),right=Math.min(a.x+a.width,clip.x+clip.width),bottom=Math.min(a.y+a.height,clip.y+clip.height);
+            if(right>x&&bottom>y)shape({...element,attrs:{...a,x,y,width:right-x,height:bottom-y}});
+          }else shape(element);
+        }else if(element.tag==='g'){
+          const a=element.attrs,nextClip=a['data-clip-x']===undefined?clip:{x:a['data-clip-x'],y:a['data-clip-y'],width:a['data-clip-width'],height:a['data-clip-height']};
+          if(nextClip&&a['data-layer']==='source'&&a['data-clip-enabled']){
+            const group=object(element.id+':group',()=>new PIXI.Container()),previous=parent;parent=group.node;
+            const mask=object(element.id+':mask',()=>new PIXI.Graphics()),signature=JSON.stringify(nextClip);
+            if(mask.signature!==signature){mask.signature=signature;mask.node.clear().rect(nextClip.x,nextClip.y,nextClip.width,nextClip.height).fill(0xffffff);}
+            if(group.node.mask!==mask.node)group.node.mask=mask.node;
+            for(const child of element.children)visit(child,nextClip);parent=previous;
+          }else for(const child of element.children)visit(child,nextClip);
+        }
       }
       for(const child of model.children)visit(child);
       let evicted=0;
-      for(const [key,record] of cache)if(!used.has(key)){record.node.destroy();cache.delete(key);counters.destroyed++;evicted++;}
+      for(const [key,record] of cache)if(!used.has(key)){dispose(record);cache.delete(key);evicted++;}
       for(const [key,style] of styles)if(!usedStyles.has(key)){style.destroy();styles.delete(key);}
       render();
       // Only idle pooled textures are cleared; live/shared text textures retain their references.

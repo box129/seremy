@@ -1,6 +1,10 @@
 const {pathToFileURL}=require('node:url');
 const assert=require('node:assert/strict');
 
+exports.openFinder=async scope=>{
+  if(!await scope.locator('#search').isVisible())await scope.locator('#toggle-search').click();
+};
+
 exports.pathToFileURL=file=>{
   const url=pathToFileURL(file);
   if(process.env.SEREMY_RENDERER)url.searchParams.set('renderer',process.env.SEREMY_RENDERER);

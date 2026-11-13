@@ -12,7 +12,7 @@ function createSceneAdapter(namespace){
     return frame.get(parent);
   }
   function identity(tag,attrs){
-    const keys=Object.keys(attrs).filter(key=>key.startsWith('data-')&&!['data-site-count','data-overview'].includes(key));
+    const keys=Object.keys(attrs).filter(key=>key.startsWith('data-')&&!key.startsWith('data-clip-')&&!['data-site-count','data-overview','data-render-start'].includes(key));
     return tag+'|'+(attrs.class||'').replace(/\b(selected|faded)\b/g,'').trim()+'|'+JSON.stringify(keys.map(key=>[key,attrs[key]]));
   }
   return {
@@ -27,9 +27,12 @@ function createSceneAdapter(namespace){
       const record=recordFor(node);
       for(const key of Object.keys(record.attrs))if(!(key in attrs))node.removeAttribute(key);
       for(const [key,value] of Object.entries(attrs))if(record.attrs[key]!==value)node.setAttribute(key,value);
+      if(record.text!==text){
+        const own=node.firstChild?.nodeType===Node.TEXT_NODE?node.firstChild:null;
+        if(text){if(own)own.nodeValue=text;else node.prepend(document.createTextNode(text));}else if(own)own.remove();
+      }
       record.attrs=attrs;record.text=text;record.children=[];
       if(retained.has(node))state(node);
-      if(text&&node.textContent!==text)node.textContent=text;
       const expected=parent.children[current.index++];if(expected!==node)parent.insertBefore(node,expected||null);
       current.used.add(key);current.children.push(record);return node;
     },

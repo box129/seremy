@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
-const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
+const {pathToFileURL,requireRenderer,openFinder}=require('./map-test-url.cjs');
 
 async function state(page){return page.evaluate(()=>({camera:document.querySelector('#world').getAttribute('transform'),edge:document.querySelector('#edges').value,
   focus:[...document.querySelectorAll('.source-focus')].map(node=>[node.dataset.file,node.dataset.start,node.dataset.end,node.dataset.line]),
@@ -49,7 +49,8 @@ async function run(){
     const page=await browser.newPage({viewport:{width:1225,height:580}});
     await page.goto(pathToFileURL(path.join(redux,'map.html')).href);
     await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('source verified'));
-    await page.locator('#close-files').click();await page.locator('#files').selectOption('src/utils/formatProdErrorMessage.ts');await page.locator('#open').click();
+    await page.locator('#close-files').click();await openFinder(page);
+    await page.locator('#files').selectOption('src/utils/formatProdErrorMessage.ts');await page.locator('#open').click();
     const card=page.locator('.file[data-file="src/utils/formatProdErrorMessage.ts"]');
     const bounds=await card.boundingBox(),map=await page.locator('#map').boundingBox();
     // Keep readable source at the product's minimum source-detail scale.
@@ -59,9 +60,10 @@ async function run(){
     await page.mouse.move(map.x+map.width/2,map.y+map.height/2);await page.mouse.down();
     await page.mouse.move(map.x+map.width/2+dx,map.y+map.height/2+dy,{steps:5});await page.mouse.up();
     await page.screenshot({path:path.join(evidence,'seremy-reference-source.png')});
+    const finalCard=await card.boundingBox(),toolbarHeight=await page.locator('header').evaluate(node=>node.getBoundingClientRect().height);
     assert.ok(bounds.width>0);assert.deepEqual(errors,[]);
     fs.writeFileSync(path.join(evidence,'workflow-checks.json'),JSON.stringify({status:'passed',browser:browser.version(),checks,screens,page_errors:errors,
-      reference:{viewport:[1225,580],file:'src/utils/formatProdErrorMessage.ts',source_zoom:.51,limits:'Historical CodeCanvas revision and camera transform are unavailable. Source text and viewport are aligned; source-card width and zoom policy differ.'}},null,2)+'\n');
+      reference:{viewport:[1225,580],file:'src/utils/formatProdErrorMessage.ts',source_zoom:.51,card_bounds:finalCard,toolbar_height:toolbarHeight,limits:'Historical CodeCanvas revision and camera transform are unavailable. Filename and viewport are aligned; exact visual parity is not asserted.'}},null,2)+'\n');
     console.log(JSON.stringify({status:'passed',checks}));
   }finally{await browser.close();}
 }

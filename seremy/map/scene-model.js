@@ -19,11 +19,12 @@ function folderFor(name){
 for(const path of Object.keys(data.files).sort()){
   const dir=path.includes('/')?path.slice(0,path.lastIndexOf('/')):'';
   const folder=folderFor(dir),lines=data.files[path].split(/\r\n|\n/);
-  let width=650;
-  for(const line of lines)width=Math.max(width,line.replace(/\t/g,'    ').length*charWidth+65);
+  let width=650,contentWidth=0;
+  for(const line of lines)contentWidth=Math.max(contentWidth,line.replace(/\t/g,'    ').length*charWidth);
+  width=Math.max(width,contentWidth+70);
   const raw=new TextEncoder().encode(data.files[path]),lineOffsets=[0];
   for(let offset=0;offset<raw.length;offset++)if(raw[offset]===10)lineOffsets.push(offset+1);
-  files[path]={path,text:data.files[path],lines,raw,lineOffsets,positions:new Map(),width,dir};
+  files[path]={path,text:data.files[path],lines,raw,lineOffsets,positions:new Map(),contentWidth,width:Math.min(760,width),sourceX:0,clipId:'source-window-'+Object.keys(files).length,dir};
   folder.children.push(files[path]);
   for(let ancestor=folder;ancestor!==root;ancestor=folderFor(ancestor.parent))ancestor.count++;
 }
@@ -79,8 +80,26 @@ function anchor(span){
   for(let folder=folderFor(f.dir);folder!==root;folder=folderFor(folder.parent))
     if(closedFolders.has(folder.name)&&!folder.hidden)return {x:folder.x+folder.width/2,y:folder.y+folder.height/2};
   if(p.line>f.displayLines)return {x:f.x+f.width/2,y:f.y+f.height-15};
-  return {x:f.x+52+p.x,y:f.y+codeTop+(p.line-1)*lineHeight};
+  const point=sourcePoint(span),clip=sourceWindow(f);
+  return {x:Math.max(clip.x,Math.min(clip.x+clip.width,point.x)),y:point.y};
 }
+function sourceWindow(file){return {x:file.x+50,y:file.y+codeTop-16,width:file.width-66,height:file.height-codeTop-12};}
+function sourcePoint(span){const f=files[span.file],p=position(span);return {x:f.x+52+p.x-f.sourceX,y:f.y+codeTop+(p.line-1)*lineHeight};}
+function sourceLimit(file){
+  if(!file.extentMeasured){
+    for(const line of file.lines)if(/[^\x00-\x7f]/.test(line))file.contentWidth=Math.max(file.contentWidth,textWidth(line));
+    file.extentMeasured=true;
+  }
+  return Math.max(0,file.contentWidth-(file.width-70));
+}
+function revealSource(span){
+  const f=files[span.file],p=position(span),width=f.width-70;
+  f.contentWidth=Math.max(f.contentWidth,p.x+p.width);
+  if(p.x<f.sourceX+12)f.sourceX=Math.max(0,p.x-24);
+  else if(p.x+Math.min(p.width,width-48)>f.sourceX+width-12)f.sourceX=Math.min(sourceLimit(f),Math.max(0,p.x+Math.min(p.width,width-48)-width+24));
+}
+function sourceOffsets(){return Object.fromEntries(Object.values(files).filter(f=>f.sourceX).map(f=>[f.path,f.sourceX]));}
+function restoreSourceOffsets(offsets={}){for(const file of Object.values(files))file.sourceX=offsets[file.path]||0;}
 function overviewContainer(path){
   const file=files[path];
   for(let folder=folderFor(file.dir);folder!==root;folder=folderFor(folder.parent))

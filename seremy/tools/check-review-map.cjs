@@ -3,7 +3,7 @@ const {spawnSync} = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const {pathToFileURL,requireRenderer} = require('./map-test-url.cjs');
+const {pathToFileURL,requireRenderer,openFinder} = require('./map-test-url.cjs');
 const assert = require('node:assert/strict');
 
 async function run() {
@@ -37,6 +37,7 @@ async function run() {
         const foldedHeight=await page.locator('.file').getAttribute('height');
         assert.ok(Number(foldedHeight)<2000);
         assert.equal(await page.getByRole('button',{name:'Expand full file long.py',exact:true}).count(),1);
+        await openFinder(page);
         await page.getByRole('searchbox', {name:'Find file or symbol'}).fill('main');
         await page.getByRole('button', {name:'Open file', exact:true}).click();
         assert.match(await page.locator('#detail').innerText(), /long.py:160001/);

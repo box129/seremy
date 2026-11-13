@@ -2,7 +2,7 @@
 const {chromium}=require('playwright');
 const fs=require('node:fs');
 const path=require('node:path');
-const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
+const {pathToFileURL,requireRenderer,openFinder}=require('./map-test-url.cjs');
 const assert=require('node:assert/strict');
 
 async function run(){
@@ -39,6 +39,7 @@ async function run(){
     await page.getByRole('button',{name:'Expand folders',exact:true}).click();
     assert.equal(await page.locator('#world').getAttribute('transform'),origin);
     checks.push('Folder collapse hides source files and expansion preserves camera');
+    await openFinder(page);
     await page.getByRole('searchbox',{name:'Find file or symbol'}).fill('isPlainObject');
     await page.getByRole('combobox',{name:'Open file'}).selectOption('src/utils/isPlainObject.ts');
     await page.getByRole('button',{name:'Open file',exact:true}).press('Enter');

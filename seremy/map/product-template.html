@@ -30,19 +30,19 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 #pixi-surface{position:absolute;inset:0 auto auto 0;pointer-events:none;z-index:0;background-color:#171717;background-image:radial-gradient(#333 1px,transparent 1px);background-size:25px 25px}body[data-renderer=pixi] #map{position:relative;z-index:1;background:transparent}body[data-renderer=pixi] #world{opacity:0}#mini{z-index:2}#renderer-status{color:#aaa;line-height:1.6}
 #evidence{padding:0;line-height:1.7;color:#999;overflow-wrap:anywhere}#inspection-empty{color:#aaa;line-height:1.7}#detail{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}footer{min-height:28px;padding:5px 12px;background:#202020;border-top:1px solid #383838}
 @media(max-width:700px){#repository{width:210px}header input{width:130px}header #files{max-width:130px}}
+
+#skip-map{position:fixed;top:4px;left:4px;z-index:6;padding:8px 12px;background:#303030;color:#fff;transform:translateY(-150%)}#skip-map:focus{transform:translateY(0)}
+header{flex-wrap:nowrap;min-height:44px;padding:6px 12px;gap:12px;overflow-x:auto}header button{white-space:nowrap;border-color:transparent;background:transparent;border-radius:5px;min-height:30px}header button:hover:enabled{background:#343434}.rail-group{display:flex;align-items:center;gap:2px}.rail-group+.rail-group{border-left:1px solid #3a3a3a;padding-left:12px}.rail-secondary{margin-left:auto}kbd{font:10px Consolas,monospace;border:1px solid #4a4a4a;border-radius:3px;padding:0 4px;margin-left:8px;color:#999}
+#file-finder{position:absolute;top:12px;left:12px;z-index:4;width:min(440px,calc(100% - 24px));padding:16px;background:#242424;border:1px solid #4a4a4a;border-radius:8px;box-shadow:0 12px 40px #0005}#file-finder input{width:100%;padding:10px 12px}#file-finder .panel-heading{margin-bottom:12px}.finder-result{display:flex;gap:8px;margin-top:10px}.finder-result select{flex:1;min-width:0}#file-finder p{padding:0;margin:12px 0 0;color:#999;font-size:11px}#source-columns{border-bottom:1px solid #383838;padding-bottom:16px;margin-bottom:16px}#source-columns p{padding:0;font-size:11px;color:#aaa}#source-scroll{width:100%;accent-color:#a6bbde}footer{flex-wrap:nowrap;gap:12px}#status{max-width:310px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;color:#999}#detail{min-width:0;font-size:11px}#breadcrumbs{max-width:36%;flex-shrink:1}button,input,select{transition:background-color .12s,border-color .12s}button:active:enabled{background:#414141}@media(prefers-reduced-motion:reduce){button,input,select{transition:none}}@media(max-width:700px){header{gap:4px;padding-inline:6px}.rail-group+.rail-group{padding-left:4px}header button{padding-inline:6px}#status{max-width:130px;font-size:10px}#breadcrumbs{display:none}#toggle-search kbd{display:none}}
 </style>
-<header><b>SEREMY</b><span id="status">Verifying source…</span>
-<button id="toggle-files" aria-controls="repository" aria-expanded="true">Files</button>
-<input id="search" type="search" placeholder="Find a file or symbol" aria-label="Find file or symbol">
-<select id="files" aria-label="Open file"></select><button id="open">Open file</button>
-<button id="back" disabled>Back</button><button id="fit">Fit map</button>
-<button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button>
-<button id="collapse">Collapse folders</button><button id="arrange" aria-pressed="false" title="Select and drag files or folders. Shift adds to the selection.">Arrange</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></header>
-<main><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
+<a id="skip-map" href="#map">Skip to source map</a><header aria-label="Map controls"><div class="rail-group"><button id="toggle-files" aria-controls="repository" aria-expanded="true">Files</button><button id="toggle-search" aria-controls="file-finder" aria-expanded="false" aria-keyshortcuts="/ Control+k Meta+k">Find <kbd>/</kbd></button><button id="back" disabled>Back</button></div>
+<div class="rail-group"><button id="fit" aria-label="Fit map">Fit</button><button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button></div>
+<div class="rail-group rail-secondary"><button id="collapse">Collapse folders</button><button id="arrange" aria-pressed="false" title="Select and drag files or folders. Shift adds to the selection.">Arrange</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></div></header>
+<main><section id="file-finder" role="search" aria-label="Find source" hidden><div class="panel-heading"><h2>Find source</h2><button id="close-search" aria-label="Close Find">×</button></div><input id="search" type="search" placeholder="File path or symbol" aria-label="Find file or symbol"><div class="finder-result"><select id="files" aria-label="Open file"></select><button id="open">Open file</button></div><p id="finder-status" role="status"></p><p>Enter opens a result · Esc returns to the map</p></section><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
 <aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
 <details id="mcp-tools"><summary>MCP and agent notes</summary><p id="agent-status" role="status">Connect an agent through the local launcher.</p><button id="connect-agent">Share selection with agent</button><div id="agent-notes"></div></details>
 <details id="arrangement-tools"><summary>Arrangement and saved view</summary><div id="arrangement"><label>Renderer<select id="renderer"><option value="svg">SVG</option><option value="pixi">Pixi / WebGL preview</option></select></label><div id="renderer-status" role="status">SVG active</div><label>Layout<select id="layout-mode"><option value="packed">Packed</option><option value="columns">Columns</option></select></label><label>Group name<input id="group-name" maxlength="80" placeholder="Group name"></label><div id="arrangement-actions"><button id="group-selection">Group selection</button><button id="ungroup">Ungroup</button><button id="save-view">Save view</button><button id="restore-view">Restore view</button></div><div id="view-status" role="status">Use Arrange to move files or folders. Shift selects multiple items.</div></div></details>
-<div class="scope-controls"><label>Connections<select id="connection-mode"><option value="all">All files</option><option value="incoming">Incoming to selected file</option><option value="outgoing">Outgoing from selected file</option><option value="neighborhood">Selected file neighborhood</option></select></label><div id="scope-label"></div><div id="connection-count" role="status"></div></div>
+<section id="source-columns" hidden><label>Long-line position<input id="source-scroll" type="range" min="0" max="0" step="1" value="0" aria-label="Horizontal source position"></label><p id="source-scroll-status"></p><button id="source-start">First columns</button></section><div class="scope-controls"><label>Connections<select id="connection-mode"><option value="all">All files</option><option value="incoming">Incoming to selected file</option><option value="outgoing">Outgoing from selected file</option><option value="neighborhood">Selected file neighborhood</option></select></label><div id="scope-label"></div><div id="connection-count" role="status"></div></div>
 <label>Connection<select id="edges" aria-label="Relationship"><option value="">Choose a connection</option></select></label>
 <details id="outcome-tools"><summary>Unresolved and other outcomes</summary><label>Resolution outcome<select id="outcomes"><option value="">Choose a recorded outcome</option></select></label></details><p id="outcome-detail"></p>
 <details id="region-tools"><summary>Source regions</summary><label>Source region<select id="regions"><option value="">Selected span</option></select></label><p id="region-detail"></p></details>
@@ -50,7 +50,7 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 <section id="inspection-source" hidden><h3 id="source-heading">Caller</h3><p id="source-location" class="source-location"></p><pre id="source-excerpt" class="source-excerpt"></pre><button id="origin">Show source</button></section>
 <section id="inspection-target" hidden><h3>Target declaration</h3><p id="target-location" class="source-location"></p><pre id="target-excerpt" class="source-excerpt"></pre><button id="target">Follow target</button></section>
 <p id="evidence"></p></aside></main>
-<footer><div id="detail" aria-live="polite">Select a relationship or source region.</div><nav id="breadcrumbs" aria-label="Source breadcrumbs"></nav></footer>
+<footer><span id="status" role="status">Verifying source…</span><div id="detail" aria-live="polite">Select a relationship or source region.</div><nav id="breadcrumbs" aria-label="Source breadcrumbs"></nav></footer>
 <script id="fixture" type="application/json">FIXTURE_JSON</script>
 <script id="pixi-runtime" type="text/plain">PIXI_RUNTIME_JS</script>
 <script>PIXI_SURFACE_JS</script>
@@ -131,7 +131,7 @@ function save(){
   history.push({camera:{...camera},collapsed,selected,focus,connectionMode,scopeFile,selectedOutcome,closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],
     arrangement:arrangementState(),
     expanded:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),
-    treeScroll:repositoryScroll});
+    treeScroll:repositoryScroll,sourceOffsets:sourceOffsets()});
 }
 function arrangementState(){return {layoutMode,placements:structuredClone(placements),viewGroups:structuredClone(viewGroups),nodeSelection:[...nodeSelection],selectedGroup};}
 function restoreArrangement(state){
@@ -161,7 +161,7 @@ function saveView(){
   const state={schema:1,repository:data.repository,digest:data.bundle.content_digest,camera,arrangement:arrangementState(),
     closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],collapsed,focus,connectionMode,scopeFile,
     edge:selected?.id||null,outcome:selectedOutcome?.candidate_id||null,
-    tree:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),treeScroll:repositoryScroll,agentNotes,renderer};
+    tree:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),treeScroll:repositoryScroll,agentNotes,renderer,sourceOffsets:sourceOffsets()};
   try{localStorage.setItem(viewKey,JSON.stringify(state));el('view-status').textContent='View saved on this browser for this snapshot.';}
   catch(error){el('view-status').textContent='Could not save this view. Browser storage is unavailable or full.';}
 }
@@ -193,6 +193,7 @@ function validView(state){
   }
   if(state.agentNotes!==undefined&&(!Array.isArray(state.agentNotes)||state.agentNotes.length>100||!state.agentNotes.every(validAgentNote)))return false;
   if(state.renderer!==undefined&&!['svg','pixi'].includes(state.renderer))return false;
+  if(state.sourceOffsets!==undefined&&(!state.sourceOffsets||typeof state.sourceOffsets!=='object'||Array.isArray(state.sourceOffsets)||!Object.entries(state.sourceOffsets).every(([path,value])=>files[path]&&finite(value)&&value>=0&&value<=sourceLimit(files[path])+1)))return false;
   return true;
 }
 function restoreView(){
@@ -201,13 +202,14 @@ function restoreView(){
     if(!text){el('view-status').textContent='No saved view for this repository snapshot.';return;}
     const state=JSON.parse(text);
     if(!validView(state)){el('view-status').textContent='Saved view is incompatible or damaged.';return;}
-    save();restoreArrangement(state.arrangement);camera={...state.camera};
+    save();restoreArrangement(state.arrangement);restoreSourceOffsets(state.sourceOffsets);camera={...state.camera};
     ({collapsed,focus,connectionMode,scopeFile}=state);
     selected=data.edges.find(edge=>edge.id===state.edge)||null;selectedOutcome=outcomes.find(record=>record.candidate_id===state.outcome)||null;
     closedFolders.clear();state.closedFolders.forEach(id=>closedFolders.add(id));
     expandedFiles.clear();state.expandedFiles.forEach(id=>expandedFiles.add(id));layout();
+    if(state.sourceOffsets===undefined&&focus){revealSource(focus);center(anchor(focus),camera.k);}
     for(const node of el('tree').querySelectorAll('details'))node.open=state.tree.includes(node.dataset.directory);
-    repositoryScroll=state.treeScroll;el('repository').scrollTop=repositoryScroll;agentNotes=state.agentNotes||[];renderAgentNotes();draw();chooseRenderer(state.renderer||'svg');el('view-status').textContent='Saved view restored.';
+    repositoryScroll=state.treeScroll;el('repository').scrollTop=repositoryScroll;agentNotes=state.agentNotes||[];renderAgentNotes();draw();chooseRenderer(state.renderer||'svg');el('view-status').textContent=state.sourceOffsets===undefined&&focus?'Saved view restored. Source framing updated.':'Saved view restored.';
   }catch(error){el('view-status').textContent='Could not read the saved view. Browser storage may be unavailable.';}
 }
 function revealFile(path){
@@ -226,7 +228,7 @@ function follow(span,edge=null,outcome=null){
   if(!edge)scopeFile=span.file;
   for(let folder=folderFor(files[span.file].dir);folder!==root;folder=folderFor(folder.parent))closedFolders.delete(folder.name);
   if(position({file:span.file,start:span.end,end:span.end}).line>previewLines)expandedFiles.add(span.file);
-  layout();center(anchor(span),1.25);draw();
+  layout();revealSource(span);center(anchor(span),1.25);draw();
 }
 function zoom(x,y,factor){
   const k=Math.min(4,Math.max(.001,camera.k*factor)),ratio=k/camera.k;
@@ -278,8 +280,8 @@ function inspection(){
 }
 function controls(){
   const active=selected&&bound;
-  el('origin').disabled=!(bound&&(selected||selectedOutcome));el('target').disabled=!active;
-  el('back').disabled=!history.length;
+  el('origin').disabled=!(bound&&(selected||selectedOutcome||(focus&&focus.end>focus.start)));el('target').disabled=!active;
+  el('back').disabled=!history.length;el('open').disabled=!(bound&&el('files').options.length);
   el('collapse').textContent=collapsed?'Expand folders':'Collapse folders';
   el('edges').value=selected?.id||'';
   for(const button of el('tree').querySelectorAll('button'))
@@ -295,9 +297,38 @@ function controls(){
   connectionControls();
   el('arrange').setAttribute('aria-pressed',String(arranging));el('layout-mode').value=layoutMode;
   el('group-selection').disabled=nodeSelection.size<2;el('ungroup').disabled=!selectedGroup;
-  breadcrumbs();
+  sourceControls();breadcrumbs();
   scheduleAgentReport();
 }
+function moveSource(file,value,remember=true){if(!bound)return;if(remember)save();file.sourceX=Math.max(0,Math.min(sourceLimit(file),value));draw();}
+function syncSourceButtons(){
+  for(const node of world.querySelectorAll('[data-source-shift]')){
+    const file=files[node.dataset.sourcePath],delta=Number(node.dataset.sourceDelta),disabled=!bound||(delta<0?file.sourceX<=0:file.sourceX>=sourceLimit(file));
+    node.setAttribute('aria-disabled',String(disabled));node.setAttribute('tabindex',disabled?'-1':'0');node.style.cursor=disabled?'default':'pointer';
+  }
+}
+function sourceControls(){
+  const file=files[focus?.file||scopeFile||selected?.from.file];
+  const limit=file?sourceLimit(file):0;el('source-columns').hidden=!limit;
+  el('source-scroll').max=String(limit);el('source-scroll').value=String(file?.sourceX||0);el('source-scroll').disabled=!bound;
+  el('source-scroll').setAttribute('aria-valuetext',Math.round((file?.sourceX||0)/(limit||1)*100)+'% across source');
+  el('source-scroll-status').textContent=file?'Long lines in '+file.path:'';el('source-start').disabled=!bound||!file?.sourceX;
+}
+let sourceRangeSaved=false;
+el('source-scroll').onpointerdown=()=>{if(bound){save();sourceRangeSaved=true;}};
+el('source-scroll').onchange=()=>{sourceRangeSaved=false;};
+el('source-scroll').onblur=()=>{sourceRangeSaved=false;};
+el('source-scroll').oninput=()=>{const file=files[focus?.file||scopeFile||selected?.from.file];if(file)moveSource(file,Number(el('source-scroll').value),!sourceRangeSaved);};
+el('source-start').onclick=()=>{const file=files[focus?.file||scopeFile||selected?.from.file];if(file)moveSource(file,0);};
+function setFinder(open,restoreFocus=true){
+  el('file-finder').hidden=!open;el('toggle-search').setAttribute('aria-expanded',String(open));
+  if(open)el('search').focus();else if(restoreFocus)el('toggle-search').focus();
+}
+el('skip-map').onclick=event=>{event.preventDefault();map.focus();};
+el('toggle-search').onclick=()=>setFinder(el('file-finder').hidden);
+el('close-search').onclick=()=>setFinder(false);
+el('file-finder').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();setFinder(false);}else if(event.key==='Enter'&&event.target===el('search')){event.preventDefault();if(!el('open').disabled)el('open').click();}});
+document.addEventListener('keydown',event=>{if((event.key==='/'||((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'))&&!['INPUT','SELECT','TEXTAREA'].includes(event.target.tagName)){event.preventDefault();setFinder(true);}});
 let breadcrumbKey=null;
 function breadcrumbs(){
   const path=focus?.file||[...nodeSelection].map(sceneNode).filter(Boolean).map(node=>node.path||node.name)[0]||selected?.from.file||'';
@@ -331,25 +362,51 @@ function connectionControls(){
   el('scope-label').textContent=connectionMode==='all'?'Entire repository':scopeFile||'Select a source file to apply this filter.';
   el('connection-count').textContent=new Set(edges.map(edge=>edge.relation_id||edge.id)).size+' relationships · '+edges.length+' source sites';
 }
-function renderCode(line,node){
-  const pieces=line.replace(/\t/g,'    ').split(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\/\/.*$|#.*$|\b(?:def|class|return|import|from|export|default|function|const|let|while|if|else|async|await|try|except|raise|throw|new|interface|type|extends|true|false|null|None|True|False|\d+(?:\.\d+)?)\b)/g);
+const syntaxCache=new Map();let syntaxWeight=0;
+function renderCode(line,node,start=0,end=Infinity){
+  const expanded=line.replace(/\t/g,'    ');
+  let pieces=syntaxCache.get(expanded);
+  if(!pieces){
+    pieces=expanded.split(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\/\/.*$|#.*$|\b(?:def|class|return|import|from|export|default|function|const|let|while|if|else|async|await|try|except|raise|throw|new|interface|type|extends|true|false|null|None|True|False|\d+(?:\.\d+)?)\b)/g);
+    if(expanded.length<=131072){
+      while(syntaxCache.size&&(syntaxCache.size>=1024||syntaxWeight+expanded.length>1048576)){const key=syntaxCache.keys().next().value;syntaxWeight-=key.length;syntaxCache.delete(key);}
+      syntaxCache.set(expanded,pieces);syntaxWeight+=expanded.length;
+    }
+  }
+  let offset=0;
   for(const piece of pieces){
+    const visible=piece.slice(Math.max(0,start-offset),Math.max(0,end-offset));offset+=piece.length;if(!visible)continue;
     let kind='';
     if(/^(\/\/|#)/.test(piece))kind='comment';
     else if(/^["'`]/.test(piece))kind='string';
     else if(/^(true|false|null|None|True|False|\d+(?:\.\d+)?)$/.test(piece))kind='literal';
     else if(/^(def|class|return|import|from|export|default|function|const|let|while|if|else|async|await|try|except|raise|throw|new|interface|type|extends)$/.test(piece))kind='keyword';
-    add(node,'tspan',{class:kind},piece);
+    add(node,'tspan',{class:kind},visible);
   }
 }
+function visibleCode(file,index){
+  if(file.sliceOffset!==file.sourceX){file.sliceOffset=file.sourceX;file.slices=new Map();}
+  if(file.slices.has(index))return file.slices.get(index);
+  const line=file.lines[index].replace(/\t/g,'    '),ascii=/^[\x00-\x7f]*$/.test(line),width=file.width-70;
+  const find=target=>{let low=0,high=line.length;while(low<high){const mid=Math.floor((low+high)/2);if(textWidth(line.slice(0,mid))<target)low=mid+1;else high=mid;}return low;};
+  let start=Math.max(0,(ascii?Math.floor((file.sourceX-32)/charWidth):find(Math.max(0,file.sourceX-32)))-16);
+  let end=Math.min(line.length,(ascii?Math.ceil((file.sourceX+width+32)/charWidth):find(file.sourceX+width+32))+16);
+  if(start>0&&/[\uDC00-\uDFFF]/.test(line[start]||''))start--;
+  if(end<line.length&&/[\uDC00-\uDFFF]/.test(line[end]||''))end++;
+  const result={start,end,x:ascii?start*charWidth:textWidth(line.slice(0,start))};
+  if(file.slices.size>=128)file.slices.delete(file.slices.keys().next().value);file.slices.set(index,result);return result;
+}
+
 function draw(){
   sceneAdapter.begin();
   world.setAttribute('transform','translate('+camera.x+' '+camera.y+') scale('+camera.k+')');
   mini.setAttribute('viewBox','0 0 '+maxX+' '+(maxY+30));
   const visible={left:-camera.x/camera.k,top:-camera.y/camera.k,
     right:(map.clientWidth-camera.x)/camera.k,bottom:(map.clientHeight-camera.y)/camera.k};
-  const visibleFiles=[];
+  const visibleFiles=[],windows=new Map(),interactionLayers=new Map();
+  const definitions=add(world,'defs');
   const folderLabels=add(world,'g');
+  const clipAttrs=(f,kind)=>{const box=sourceWindow(f);return {'data-source-window':f.path,'data-layer':kind,'data-clip-enabled':camera.k>=.5,...camera.k>=.5?{'clip-path':'url(#'+f.clipId+')'}:{},'data-clip-x':box.x,'data-clip-y':box.y,'data-clip-width':box.width,'data-clip-height':box.height};};
   for(const group of viewGroups){
     const bounds=groupBounds(group);if(!bounds)continue;
     add(world,'rect',{...bounds,rx:8,class:'view-group','data-view-group':group.id});
@@ -376,8 +433,11 @@ function draw(){
     if(f.x+f.width<visible.left||f.x>visible.right||f.y+f.height<visible.top||f.y>visible.bottom)continue;
     visibleFiles.push(f);
     add(world,'rect',{x:f.x,y:f.y,width:f.width,height:f.height,rx:4,class:'file','data-file':f.path});
-    const title=add(world,'text',{x:f.x+10,y:f.y+23,class:'name'},f.path);
-    title.onclick=()=>follow({file:f.path,start:0,end:0});
+    if(camera.k>=.5){const clip=add(definitions,'clipPath',{id:f.clipId,clipPathUnits:'userSpaceOnUse'});add(clip,'rect',sourceWindow(f));}
+    const sourceLayer=add(world,'g',clipAttrs(f,'source'));windows.set(f.path,sourceLayer);
+    const title=add(world,'text',{x:f.x+f.width/2,y:f.y+23,class:'name','text-anchor':'middle','data-source-title':f.path,tabindex:0,role:'button','aria-label':'Focus source '+f.path},f.path.split('/').at(-1));
+    add(title,'title',{},f.path);title.onclick=()=>follow({file:f.path,start:0,end:0});
+    title.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();title.onclick();}};
     if(f.lines.length>foldThreshold){
       const expanded=expandedFiles.has(f.path);
       const toggle=add(world,'text',{x:f.x+10,y:f.y+47,class:'name',role:'button',tabindex:0,
@@ -388,6 +448,15 @@ function draw(){
       toggle.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();toggle.onclick();}};
       if(!expanded)add(world,'text',{x:f.x+10,y:f.y+f.height-16,class:'name'},(f.lines.length-previewLines)+' lines folded');
     }
+    if(sourceLimit(f)>0){
+      for(const [label,delta,x] of [['Reveal earlier columns',-1,f.x+f.width-66],['Reveal later columns',1,f.x+f.width-30]]){
+        const disabled=!bound||(delta<0?f.sourceX<=0:f.sourceX>=sourceLimit(f));
+        const button=add(world,'text',{x,y:f.y+47,class:'name',role:'button',tabindex:disabled?-1:0,'data-source-shift':label,'data-source-path':f.path,'data-source-delta':delta,'aria-label':label+' in '+f.path,'aria-disabled':String(disabled)},delta<0?'‹':'›');
+        sceneAdapter.style(button,{cursor:disabled?'default':'pointer'});
+        button.onclick=()=>{if(bound&&(delta<0?f.sourceX>0:f.sourceX<sourceLimit(f)))moveSource(f,f.sourceX+delta*(f.width-70)*.65);};
+        button.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();button.onclick();}};
+      }
+    }
     const first=Math.max(0,Math.floor((visible.top-f.y-codeTop)/lineHeight));
     const last=Math.min(f.displayLines,Math.ceil((visible.bottom-f.y)/lineHeight));
     const stride=camera.k<.5?Math.max(1,Math.ceil(3/(camera.k*lineHeight))):1;
@@ -395,14 +464,16 @@ function draw(){
     for(let i=first;i<last;i+=stride){
       const y=f.y+codeTop+i*lineHeight,line=f.lines[i];
       if(camera.k<.5){
-        if(line.trim())coarseLines+='M '+(f.x+52)+' '+(y-9)+' h '+(line.length*7)+' v 8 h '+(-line.length*7)+' Z ';
+        const expanded=line.replace(/\t/g,'    '),coarseWidth=Math.max(0,Math.min((measuredWidths.get(expanded)??expanded.length*charWidth)-f.sourceX,f.width-70));
+        if(line.trim())coarseLines+='M '+(f.x+52)+' '+(y-9)+' h '+coarseWidth+' v 8 h '+(-coarseWidth)+' Z ';
       }else{
-        const t=add(world,'text',{x:f.x+8,y,class:'code','xml:space':'preserve','data-file':f.path,'data-line':i+1});
-        add(t,'tspan',{class:'number'},String(i+1));
-        renderCode(line,add(t,'tspan',{x:f.x+52}));
+        add(world,'text',{x:f.x+8,y,class:'code number','data-line-number':i+1,'data-source-file':f.path},String(i+1));
+        const slice=visibleCode(f,i),x=f.x+52+slice.x-f.sourceX;
+        const t=add(sourceLayer,'text',{x,y,class:'code','xml:space':'preserve','data-file':f.path,'data-line':i+1,'data-render-start':slice.start});
+        renderCode(line,add(t,'tspan',{x}),slice.start,slice.end);
       }
     }
-    if(coarseLines)add(world,'path',{d:coarseLines,fill:'#507561','data-source-preview':f.path});
+    if(coarseLines)add(sourceLayer,'path',{d:coarseLines,fill:'#507561','data-source-preview':f.path});
   }
   const filtered=visibleEdges();
   const relationships=camera.k<.5?overviewEdges():filtered.map(edge=>({edge,count:1}));
@@ -431,11 +502,14 @@ function draw(){
     hit.onclick=()=>select(edge);
   }
   {
-    for(const file of camera.k>=.5?visibleFiles:[])for(const span of selectableSites.get(file.path)||[]){
+    for(const file of camera.k>=.5?visibleFiles:[]){
+      const layer=add(world,'g',clipAttrs(file,'interaction'));interactionLayers.set(file.path,layer);
+      for(const span of selectableSites.get(file.path)||[]){
       if(position(span).line>file.displayLines)continue;
-      const p=anchor(span),name=position(span).token;
+      const p=sourcePoint(span),name=position(span).token,clip=sourceWindow(file);
+      if(p.x+position(span).width<clip.x||p.x>clip.x+clip.width)continue;
       if(p.x<visible.left||p.x>visible.right||p.y<visible.top||p.y>visible.bottom)continue;
-      const box=add(world,'rect',{x:p.x,y:p.y-14,width:Math.max(8,position(span).width),height:18,class:'token',
+      const box=add(layer,'rect',{x:p.x,y:p.y-14,width:Math.max(8,position(span).width),height:18,class:'token',
         'data-file':span.file,'data-start':span.start,tabindex:0,role:'button',
         'aria-label':'Select '+name+' in '+span.file+':'+position(span).line});
       add(box,'title',{},name+' · '+span.file+':'+position(span).line);
@@ -444,12 +518,13 @@ function draw(){
         if(outcome&&!edge)chooseOutcome(outcome);else select(edge||null,span);};
       box.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();box.onclick();}};
     }
-    if(focus&&!files[focus.file].hidden&&position(focus).line<=files[focus.file].displayLines){
+    }
+    if(focus&&interactionLayers.has(focus.file)&&!files[focus.file].hidden&&position(focus).line<=files[focus.file].displayLines){
       const file=files[focus.file],start=position(focus),end=position({file:focus.file,start:focus.end,end:focus.end});
       for(let line=Math.max(start.line,1,Math.floor((visible.top-file.y-codeTop)/lineHeight));line<=Math.min(end.line,file.displayLines,Math.ceil((visible.bottom-file.y-codeTop)/lineHeight)+1);line++){
         const left=line===start.line?start.x:0,right=line===end.line?end.x:textWidth(file.lines[line-1]);
         if(line===end.line&&end.x===0&&line!==start.line)continue;
-        add(world,'rect',{x:file.x+52+left,y:file.y+codeTop+(line-1)*lineHeight-15,width:Math.max(8,right-left),height:20,
+        add(interactionLayers.get(focus.file),'rect',{x:file.x+52+left-file.sourceX,y:file.y+codeTop+(line-1)*lineHeight-15,width:Math.max(8,right-left),height:20,
           class:'source-focus','data-file':focus.file,'data-start':focus.start,'data-end':focus.end,'data-line':line});
       }
     }
@@ -494,13 +569,15 @@ function filterFiles(){
     const names=data.entities.filter(e=>e.file_id===f.path).map(e=>e.name).join(' ').toLowerCase();
     if(f.path.toLowerCase().includes(query)||names.includes(query))picker.add(new Option(f.path,f.path));
   }
-  el('open').disabled=!picker.options.length;
+  el('open').disabled=!bound||!picker.options.length;
+  el('finder-status').textContent=picker.options.length?picker.options.length+(query?' matching files':' source files'):'No files or symbols match your search.';
 }
 el('search').oninput=filterFiles;filterFiles();
 el('open').onclick=()=>{
   const file=el('files').value,query=el('search').value.toLowerCase();
   const entity=data.entities.find(e=>e.file_id===file&&e.name.toLowerCase().includes(query));
   follow(entity?{file,start:entity.name_span[0],end:entity.name_span[1]}:{file,start:0,end:0});
+  setFinder(false,false);map.focus();
 };
 el('edges').onchange=()=>{const id=el('edges').value;select(data.edges.find(edge=>edge.id===id));};
 el('connection-mode').onchange=()=>{
@@ -594,7 +671,7 @@ el('collapse').onclick=()=>{
 el('back').onclick=()=>{
   const prior=history.pop();if(!prior)return;
   ({camera,collapsed,selected,focus,connectionMode,scopeFile,selectedOutcome}=prior);
-  restoreArrangement(prior.arrangement);
+  restoreArrangement(prior.arrangement);restoreSourceOffsets(prior.sourceOffsets);
   closedFolders.clear();for(const name of prior.closedFolders)closedFolders.add(name);
   expandedFiles.clear();for(const name of prior.expandedFiles)expandedFiles.add(name);layout();
   for(const node of el('tree').querySelectorAll('details'))node.open=prior.expanded.includes(node.dataset.directory);
@@ -606,6 +683,7 @@ map.addEventListener('wheel',event=>{event.preventDefault();const r=map.getBound
 let drag=null,moved=false;
 map.onpointerdown=e=>{
   if(e.button!==0)return;
+  if(!el('file-finder').hidden)setFinder(false,false);
   moved=false;drag={x:e.clientX,y:e.clientY,c:{...camera}};
   if(!arranging)return;
   const groupId=e.target.closest('[data-view-group]')?.dataset.viewGroup;
@@ -652,6 +730,7 @@ fit();draw();
     }
     bound=true;
   }catch(error){bound=false;el('status').textContent='STALE · source verification failed';}
+  syncSourceButtons();
   if(new URLSearchParams(location.search).get('renderer')==='pixi')await chooseRenderer('pixi');
   if(bound)el('status').textContent=Object.keys(files).length+' files · '+data.coverage.s03.direct_edge_count+' relationships · '+data.edges.length+' source sites · source verified · draft';
   controls();

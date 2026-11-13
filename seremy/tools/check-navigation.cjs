@@ -3,7 +3,7 @@ const {chromium} = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {pathToFileURL,requireRenderer} = require('./map-test-url.cjs');
+const {pathToFileURL,requireRenderer,openFinder} = require('./map-test-url.cjs');
 
 async function state(page) {
   return page.evaluate(() => ({
@@ -103,15 +103,19 @@ async function run() {
     assert.equal((await state(page)).edge,'');
     await page.getByRole('button', {name:'Back',exact:true}).click();
     assert.deepEqual(await state(page),origin);
+    await openFinder(page);
     await page.getByRole('searchbox',{name:'Find file or symbol'}).fill('createStore');
     await page.getByRole('button',{name:'Open file',exact:true}).click();
     assert.equal(await page.locator('#target').isDisabled(),true);
     await page.getByRole('button',{name:'Back',exact:true}).click();
     assert.deepEqual(await state(page),origin);
-    await page.locator('#world text.name').filter({hasText:/^src\/utils\/isAction\.ts$/}).click();
+    // At reading zoom the centered card heading may sit underneath the overlay inspector.
+    await page.getByRole('button',{name:'Close inspector',exact:true}).click();
+    await page.locator('[data-source-title="src/utils/isAction.ts"]').click();
     assert.equal(await page.locator('#target').isDisabled(),true);
     await page.getByRole('button',{name:'Back',exact:true}).click();
     assert.deepEqual(await state(page),origin);
+    await page.locator('#inspect').click();
     checks.push('Opening a file through tree, search, or canvas title clears the relationship and Back recovers it');
     await page.getByRole('button', {name:'Open src/createStore.ts',exact:true}).click();
     // Following a relationship reveals its target directory, which Back must undo.

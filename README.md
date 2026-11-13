@@ -20,7 +20,7 @@ python -B -m seremy analyze seremy/fixtures/local-demo --output .seremy-artifact
 python -B -m seremy analyze --zip C:/path/source.zip --output .seremy-artifacts
 ```
 
-The map, graph, documentation, and validation result are stored together under `.seremy-artifacts/versions/`. The map renders actual source in place as you zoom. Its repository tree expands folders and opens files. Select a call in source and choose Follow target to reach its declaration. Back restores selection, camera position, zoom, tree expansion, and tree scroll. The selected source region stays highlighted. File and symbol search, global canvas folder collapse, and a minimap are also available. Distinct relationships and source sites have separate counts.
+The map, graph, documentation, and validation result are stored together under `.seremy-artifacts/versions/`. The map renders actual source in place as you zoom. Its repository tree expands folders and opens files. Select a call in source and choose Follow target to reach its declaration. Back restores selection, camera position, zoom, tree expansion, and tree scroll. The selected source region stays highlighted. File and symbol search, global canvas folder collapse, and a minimap are also available. Distinct relationships and source sites have separate counts. Compact controls keep search in the Find drawer (`/`). Source cards have bounded widths with horizontal reveal for long lines; call/declaration navigation and saved views retain per-file offsets. See [the compact source workspace](docs/compact-source-workspace.md).
 
 Install the development dependency and run the Python regressions with the normal product entry points.
 

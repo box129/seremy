@@ -2,7 +2,7 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
+const {pathToFileURL,requireRenderer,openFinder}=require('./map-test-url.cjs');
 
 async function run(){
   const publication=path.resolve(process.argv[2]),evidence=path.resolve(process.argv[3]);
@@ -17,6 +17,7 @@ async function run(){
     await requireRenderer(page);
     const data=JSON.parse(await page.locator('#fixture').textContent());
     const allEdges=await page.locator('.wire').count();assert.ok(allEdges>0);
+    await openFinder(page);
     await page.getByRole('searchbox',{name:'Find file or symbol'}).fill('isAction');
     await page.getByRole('button',{name:'Open file',exact:true}).click();
     const file=await page.locator('.file[data-file="src/utils/isAction.ts"]').elementHandle();

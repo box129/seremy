@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
-const {pathToFileURL,requireRenderer}=require('./map-test-url.cjs');
+const {pathToFileURL,requireRenderer,openFinder}=require('./map-test-url.cjs');
 
 async function run(){
   const evidence=path.resolve(process.argv[2]);
@@ -38,6 +38,7 @@ async function run(){
     assert.equal(new Set(data.edges.map(edge=>edge.relation_id)).size,2);
     await page.locator('#inspect').click();
     assert.match(await page.locator('#connection-count').textContent(),/^2 relationships · 3 source sites$/);
+    await openFinder(page);
     await page.locator('#files').selectOption('entry.py');
     await page.locator('#open').click();
     await page.locator('#connection-mode').selectOption('outgoing');
@@ -49,6 +50,7 @@ async function run(){
     assert.match(await page.locator('#connection-count').textContent(),/^0 relationships · 0 source sites$/);
     await page.locator('#back').click();
     assert.equal(await page.locator('#connection-mode').inputValue(),'outgoing');
+    await openFinder(page);
     await page.locator('#files').selectOption('target.py');
     await page.locator('#open').click();
     await page.locator('#connection-mode').selectOption('incoming');

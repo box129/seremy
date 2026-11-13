@@ -15,3 +15,5 @@ The restore operation validates snapshot identities, scene members, coordinates,
 Saved views also retain the optional Pixi/SVG renderer preference. Older views default to SVG, and unavailable WebGL falls back to SVG. Both renderers use the same arrangement controller. See [the renderer integration](pixi-integration.md).
 
 The browser check `seremy/tools/check-arrangement.cjs` exercises real file, nested-folder and named-group drags, Shift selection, keyboard movement, layout switching, call navigation, breadcrumbs, collapse, reload and saved-view recovery. It also checks mismatched snapshots, damaged coordinates, storage failure and unchanged embedded graph data. Existing navigation, rendering, folding, dependency and launcher regressions passed.
+
+Per-file horizontal source offsets are also saved and restored. Earlier views reveal their saved selection under the new bounded framing. See [compact controls and source windows](compact-source-workspace.md).
