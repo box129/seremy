@@ -52,3 +52,7 @@ The final run passed 155 Python tests and 135 local browser case groups. Referen
 | Pydantic | PIXI | 3.73 | 145.6 | 66.8 | 78.6 | 46.8 |
 
 These are current-view measurements on one laptop; source-card geometry changed from earlier records. They are not a controlled before/after speed claim. Raw samples, screenshots, framebuffer/alignment checks and resource receipts are in the local SEREMY-Compact-Source-Verification deliverable.
+
+## Verified hosted rollout
+
+Runtime commit `aa8387b` is live at https://seremy-analysis.onrender.com/ (13 November 2026, deploy `dep-dbr98nui0phs73f6b11g`). Both SVG and Pixi passed six hosted case groups, including compact/Find keyboard and empty states, upload/downloads, refresh and recovered device history. The hosted capture measures a 44 px toolbar and bounded cards. Pixi was selected again after refresh and device-history recovery. The 135 local plus twelve hosted groups total 147 browser case groups. No page errors or new runtime error logs appeared during verification. The public browser used SwiftShader software WebGL; the timing and clipping runs used Intel UHD Direct3D11. Live MCP remains local-launcher only.

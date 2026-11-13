@@ -26,6 +26,14 @@ async function run(){
     await frame.locator('#status').filter({hasText:'source verified'}).waitFor({timeout:120000});
     await selectRenderer(frame);
     const rendering=await frame.locator('body').evaluate(()=>window.__seremyRendererInfo());
+    const camera=await frame.locator('#world').getAttribute('transform');
+    await frame.locator('#toggle-search').click();await frame.locator('#search').fill('no-matching-source-zzzz');
+    assert.equal(await frame.locator('#open').isDisabled(),true);assert.match(await frame.locator('#finder-status').textContent(),/No files or symbols/);
+    await frame.locator('#search').fill('');assert.equal(await frame.locator('#open').isEnabled(),true);await frame.locator('#search').press('Escape');
+    assert.equal(await frame.locator('#file-finder').isVisible(),false);assert.equal(await frame.locator('#world').getAttribute('transform'),camera);
+    const ui=await frame.locator('body').evaluate(()=>({toolbar_height:document.querySelector('header').getBoundingClientRect().height,max_card_width:Math.max(...[...document.querySelectorAll('.file')].map(node=>Number(node.getAttribute('width'))))}));
+    assert.equal(ui.toolbar_height,44);assert.ok(ui.max_card_width<=760);
+    checks.push('Compact controls and Find empty/recovery/keyboard states preserve the deployed map camera');
     const status=await frame.locator('#status').innerText();assert.match(status,/4 files/);
     assert.match(await page.locator('#summary').innerText(),/2 distinct call relationships/);
     checks.push('ZIP upload runs Python and TypeScript analysis and opens the verified source map');
@@ -39,6 +47,7 @@ async function run(){
     checks.push('Documentation, graph and portable map downloads are available');
     await page.reload();
     await page.frameLocator('#map').locator('#status').filter({hasText:'source verified'}).waitFor({timeout:120000});
+    await selectRenderer(page.frameLocator('#map'));
     checks.push('Refreshing the tab restores the completed analysis');
     await page.locator('#save-device').click();
     await page.waitForFunction(()=>document.querySelector('#status').textContent==='Saved on this device');
@@ -48,6 +57,7 @@ async function run(){
     await page.locator('#history').click();
     await page.getByRole('button',{name:'Open saved mixed-repository.zip',exact:true}).click();
     await page.frameLocator('#map').locator('#status').filter({hasText:'source verified'}).waitFor();
+    await selectRenderer(page.frameLocator('#map'));
     await page.locator('#doc-tab').click();
     await page.waitForFunction(()=>document.querySelector('#doc').textContent.includes('Structural components'));
     await page.locator('#map-tab').click();
@@ -62,7 +72,7 @@ async function run(){
     assert.equal((await page.request.get(new URL('/api/jobs/'+'0'.repeat(64),url).href)).status(),404);
     assert.deepEqual(errors,[]);
     await page.screenshot({path:path.join(evidence,'hosted-workspace.png')});
-    const result={url,status:'passed',renderer:rendering,checks,page_errors:errors,verified_at:new Date().toISOString()};
+    const result={url,status:'passed',renderer:rendering,ui,checks,page_errors:errors,verified_at:new Date().toISOString()};
     fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(result,null,2)+'\n');
     console.log(JSON.stringify(result));
   }finally{await browser.close();}
