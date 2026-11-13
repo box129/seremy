@@ -1,5 +1,5 @@
 {
-  "status": "local_passed",
+  "status": "passed",
   "python": {
     "command": "python -B -m pytest -q -p no:cacheprovider seremy/tests",
     "exit_code": 0,
@@ -145,5 +145,56 @@
   },
   "counts_note": "Browser case groups contain multiple assertions and are not independent unit-test counts. Suites are counted once.",
   "performance": "No new standalone timing comparison in this milestone. SVG remains default.",
-  "hosted": "pending rollout"
+  "hosted": "passed",
+  "hosted_suites": [
+    {
+      "name": "hosted-svg",
+      "browser": "157.0.4341.42",
+      "renderer": {
+        "engine": "svg",
+        "scene": {
+          "created": 141,
+          "removed": 0
+        }
+      },
+      "case_groups": 9,
+      "receipt": "file-visibility-checks/hosted-svg.json",
+      "verified_at": "2026-11-13T17:23:10.203Z"
+    },
+    {
+      "name": "hosted-pixi",
+      "browser": "157.0.4341.42",
+      "renderer": {
+        "engine": "pixi",
+        "version": "8.22.0",
+        "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x00009B41) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "created": 71,
+        "destroyed": 0,
+        "text_updates": 54,
+        "graphics_updates": 9,
+        "style_objects": 5,
+        "width_cache": 33,
+        "objects": 71,
+        "text_objects": 54,
+        "gl_error": 0,
+        "scene": {
+          "created": 141,
+          "removed": 0
+        }
+      },
+      "case_groups": 9,
+      "receipt": "file-visibility-checks/hosted-pixi.json",
+      "verified_at": "2026-11-13T17:24:08.678Z"
+    }
+  ],
+  "hosted_browser_case_groups": 18,
+  "total_browser_case_groups": 159,
+  "deployment": {
+    "url": "https://seremy-analysis.onrender.com/",
+    "runtime_commit": "c56ac62ad3b31312c896618a6daa14eed2d7c1b8",
+    "deploy_id": "dep-dbrke08m7kps73cgkf3g",
+    "finished_at": "2026-11-13T17:21:30.692195Z",
+    "plan": "free",
+    "runtime_error_count": 0
+  }
 }

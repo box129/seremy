@@ -2,7 +2,7 @@
 
 The Files tree has a checkbox beside each source file and directory. Unchecking a file hides its card and connections from the map. Its source, declarations, resolution outcomes and canonical graph records remain available. Open the file through Files or Find to reveal it again.
 
-Directory checkboxes operate on every source file beneath that directory. A mixed checkbox means some descendants are included; checking it includes the entire subtree, and unchecking it hides the subtree. This is independent of expanding the Files tree and collapsing canvas folders. The footer counts included/displayable source files, including those inside collapsed folders. Coverage retains the broader discovery and parsing counts. Restore all brings back all source files without resetting the camera, folder collapse or arrangement.
+Directory checkboxes operate on every source file beneath that directory. A mixed checkbox means some descendants are included; checking it includes the entire subtree, and unchecking it hides the subtree. This is independent of expanding the Files tree and collapsing canvas folders. The footer counts included/displayable source files, including those inside collapsed folders. Coverage retains the broader discovery and parsing counts. Restore all brings back all source files without resetting the camera, folder collapse or stored arrangement. Automatic packing can compact the included files; manual positions remain available when files are revealed again.
 
 When every file is hidden, the map explains the empty view and offers Restore all files. A repository with no supported/displayable source retains its separate analysis-coverage state.
 

@@ -1,0 +1,41 @@
+{
+  "url": "https://seremy-analysis.onrender.com",
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "renderer": {
+    "engine": "pixi",
+    "version": "8.22.0",
+    "renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x00009B41) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "created": 71,
+    "destroyed": 0,
+    "text_updates": 54,
+    "graphics_updates": 9,
+    "style_objects": 5,
+    "width_cache": 33,
+    "objects": 71,
+    "text_objects": 54,
+    "gl_error": 0,
+    "scene": {
+      "created": 141,
+      "removed": 0
+    }
+  },
+  "ui": {
+    "toolbar_height": 44,
+    "max_card_width": 650
+  },
+  "checks": [
+    "Compact controls and Find empty/recovery/keyboard states preserve the deployed map camera",
+    "ZIP upload runs Python and TypeScript analysis and opens the verified source map",
+    "The deployed coverage panel identifies the supported language profile and snapshot-specific parse counts",
+    "Deployed file visibility, target reveal, Back and documentation switching preserve the working set and canonical source",
+    "Documentation, graph and portable map downloads are available",
+    "Refreshing the tab restores the completed analysis",
+    "Device history restores verified map, documentation and downloads after server results expire",
+    "Saved reports can be deleted from device history",
+    "Unsupported-only ZIP shows explicit coverage guidance and a failed replacement retains that publication"
+  ],
+  "page_errors": [],
+  "verified_at": "2026-11-13T17:24:08.678Z"
+}
