@@ -15,6 +15,7 @@ from seremy.__main__ import input_root
 from seremy.product import analyze, publish
 from seremy.viewer import render_map
 from seremy.map_bridge import MapBridge
+from seremy.save_documentation import save_documentation
 
 
 class Cancelled(Exception):
@@ -158,6 +159,8 @@ def handler_for(application):
                     self.send(200,application.map_bridge.register(data))
                 elif self.path=="/api/mcp/tool":
                     self.send(200,application.map_bridge.tool(data))
+                elif self.path=="/api/documentation/save":
+                    self.send(200,save_documentation(application.map_bridge, data))
                 elif self.path.startswith("/api/cancel/"):
                     application.cancel(self.path.removeprefix("/api/cancel/"))
                     self.send(200,{"status":"cancellation_requested"})

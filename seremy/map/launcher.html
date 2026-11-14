@@ -46,6 +46,20 @@ const get=id=>document.getElementById(id);
 const hosted=window.SEREMY_HOSTED===true;
 let job=null,publication=null,repositoryName='',pendingRepositoryName='';
 function status(message){get('status').textContent=get('connection-status').textContent=message;}
+const savePathDialog=document.createElement('dialog');
+savePathDialog.setAttribute('aria-label','Save documentation to a local path');
+savePathDialog.innerHTML='<form method="dialog"><button class="close" aria-label="Close save path">×</button></form><h2>Save documentation</h2><form id="save-path-form"><label>Destination path<input id="save-path" required placeholder="C:\\path\\to\\documentation.md"></label><p>Choose an existing folder and include the .md filename.</p><button id="save-path-submit">Save Markdown</button><p id="save-path-status" role="status" aria-live="polite"></p></form>';
+document.body.append(savePathDialog);
+let savePathRequest=null;
+get('save-path-form').onsubmit=async event=>{
+  event.preventDefault();get('save-path-submit').disabled=true;
+  try{
+    const response=await fetch('/api/documentation/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...savePathRequest,destination:get('save-path').value})});
+    const result=await response.json();if(!response.ok)throw new Error(result.error||'Could not save documentation');
+    get('save-path-status').textContent='Saved to '+result.path;status('Markdown saved');
+  }catch(error){get('save-path-status').textContent=error.message;}
+  finally{get('save-path-submit').disabled=false;}
+};
 function connect(){get('connect-dialog').showModal();}
 get('connect').onclick=get('empty-connect').onclick=connect;
 get('close-connect').onclick=()=>get('connect-dialog').close();
@@ -174,12 +188,19 @@ function showDocumentation(markdown){
     list=null;table=null;const node=document.createElement(line.startsWith('> ')?'blockquote':'p');appendGuideInline(node,line.replace(/^> /,''));container.append(node);
   }
   for(const draft of visibleDrafts){
+    const saveActions=document.createElement('div');saveActions.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:16px 0';
     const save=document.createElement('a');save.textContent='Save Markdown · '+(draft.title||'documentation draft');save.download='documentation-draft.md';
     const localDownload=typeof draft.download_url==='string'&&draft.download_url.startsWith('/api/mcp/draft.md?');
     save.href=localDownload?draft.download_url:URL.createObjectURL(new Blob([draft.markdown],{type:'text/markdown'}));
     if(!localDownload)documentationBlobUrls.push(save.href);
     save.onclick=async event=>{if(window.showSaveFilePicker){event.preventDefault();try{const handle=await window.showSaveFilePicker({suggestedName:'documentation-draft.md'});const writer=await handle.createWritable();await writer.write(draft.markdown);await writer.close();status('Markdown saved');}catch(error){if(error.name!=='AbortError')status('Save failed. Use the link menu to download Markdown.');}}};
-    doc.append(save);
+    saveActions.append(save);
+    if(localDownload&&!hosted){
+      const savePath=document.createElement('button');savePath.textContent='Save to local path · '+(draft.title||'documentation draft');
+      savePath.onclick=()=>{savePathRequest=Object.fromEntries(new URL(save.href,location.href).searchParams);get('save-path-status').textContent='';savePathDialog.showModal();get('save-path').focus();};
+      saveActions.append(savePath);
+    }
+    doc.append(saveActions);
   }
 }
 get('doc-tab').onclick=async()=>{
