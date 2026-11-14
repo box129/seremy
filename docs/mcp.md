@@ -22,6 +22,7 @@ Open a repository in the local launcher. In Inspect, open MCP and agent notes an
 | `read_documentation` | Returns validated claims for the selection or one claim ID, with source ranges ready for map navigation. |
 | `list_documentation_sections` | Lists section identities and claim counts for drafting. |
 | `read_documentation_section` | Returns bounded section claims, source excerpts, dependencies, pagination and omissions. |
+| `read_documentation_scope` | Returns file, folder, entity or connection evidence with the requested question, pagination and bounded source bodies. |
 | `submit_documentation_draft` | Submits statements and reported generation metadata against a retrieved context. New prose retains review labels. |
 | `read_documentation_draft` | Reads the submitted draft, Markdown, checks and current delivery acknowledgement. |
 | `focus_source` | Queues focusing an exact source range in the chosen browser view. Back restores the prior navigation state. |

@@ -1,5 +1,7 @@
 # SEREMY
 
+Start with the [beta setup and user guide](docs/beta-guide.md) for the public app, local MCP documentation workflow, saving and troubleshooting.
+
 The current [callable binding extension](docs/callable-bindings.md) resolves named const arrows/function values, immutable aliases and imported namespace calls. It gives returned named functions and method bodies their own source regions, preserves anonymous-body calls at file level with an ownership limit, and adds corresponding guide/MCP evidence. Dynamic callback invocation and mutable receiver dispatch remain separate work.
 
 The [live interaction follow-up](docs/live-audit-fixes.md) adds compiler-resolved file imports/type imports/re-exports, source-text search, a rendered cited guide and improved file/narrow-window framing. Module dependencies are a separate checked graph layer; they are not runtime call edges. Hosted GitHub failures now identify known limits and recovery actions. Larger-repository ingestion and complete architectural explanations remain qualified follow-up work.

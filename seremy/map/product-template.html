@@ -836,6 +836,8 @@ documentationDialog.setAttribute('aria-label','Generate documentation');
 documentationDialog.style.cssText='width:min(560px,90vw);max-height:85vh;overflow:auto;background:#252525;color:#ddd;border:1px solid #555;border-radius:8px;padding:24px';
 documentationDialog.innerHTML='<form method="dialog"><button style="float:right" aria-label="Close documentation request">×</button></form><h2>Generate documentation</h2><label>Document a file, folder or selection<select id="documentation-scope" style="display:block;width:100%;margin:10px 0"></select></label><label>Question (optional)<textarea id="documentation-question" maxlength="2000" rows="3" style="display:block;width:100%;margin:10px 0;background:#181818;color:#ddd"></textarea></label><button id="copy-documentation-request">Copy request for agent</button><p id="documentation-request-status" role="status"></p><textarea id="documentation-request-text" aria-label="Agent documentation request" readonly hidden rows="8" style="width:100%;background:#181818;color:#ddd"></textarea>';
 document.body.append(documentationDialog);
+const documentationHelp=document.createElement('p');
+const setupLink=document.createElement('a');setupLink.href='https://github.com/box129/seremy/blob/main/docs/beta-guide.md';setupLink.target='_blank';setupLink.rel='noopener';setupLink.textContent='Set up the local launcher and MCP agent';setupLink.style.color='#8dc5ff';documentationHelp.append(setupLink);documentationDialog.append(documentationHelp);
 const documentationOptions=[];
 function openDocumentationRequest(useSelection){
   const picker=el('documentation-scope');picker.replaceChildren();documentationOptions.length=0;
@@ -856,7 +858,11 @@ function openDocumentationRequest(useSelection){
   el('documentation-request-text').hidden=true;documentationDialog.showModal();
 }
 el('explain-selection').onclick=()=>openDocumentationRequest(true);
-window.addEventListener('message',event=>{if(event.source===parent&&event.data?.type==='seremy-generate-documentation')openDocumentationRequest(false);});
+window.addEventListener('message',event=>{
+  if(event.source!==parent)return;
+  if(event.data?.type==='seremy-generate-documentation')openDocumentationRequest(false);
+  if(event.data?.type==='seremy-refresh-drafts'&&agentSharing)reportAgent();
+});
 el('copy-documentation-request').onclick=async()=>{
   const button=el('copy-documentation-request');button.disabled=true;
   try{
