@@ -105,6 +105,10 @@ def submit_draft(context, statements, generation):
                            "omitted_record_count": sum(bool(c["omitted_record_fields"]) for c in claims.values())},
               "human_review": "not_run", "semantic_verifier": "not_run"}
     packet = context.get("implementation_context")
+    if "requested_scope" in context:
+        result["requested_scope"] = context["requested_scope"]
+        result["question"] = context["question"]
+        result["scope_file_count"] = context["scope_file_count"]
     if packet is not None:
         result["coverage"].update(source_context_profile=packet["profile"], source_body_count=len(packet["records"]),
                                   omitted_source_body_count=packet["omitted_range_count"],
@@ -119,6 +123,8 @@ def render_draft(draft):
     lines = [f"# Documentation draft — {draft['title']}", "", f"Status {draft['status']}. Human review pending.",
              "", "Generation metadata is client reported. " + str(draft["generation"]), "",
              "Evidence coverage " + str(draft["coverage"]), ""]
+    if "requested_scope" in draft:
+        lines.extend(["Requested scope " + str(draft["requested_scope"]), "", "Question " + draft["question"], ""])
     for statement in draft["statements"]:
         lines.extend([f"## {statement['statement_id']} · {statement['status']}", "", statement["text"], "",
                       "Check outcome " + statement["reason"], ""])

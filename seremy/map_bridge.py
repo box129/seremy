@@ -11,6 +11,7 @@ from seremy.contracts import sha256_hex, canonical_bytes
 from seremy.documentation import validate_document
 from seremy.product import validate_graph
 from seremy.document_drafts import sections, evidence_context, submit_draft
+from seremy.document_scope import scoped_context
 
 
 PUBLICATION = re.compile(r"[0-9a-f]{64}\Z")
@@ -204,9 +205,14 @@ class MapBridge:
                 return self.citation(loader, request.get("span"))
             if tool == "documentation_sections":
                 return {"binds": document["binds"], "sections": sections(document), "coverage": loader.contents["coverage"]}
-            if tool == "documentation_section":
-                context = evidence_context(document, request.get("section_id"), request.get("offset", 0), request.get("limit", 10),
-                                           lambda span: self.citation(loader, span), loader=loader)
+            if tool in {"documentation_section", "documentation_scope"}:
+                if tool == "documentation_scope":
+                    context = scoped_context(loader, document, request.get("scope"), request.get("question", ""),
+                                             request.get("offset", 0), request.get("limit", 10),
+                                             lambda span: self.citation(loader, span))
+                else:
+                    context = evidence_context(document, request.get("section_id"), request.get("offset", 0), request.get("limit", 10),
+                                               lambda span: self.citation(loader, span), loader=loader)
                 context["coverage"] = loader.contents["coverage"]
                 context.pop("context_digest")
                 context["context_digest"] = sha256_hex(canonical_bytes(context))
@@ -243,7 +249,8 @@ class MapBridge:
                 if len(canonical_bytes(draft)) > 256 * 1024:
                     raise ValueError("Draft is too large. Narrow the section and statement references.")
                 view["sequence"] += 1
-                command = {"type": "documentation_draft", "draft": draft, "sequence": view["sequence"], "digest": view["digest"]}
+                command = {"type": "documentation_draft", "draft": draft, "request_id": request_id,
+                           "sequence": view["sequence"], "digest": view["digest"]}
                 view["commands"].append(command)
                 result = {"delivery": "queued", "sequence": command["sequence"], "draft": draft}
                 view["drafts"][request_id] = {"payload_hash": payload_hash, "result": result}

@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import json
 import threading
 import tempfile
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 import uuid
 
 from seremy.__main__ import input_root
@@ -119,6 +119,11 @@ def handler_for(application):
                     self.send(200,(Path(__file__).parent/"map/launcher.html").read_bytes(),"text/html; charset=utf-8")
                 elif route=="/api/mcp/views":
                     self.send(200,application.map_bridge.list_views())
+                elif route=="/api/mcp/draft.md":
+                    query = parse_qs(urlsplit(self.path).query)
+                    arguments = {key: query.get(key, [None])[0] for key in ("view_id", "digest", "request_id")}
+                    receipt = application.map_bridge.tool({"tool": "documentation_draft", **arguments})
+                    self.send(200, receipt["draft"]["markdown"].encode("utf8"), "text/markdown; charset=utf-8")
                 elif route.startswith("/api/jobs/"):
                     self.send(200,application.state(route.removeprefix("/api/jobs/")))
                 elif route.startswith("/reports/"):
@@ -134,6 +139,8 @@ def handler_for(application):
                     self.send(404,{"error":"not found"})
             except (KeyError,OSError):
                 self.send(404,{"error":"not found"})
+            except ValueError as error:
+                self.send(400, {"error": str(error)})
 
         def do_POST(self):
             if not self.local_request():
