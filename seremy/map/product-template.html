@@ -34,11 +34,13 @@ main:has(#inspector:not([hidden])) #mini{right:332px}
 #skip-map{position:fixed;top:4px;left:4px;z-index:6;padding:8px 12px;background:#303030;color:#fff;transform:translateY(-150%)}#skip-map:focus{transform:translateY(0)}
 header{flex-wrap:nowrap;min-height:44px;padding:6px 12px;gap:12px;overflow-x:auto}header button{white-space:nowrap;border-color:transparent;background:transparent;border-radius:5px;min-height:30px}header button:hover:enabled{background:#343434}.rail-group{display:flex;align-items:center;gap:2px}.rail-group+.rail-group{border-left:1px solid #3a3a3a;padding-left:12px}.rail-secondary{margin-left:auto}kbd{font:10px Consolas,monospace;border:1px solid #4a4a4a;border-radius:3px;padding:0 4px;margin-left:8px;color:#999}
 #file-finder{position:absolute;top:12px;left:12px;z-index:4;width:min(440px,calc(100% - 24px));padding:16px;background:#242424;border:1px solid #4a4a4a;border-radius:8px;box-shadow:0 12px 40px #0005}#file-finder input{width:100%;padding:10px 12px}#file-finder .panel-heading{margin-bottom:12px}.finder-result{display:flex;gap:8px;margin-top:10px}.finder-result select{flex:1;min-width:0}#file-finder p{padding:0;margin:12px 0 0;color:#999;font-size:11px}#source-columns{border-bottom:1px solid #383838;padding-bottom:16px;margin-bottom:16px}#source-columns p{padding:0;font-size:11px;color:#aaa}#source-scroll{width:100%;accent-color:#a6bbde}footer{flex-wrap:nowrap;gap:12px}#status{max-width:310px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;color:#999}#detail{min-width:0;font-size:11px}#breadcrumbs{max-width:36%;flex-shrink:1}button,input,select{transition:background-color .12s,border-color .12s}button:active:enabled{background:#414141}@media(prefers-reduced-motion:reduce){button,input,select{transition:none}}@media(max-width:700px){header{gap:4px;padding-inline:6px}.rail-group+.rail-group{padding-left:4px}header button{padding-inline:6px}#status{max-width:130px;font-size:10px}#breadcrumbs{display:none}#toggle-search kbd{display:none}}
+#code-results{max-height:40vh;overflow:auto;margin-top:12px}.code-result{display:block;width:100%;text-align:left;margin:5px 0;white-space:normal;overflow-wrap:anywhere;font:12px/1.6 Consolas,monospace}
+@media(max-width:700px){header{flex-wrap:wrap}.rail-secondary{margin-left:auto}footer{min-width:0}#visible-file-count{flex-shrink:0}#status{max-width:90px}#detail{overflow:hidden}}
 </style>
 <a id="skip-map" href="#map">Skip to source map</a><header aria-label="Map controls"><div class="rail-group"><button id="toggle-files" aria-controls="repository" aria-expanded="true">Files</button><button id="toggle-search" aria-controls="file-finder" aria-expanded="false" aria-keyshortcuts="/ Control+k Meta+k">Find <kbd>/</kbd></button><button id="back" disabled>Back</button></div>
 <div class="rail-group"><button id="fit" aria-label="Fit map">Fit</button><button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button></div>
 <div class="rail-group rail-secondary"><button id="collapse">Collapse folders</button><button id="arrange" aria-pressed="false" title="Select and drag files or folders. Shift adds to the selection.">Arrange</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></div></header>
-<main><section id="file-finder" role="search" aria-label="Find source" hidden><div class="panel-heading"><h2>Find source</h2><button id="close-search" aria-label="Close Find">×</button></div><input id="search" type="search" placeholder="File path or symbol" aria-label="Find file or symbol"><div class="finder-result"><select id="files" aria-label="Open file"></select><button id="open">Open file</button></div><p id="finder-status" role="status"></p><p>Enter opens a result · Esc returns to the map</p></section><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><button id="restore-all-files" disabled>Restore all</button><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
+<main><section id="file-finder" role="search" aria-label="Find source" hidden><div class="panel-heading"><h2>Find source</h2><button id="close-search" aria-label="Close Find">×</button></div><input id="search" type="search" placeholder="File path, symbol or source text" aria-label="Find file or symbol"><div class="finder-result"><select id="files" aria-label="Open file"></select><button id="open">Open file</button></div><p id="finder-status" role="status"></p><div id="code-results" aria-label="Source text matches"></div><p>Enter opens a result · Esc returns to the map</p></section><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><button id="restore-all-files" disabled>Restore all</button><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
 <section id="working-set-empty" hidden><h2>No files visible</h2><p>Files are hidden from this view. Use Files or Find to reveal one, or restore the full map.</p><button id="restore-visible-files">Restore all files</button></section>
 <aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
 <details id="coverage-tools"><summary>Analysis coverage and limits</summary><div id="analysis-coverage"></div></details>
@@ -83,7 +85,8 @@ function coverageView(){
   paragraph(c.inventory.input_count+' enumerated entries · '+c.inventory.eligible_count+' eligible entries · '+c.inventory.excluded_count+' excluded entries. Discovery scope: '+(a.scope.mode||'not recorded')+'.');
   paragraph(c.s02.source_file_count+' eligible source files · '+c.s02.parsed_file_records+' parse records: '+c.s02.complete+' complete, '+c.s02.partial+' partial, '+c.s02.failed+' failed; '+c.s02.not_processed+' not processed. Complete refers to syntax extraction within this profile.');
   paragraph(Object.keys(data.files).length+' displayable source files are embedded in this map. Files that could not be decoded remain in the parse outcomes.');
-  paragraph(c.s03.direct_edge_count+' distinct call relationships · '+data.edges.length+' bound source sites · '+c.s03.attempted_count+' binding attempts / '+c.s03.candidate_count+' extracted candidates.');
+  paragraph(c.s03.direct_edge_count+' distinct call relationships · '+data.edges.length+' displayed source sites · '+c.s03.attempted_count+' binding attempts / '+c.s03.candidate_count+' extracted candidates.');
+  if(c.modules){paragraph(c.modules.distinct_edge_count+' module dependencies · '+c.modules.site_count+' import/re-export sites. Module relationships do not establish runtime calls.');records('Module dependency outcomes',Object.entries(c.modules.outcome_counts).map(([name,count])=>name+': '+count));}
   records('Resolution outcome counts',Object.entries(c.s03.outcome_counts).map(([name,count])=>name+': '+count));
   paragraph('Outcome counts include non-call candidates such as imports. Zero relationships do not establish that a repository has no dependencies. Source hash verification checks embedded bytes; it does not establish analysis completeness or accuracy.');
   records('Parse limitations by file',a.parse_files.filter(row=>row.bucket!=='complete').map(row=>row.file_id+' · '+row.bucket+' · '+(row.reason||'see diagnostics')+'\n'+JSON.stringify(row.diagnostics||[])));
@@ -292,10 +295,15 @@ function revealFile(path){
   for(let parent=button?.parentElement;parent&&parent!==el('tree');parent=parent.parentElement)
     if(parent.tagName==='DETAILS')parent.open=true;
 }
-function center(p,k){camera={x:map.clientWidth/2-p.x*k,y:map.clientHeight/2-p.y*k,k};}
+function canvasArea(){
+  const left=el('repository').hidden?16:el('repository').getBoundingClientRect().width+16;
+  const right=el('inspector').hidden?16:el('inspector').getBoundingClientRect().width+16;
+  return {x:left,y:16,width:Math.max(80,map.clientWidth-left-right),height:Math.max(80,map.clientHeight-32)};
+}
+function center(p,k){const area=canvasArea();camera={x:area.x+area.width/2-p.x*k,y:area.y+area.height/2-p.y*k,k};}
 function fit(){
   const height=maxY+30;
-  center({x:maxX/2,y:height/2},Math.min((map.clientWidth-35)/maxX,(map.clientHeight-35)/height,1));
+  const area=canvasArea();center({x:maxX/2,y:height/2},Math.min(area.width/maxX,area.height/height,1));
 }
 function follow(span,edge=null,outcome=null){
   if(!bound||!span)return;
@@ -304,7 +312,12 @@ function follow(span,edge=null,outcome=null){
   if(!edge)scopeFile=span.file;
   for(let folder=folderFor(files[span.file].dir);folder!==root;folder=folderFor(folder.parent))closedFolders.delete(folder.name);
   if(position({file:span.file,start:span.end,end:span.end}).line>previewLines)expandedFiles.add(span.file);
-  layout();revealSource(span);center(anchor(span),1.25);draw();
+  layout();revealSource(span);
+  const file=files[span.file],area=canvasArea();
+  if(span.start===0&&span.end===0){
+    center({x:file.x+file.width/2,y:file.y+file.height/2},Math.min(area.width/file.width,area.height/file.height,1.25));
+  }else center(anchor(span),Math.min(1.25,area.width/Math.min(file.width,650)));
+  draw();
 }
 function zoom(x,y,factor){
   const k=Math.min(4,Math.max(.001,camera.k*factor)),ratio=k/camera.k;
@@ -316,6 +329,10 @@ function select(edge,span=null){
   overviewRelationships=null;draw();setPanel('inspector',true);
 }
 function setPanel(id,open){
+  if(open&&map.clientWidth<900){
+    const other=id==='inspector'?'repository':'inspector';el(other).hidden=true;
+    el(other==='inspector'?'inspect':'toggle-files').setAttribute('aria-expanded','false');
+  }
   el(id).hidden=!open;
   el(id==='inspector'?'inspect':'toggle-files').setAttribute('aria-expanded',String(open));
 }
@@ -336,7 +353,8 @@ function inspection(){
   el('inspection-empty').hidden=!!source;
   el('inspection-source').hidden=!source;
   el('inspection-target').hidden=!selected;
-  el('source-heading').textContent=selected?'Caller':'Selected source';
+  el('source-heading').textContent=selected?(selected.kind==='CALLS'?'Caller':'Dependency source'):'Selected source';
+  el('inspection-target').querySelector('h3').textContent=selected?.kind==='CALLS'?'Target declaration':'Target module';
   if(source){el('source-location').textContent=source.file+':'+position(source).line;excerpt(source,'source-excerpt');}
   if(selected){el('target-location').textContent=selected.to.file+':'+position(selected.to).line;excerpt(selected.to,'target-excerpt');}
   el('outcomes').value=selectedOutcome?.candidate_id||'';
@@ -483,7 +501,8 @@ function draw(){
   const visibleFiles=[],windows=new Map(),interactionLayers=new Map();
   const definitions=add(world,'defs');
   const folderLabels=add(world,'g');
-  const clipAttrs=(f,kind)=>{const box=sourceWindow(f);return {'data-source-window':f.path,'data-layer':kind,'data-clip-enabled':camera.k>=.5,...camera.k>=.5?{'clip-path':'url(#'+f.clipId+')'}:{},'data-clip-x':box.x,'data-clip-y':box.y,'data-clip-width':box.width,'data-clip-height':box.height};};
+  const readable=f=>camera.k>=.5||(focus?.file===f.path&&focus.start===0&&focus.end===0&&f.displayLines<=foldThreshold);
+  const clipAttrs=(f,kind)=>{const box=sourceWindow(f);return {'data-source-window':f.path,'data-layer':kind,'data-clip-enabled':readable(f),...readable(f)?{'clip-path':'url(#'+f.clipId+')'}:{},'data-clip-x':box.x,'data-clip-y':box.y,'data-clip-width':box.width,'data-clip-height':box.height};};
   for(const group of viewGroups){
     const bounds=groupBounds(group);if(!bounds)continue;
     add(world,'rect',{...bounds,rx:8,class:'view-group','data-view-group':group.id});
@@ -510,7 +529,7 @@ function draw(){
     if(f.x+f.width<visible.left||f.x>visible.right||f.y+f.height<visible.top||f.y>visible.bottom)continue;
     visibleFiles.push(f);
     add(world,'rect',{x:f.x,y:f.y,width:f.width,height:f.height,rx:4,class:'file','data-file':f.path});
-    if(camera.k>=.5){const clip=add(definitions,'clipPath',{id:f.clipId,clipPathUnits:'userSpaceOnUse'});add(clip,'rect',sourceWindow(f));}
+    if(readable(f)){const clip=add(definitions,'clipPath',{id:f.clipId,clipPathUnits:'userSpaceOnUse'});add(clip,'rect',sourceWindow(f));}
     const sourceLayer=add(world,'g',clipAttrs(f,'source'));windows.set(f.path,sourceLayer);
     const title=add(world,'text',{x:f.x+f.width/2,y:f.y+23,class:'name','text-anchor':'middle','data-source-title':f.path,tabindex:0,role:'button','aria-label':'Focus source '+f.path},f.path.split('/').at(-1));
     add(title,'title',{},f.path);title.onclick=()=>follow({file:f.path,start:0,end:0});
@@ -536,11 +555,11 @@ function draw(){
     }
     const first=Math.max(0,Math.floor((visible.top-f.y-codeTop)/lineHeight));
     const last=Math.min(f.displayLines,Math.ceil((visible.bottom-f.y)/lineHeight));
-    const stride=camera.k<.5?Math.max(1,Math.ceil(3/(camera.k*lineHeight))):1;
+    const stride=!readable(f)?Math.max(1,Math.ceil(3/(camera.k*lineHeight))):1;
     let coarseLines='';
     for(let i=first;i<last;i+=stride){
       const y=f.y+codeTop+i*lineHeight,line=f.lines[i];
-      if(camera.k<.5){
+      if(!readable(f)){
         const expanded=line.replace(/\t/g,'    '),coarseWidth=Math.max(0,Math.min((measuredWidths.get(expanded)??expanded.length*charWidth)-f.sourceX,f.width-70));
         if(line.trim())coarseLines+='M '+(f.x+52)+' '+(y-9)+' h '+coarseWidth+' v 8 h '+(-coarseWidth)+' Z ';
       }else{
@@ -651,17 +670,33 @@ el('restore-all-files').onclick=el('restore-visible-files').onclick=()=>changeVi
 function filterFiles(){
   const query=el('search').value.toLowerCase(),picker=el('files');
   picker.replaceChildren();
+  const results=el('code-results');results.replaceChildren();let total=0;
   for(const f of Object.values(files)){
     const names=data.entities.filter(e=>e.file_id===f.path).map(e=>e.name).join(' ').toLowerCase();
-    if(f.path.toLowerCase().includes(query)||names.includes(query))picker.add(new Option(f.path,f.path));
+    const sourceMatches=query&&f.text.toLowerCase().includes(query);
+    if(f.path.toLowerCase().includes(query)||names.includes(query)||sourceMatches)picker.add(new Option(f.path,f.path));
+    if(!query||!sourceMatches)continue;
+    const pattern=new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'giu');
+    f.lines.forEach((line,index)=>{
+      for(const match of line.matchAll(pattern)){
+        total++;if(total>100)continue;
+        const start=f.lineOffsets[index]+new TextEncoder().encode(line.slice(0,match.index)).length;
+        const end=start+new TextEncoder().encode(match[0]).length;
+        const button=document.createElement('button');button.type='button';button.className='code-result';
+        button.textContent=f.path+':'+(index+1)+' · '+line.trim();
+        button.onclick=()=>{follow({file:f.path,start,end});setFinder(false,false);map.focus();};results.append(button);
+      }
+    });
   }
   el('open').disabled=!bound||!picker.options.length;
-  el('finder-status').textContent=picker.options.length?picker.options.length+(query?' matching files':' source files'):'No files or symbols match your search.';
+  el('finder-status').textContent=picker.options.length?picker.options.length+(query?' matching files':' source files')+(total?' · '+total+' text matches'+(total>100?' · first 100 shown':''):''):'No files, symbols or source text match your search.';
 }
 el('search').oninput=filterFiles;filterFiles();
 el('open').onclick=()=>{
   const file=el('files').value,query=el('search').value.toLowerCase();
   const entity=data.entities.find(e=>e.file_id===file&&e.name.toLowerCase().includes(query));
+  const first=[...el('code-results').children].find(button=>button.textContent.startsWith(file+':'));
+  if(!entity&&first){first.click();return;}
   follow(entity?{file,start:entity.name_span[0],end:entity.name_span[1]}:{file,start:0,end:0});
   setFinder(false,false);map.focus();
 };
@@ -859,7 +894,7 @@ fit();draw();
   openDocumentHash();
   syncSourceButtons();
   if(new URLSearchParams(location.search).get('renderer')==='pixi')await chooseRenderer('pixi');
-  if(bound)el('status').textContent=Object.keys(files).length+' files · '+data.coverage.s03.direct_edge_count+' relationships · '+data.edges.length+' source sites · source verified · draft'+(data.coverage.s02.failed||data.coverage.s02.partial||data.coverage.s02.not_processed?' · parse limits':'');
+  if(bound)el('status').textContent=Object.keys(files).length+' files · '+data.coverage.s03.direct_edge_count+' call relationships · '+(data.coverage.modules?.distinct_edge_count||0)+' module dependencies · '+data.edges.length+' source sites · source verified · draft'+(data.coverage.s02.failed||data.coverage.s02.partial||data.coverage.s02.not_processed?' · parse limits':'');
   if(bound&&!Object.keys(files).length)el('status').textContent='No embedded source · draft · review coverage';
   el('status').title=el('status').textContent;
   controls();

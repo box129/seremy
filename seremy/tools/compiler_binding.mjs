@@ -158,5 +158,20 @@ export function createSnapshotProgram(root, fileIds, profile=null) {
         kind:"function_declaration", name_byte:mapRange(targetSource.text,[declaration.name.getStart(targetSource),declaration.name.end]) }
     };
   }
-  return { inputs, program, context, bind, syntaxDiagnostics, extended };
+  function resolveModule(source, specifier) {
+    const result={context,method:'typescript-module-resolution-v0.1'};
+    if(syntaxDiagnostics(source).length)return {...result,outcome:'UNSUPPORTED',reason:'syntax_diagnostics'};
+    const resolved=ts.resolveModuleName(specifier.text,source.fileName,options,host).resolvedModule;
+    const input=resolved&&inputs.get(resolve(resolved.resolvedFileName));
+    if(input){
+      const target=program.getSourceFile(resolve(resolved.resolvedFileName));
+      if(!target||syntaxDiagnostics(target).length)return {...result,outcome:'UNSUPPORTED',reason:'target_outside_valid_snapshot'};
+      return {...result,outcome:'RESOLVED_SINGLE',target:{file_id:input.id,content_sha256:hash(input.raw)}};
+    }
+    const mapped=Object.keys(options.paths||{}).some(pattern=>{
+      const [prefix,suffix]=pattern.split('*');return suffix===undefined?specifier.text===pattern:specifier.text.startsWith(prefix)&&specifier.text.endsWith(suffix);
+    });
+    return {...result,outcome:specifier.text.startsWith('.')||mapped?'MISSING':'EXTERNAL',reason:specifier.text.startsWith('.')||mapped?'module_not_in_snapshot':'external_module_not_loaded'};
+  }
+  return { inputs, program, context, bind, resolveModule, syntaxDiagnostics, extended };
 }

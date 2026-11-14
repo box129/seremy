@@ -34,7 +34,7 @@ if (!rootArg || !filesArg) {
 }
 
 const root = resolve(rootArg);
-const { files,profile=null } = JSON.parse(readFileSync(filesArg, "utf-8"));
+const { files,profile=null,moduleDependencies=false } = JSON.parse(readFileSync(filesArg, "utf-8"));
 const snapshotProgram = createSnapshotProgram(root, files,profile);
 const scriptKinds=new Map(snapshotProgram.context.script_kinds||[]);
 
@@ -95,7 +95,7 @@ function identifierRecord(kind, name, node, sourceFile, map, extra = {}) {
 }
 
 function extractFile(relPath) {
-  const languageCoverage=snapshotProgram.extended?{language_profile:'seremy-ecmascript-static-v0.1',script_kind:scriptKinds.get(relPath),typescript_version:ts.version,semantic_diagnostics:'not_run'}:{};
+  const languageCoverage={...(snapshotProgram.extended?{language_profile:'seremy-ecmascript-static-v0.1',script_kind:scriptKinds.get(relPath),typescript_version:ts.version,semantic_diagnostics:'not_run'}:{}),...(moduleDependencies?{module_dependency_profile:'typescript-file-dependencies-v0.1'}:{})};
   const absolute = resolve(root, relPath);
   const raw = snapshotProgram.inputs.get(absolute).raw;
   const contentSha256 = createHash("sha256").update(raw).digest("hex");
@@ -183,7 +183,10 @@ function extractFile(relPath) {
           specifier,
           sourceFile,
           map,
-          { module_path: specifier.text }
+          { module_path: specifier.text, ...(moduleDependencies?{
+            dependency_kind:node.importClause?.isTypeOnly?'TYPE_IMPORTS':'IMPORTS',
+            module_binding:snapshotProgram.resolveModule(sourceFile,specifier)
+          }:{}) }
         )
       );
       const clause = node.importClause;
@@ -209,6 +212,15 @@ function extractFile(relPath) {
       }
       ts.forEachChild(node, visit);
       return;
+    }
+    if(moduleDependencies&&ts.isExportDeclaration(node)&&node.moduleSpecifier&&ts.isStringLiteral(node.moduleSpecifier)){
+      bump(extractedCounts,'export_declaration');
+      const specifier=node.moduleSpecifier;
+      candidates.push(identifierRecord('export_specifier',specifier.getText(sourceFile),specifier,sourceFile,map,{
+        module_path:specifier.text,dependency_kind:node.isTypeOnly?'TYPE_REEXPORTS':'REEXPORTS',
+        module_binding:snapshotProgram.resolveModule(sourceFile,specifier)
+      }));
+      ts.forEachChild(node,visit);return;
     }
     if (ts.isCallExpression(node)) {
       bump(extractedCounts, "call_expression");

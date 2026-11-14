@@ -15,7 +15,8 @@ import threading
 import time
 from urllib.parse import urlsplit
 import zipfile
-from seremy.github_input import github_source, validate_archive
+from seremy.github_input import github_source, validate_archive, source_subdirectory
+from seremy.input_errors import MESSAGES
 
 ID = re.compile(r"[0-9a-f]{64}\Z")
 MAX_UPLOAD = 3 * 1024 * 1024
@@ -72,7 +73,7 @@ class HostedApplication:
             raise ValueError("Choose a repository ZIP or public GitHub repository.")
         if kind == "git":
             url, revision = github_source(value, request.get("revision"))
-            source = {"url": url, "revision": revision}
+            source = {"url": url, "revision": revision,"subdirectory":source_subdirectory(request.get("source_folder"))}
         else:
             if len(value) > 4 * ((MAX_UPLOAD + 2) // 3):
                 raise ValueError("Choose a ZIP file up to 3 MiB.")
@@ -129,6 +130,8 @@ class HostedApplication:
             if (folder / "source.json").exists():
                 source = json.loads((folder / "source.json").read_text(encoding="utf8"))
                 command = ["seremy.github_input", source["url"], "--revision", source["revision"]]
+                if source.get("subdirectory"):
+                    command += ["--source-folder",source["subdirectory"]]
             else:
                 command = ["seremy", "analyze", "--zip", str(folder / "input.zip")]
             process = subprocess.Popen([sys.executable, "-B", "-m", *command, "--output", str(folder / "results")],
@@ -150,14 +153,21 @@ class HostedApplication:
                 except subprocess.TimeoutExpired:
                     continue
             if process.returncode:
-                raise ValueError("Analysis failed. Check the repository, revision and size limits, then try again.")
-            publication = Path(json.loads(stdout)["publication"])
+                try:
+                    code=json.loads(stdout).get("error",{}).get("code")
+                except (ValueError,AttributeError):
+                    code=None
+                code=code if code in MESSAGES else "TSCONFIG_PROFILE" if "extends/references require a multi-project snapshot profile" in stderr else "ANALYSIS_FAILED"
+                outcome={"status":"failed","stage":"Analysis failed","error_code":code,"error":MESSAGES[code]}
+                return
+            result=json.loads(stdout)
+            publication = Path(result["publication"])
             coverage = json.loads((publication / "graph.json").read_text(encoding="utf8"))["contents"]["coverage"]
             if job in self.cancelled:
                 outcome = {"status": "cancelled", "stage": "Cancelled"}
                 return
             outcome = {"status": "completed", "stage": "Draft ready", "publication": job,
-                       "version": publication.name, "coverage": coverage}
+                       "version": publication.name, "coverage": coverage,"source_subdirectory":result.get("source_subdirectory")}
         except Exception as error:
             if process is not None and process.poll() is None:
                 self.stop(process)

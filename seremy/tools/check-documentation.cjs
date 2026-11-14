@@ -36,7 +36,9 @@ async function run(){
     await selectRenderer(map);
     await page.locator('#doc-tab').click();
     const doc=page.locator('#doc');await doc.filter({hasText:'Call walkthroughs'}).waitFor();
-    assert.match(await doc.innerText(),/`isAction` to `isPlainObject`/);
+    await doc.locator('summary').filter({hasText:'Contents'}).click();
+    await doc.getByRole('link',{name:'Call walkthroughs',exact:true}).click();
+    assert.match(await doc.innerText(),/isAction.*to.*isPlainObject/);
     const call=doc.getByRole('link').filter({hasText:'call site · src/utils/isAction.ts'}).first();
     const target=doc.getByRole('link').filter({hasText:'target declaration · src/utils/isPlainObject.ts'}).first();
     const citation=JSON.parse(decodeURIComponent((await call.getAttribute('href')).split('#seremy-source=')[1]));

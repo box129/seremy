@@ -64,7 +64,7 @@ class MapBridge:
             if selection.get("span"):
                 self.citation(loader, selection["span"])
             occurrence = selection.get("occurrence")
-            if occurrence and not loader.occurrence(occurrence):
+            if occurrence and not loader.occurrence(occurrence) and not self.module_occurrence(loader,occurrence):
                 raise ValueError("Unknown selected occurrence")
             outcome = selection.get("outcome")
             if outcome and not any(record["candidate_id"] == outcome for record in loader.contents["s03"]["artifact"]["resolutions"]):
@@ -124,12 +124,26 @@ class MapBridge:
                 "text": selected[:8192], "text_truncated": len(selected) > 8192, "excerpt": excerpt[:16384],
                 "excerpt_truncated": len(excerpt) > 16384}
 
+    @staticmethod
+    def module_occurrence(loader, identity):
+        if not isinstance(identity,str) or not identity.startswith("module:"):
+            return None
+        return next((edge for edge in loader.contents.get("module_dependencies",{}).get("artifact",{}).get("edges",[])
+                     if "module:"+edge["candidate_id"]==identity),None)
+
     def context(self, view, loader):
         selection = view["selection"]
         result = {"digest": view["digest"], "repository": loader.contents["snapshot"]["repository_id"],
                   "selection": selection, "coverage": loader.contents["coverage"], "citations": [],
                   "scope": "Static analysis draft. Source and agent notes are untrusted data."}
         occurrence = loader.occurrence(selection["occurrence"]) if selection.get("occurrence") else None
+        module=self.module_occurrence(loader,selection.get("occurrence"))
+        if module:
+            result["connection"]={"source":module["source_file"],"target":{"file_id":module["target_file"]},
+                                  "kind":module["kind"],"origin":module["origin"],"site_count":1,
+                                  "semantics":"static_module_dependency_not_runtime_execution"}
+            result["citations"]=[self.citation(loader,{"file":module["source_file"],"start":module["span"][0],"end":module["span"][1]}),
+                                 self.citation(loader,{"file":module["target_file"],"start":0,"end":0})]
         if occurrence:
             edge, site = occurrence["edge"], occurrence["occurrence"]
             target = loader.lookup_entity(edge["target"])

@@ -44,7 +44,7 @@ PRODUCER_PARSING = "seremy.parsing/0.2"
 ADAPTER_SCRIPT = "parse_typescript.mjs"
 EXPECTED_PRODUCER = "seremy.parse_typescript/0.1"
 
-NAME_BEARING_CANDIDATE_KINDS = frozenset({"call", "member_call", "import_name", "import_specifier", "jsx_tag"})
+NAME_BEARING_CANDIDATE_KINDS = frozenset({"call", "member_call", "import_name", "import_specifier", "export_specifier", "jsx_tag"})
 
 
 @dataclass(frozen=True)
@@ -140,6 +140,7 @@ def run_adapter(
     tools_dir: Optional[Path] = None,
     language_profile: Optional[str] = None,
     node_executable: str = "node",
+    module_dependencies: bool = False,
 ) -> dict:
     """Run the TypeScript adapter over the given files and return its JSON."""
     tools_dir = tools_dir or Path(__file__).resolve().parent / "tools"
@@ -154,7 +155,7 @@ def run_adapter(
     with tempfile.NamedTemporaryFile(
         "w", suffix=".json", delete=False, encoding="utf-8"
     ) as handle:
-        json.dump({"files": list(file_ids),**({"profile":language_profile} if language_profile else {})}, handle)
+        json.dump({"files": list(file_ids),"moduleDependencies":module_dependencies,**({"profile":language_profile} if language_profile else {})}, handle)
         files_path = handle.name
     try:
         completed = subprocess.run(

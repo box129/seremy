@@ -1,5 +1,7 @@
 # SEREMY
 
+The [live interaction follow-up](docs/live-audit-fixes.md) adds compiler-resolved file imports/type imports/re-exports, source-text search, a rendered cited guide and improved file/narrow-window framing. Module dependencies are a separate checked graph layer; they are not runtime call edges. Hosted GitHub failures now identify known limits and recovery actions. Larger-repository ingestion and complete architectural explanations remain qualified follow-up work.
+
 SEREMY turns a source repository into a graph of observed declarations and static calls, a spatial source map, and cited Markdown documentation. The local pipeline has eight stages covering discovery, parsing, dependency resolution, framework evidence, structural components, relationship views, validation, and documentation.
 
 The hosted entry point accepts repository ZIP uploads or public GitHub URLs and provides an interactive map, documentation and downloads. Visitors can save reports on their device and reopen them after server results expire. Its Docker image contains both language runtimes. See [hosted analysis](docs/hosted-analysis.md) for limits, device history, temporary server storage and deployment commands.

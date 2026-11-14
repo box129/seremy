@@ -22,14 +22,23 @@ def render_map(bundle):
                 "to":{"file":target["file_id"],"start":target["name_span"][0],"end":target["name_span"][1]},
                 "origin":edge["origin"],"method":occurrence["evidence"]["method"]})
     bound_ids={edge["id"] for edge in edges}
+    modules=loader.contents.get("module_dependencies",{}).get("artifact",{})
+    for edge in modules.get("edges",[]):
+        edges.append({"id":"module:"+edge["candidate_id"],"kind":edge["kind"],
+                      "relation_id":json.dumps([edge["source_file"],edge["target_file"],edge["kind"]]),
+                      "from":{"file":edge["source_file"],"start":edge["span"][0],"end":edge["span"][1]},
+                      "to":{"file":edge["target_file"],"start":0,"end":0},
+                      "origin":edge["origin"],"method":edge["method"]})
+    module_ids={record["candidate_id"] for record in modules.get("outcomes",[])}
     fixture={"bundle":loader.meta,"files":sources,"hashes":{p:sha256_hex(t.encode()) for p,t in sources.items()},
              "edges":edges,"entities":list(entities.values()),"coverage":loader.contents["coverage"],
              "outcomes":[record for record in loader.contents["s03"]["artifact"]["resolutions"]
-                         if record["candidate_id"] not in bound_ids],
+                         if record["candidate_id"] not in bound_ids and record["candidate_id"] not in module_ids],
              "analysis":{"profile":loader.contents["profile"],
                          "source_extensions":list(SOURCE_EXTENSIONS if loader.contents["profile"]==ECMASCRIPT_PRODUCT_PROFILE else LEGACY_SOURCE_EXTENSIONS),
                          "parsing_profile":loader.contents["s02"]["artifact"]["profile"],
                          "binding_profile":loader.contents["s03"]["artifact"].get("binding_profile"),
+                         "module_dependencies":modules,
                          "scope":loader.contents.get("scope",{}),
                          "exclusions":loader.contents["inventory"]["exclusions"],
                          "skipped_inputs":[record for record in loader.contents["inventory"]["eligible"]

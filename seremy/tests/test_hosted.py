@@ -100,3 +100,22 @@ def test_hosted_queued_cancel_and_capacity(tmp_path):
     finally:
         release.set()
         service.worker.shutdown()
+
+
+def test_hosted_preserves_known_failure_and_redacts_subprocess_output(tmp_path,monkeypatch):
+    from seremy import hosted
+    class FailedProcess:
+        returncode=1
+        def communicate(self,timeout=None):
+            return json.dumps({"error":{"code":"GITHUB_ARCHIVE_LIMIT","message":"untrusted subprocess details"}}),"private traceback"
+        def poll(self):
+            return self.returncode
+    monkeypatch.setattr(hosted.subprocess,"Popen",lambda *args,**kwargs:FailedProcess())
+    service=HostedApplication(tmp_path)
+    try:
+        state=finished(service,service.start(upload()))
+        assert state["status"]=="failed" and state["error_code"]=="GITHUB_ARCHIVE_LIMIT"
+        assert "3 MiB" in state["error"]
+        assert "private" not in json.dumps(state) and "untrusted" not in json.dumps(state)
+    finally:
+        service.worker.shutdown()

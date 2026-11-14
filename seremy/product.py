@@ -18,6 +18,7 @@ from seremy.documentation import build_document_ir, validate_document, render_ma
 from seremy.architecture import framework_evidence, structural_views, aggregate, component_cycles
 from seremy.language_profiles import SCRIPT_EXTENSIONS, SOURCE_EXTENSIONS, ECMASCRIPT_PROFILE, ECMASCRIPT_PRODUCT_PROFILE
 from seremy.membership import build_membership
+from seremy.module_dependencies import build_module_dependencies
 
 PROFILE="seremy-local-product-v0.1"
 
@@ -61,7 +62,7 @@ def analyze(root, *, policy=None, membership_plan=None, snapshot_identity=None, 
                 path=temp/p
                 path.parent.mkdir(parents=True,exist_ok=True)
                 path.write_bytes(raw)
-            results+=build_parsed_results(run_adapter(temp,list(ts_inputs),language_profile=manifest.profile_id),blobs,language_profile=manifest.profile_id)
+            results+=build_parsed_results(run_adapter(temp,list(ts_inputs),language_profile=manifest.profile_id,module_dependencies=True),blobs,language_profile=manifest.profile_id)
     results.sort(key=lambda r:r.file_id)
     progress("S03 · binding")
     if results:
@@ -76,6 +77,9 @@ def analyze(root, *, policy=None, membership_plan=None, snapshot_identity=None, 
     contents["snapshot"]["metadata_blobs"]={p:sha256_hex(raw) for p,raw in sorted(metadata.items())}
     contents["metadata_bytes"]={p:base64.b64encode(raw).decode("ascii") for p,raw in sorted(metadata.items())}
     contents["source_texts"]={}
+    modules=build_module_dependencies(contents["s02"]["artifact"]["files"])
+    contents["module_dependencies"]={"digest":sha256_hex(canonical_bytes(modules)),"artifact":modules}
+    contents["coverage"]["modules"]=modules["coverage"]
     for p,raw in {**ts_inputs,**py_inputs}.items():
         try:
             contents["source_texts"][p]=raw.decode("utf8")
@@ -123,6 +127,11 @@ def analyze(root, *, policy=None, membership_plan=None, snapshot_identity=None, 
 
 def validate_graph(loader):
     c=loader.contents;errors=[]
+    if "module_dependencies" in c:
+        modules=c["module_dependencies"]
+        expected_modules=build_module_dependencies(c["s02"]["artifact"]["files"])
+        if modules!={"digest":sha256_hex(canonical_bytes(expected_modules)),"artifact":expected_modules} or c["coverage"].get("modules")!=expected_modules["coverage"]:
+            errors.append("module dependencies disagree with snapshot observations")
     entities={e["entity_id"]:e for e in c["s03"]["artifact"]["entities"]}
     source=c["source_texts"]
     for key in ["s04","s05","s06"]:

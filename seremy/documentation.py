@@ -14,7 +14,7 @@ from seremy.contracts import PROFILE_ID, canonical_bytes, sha256_hex
 from seremy.language_profiles import SOURCE_EXTENSIONS
 
 PRODUCER_DOCUMENTATION = "seremy.documentation/0.1"
-TEMPLATE_VERSION = "developer-guide-v0.2"
+TEMPLATE_VERSION = "developer-guide-v0.3"
 
 
 def build_document_ir(loader: BundleLoader) -> dict:
@@ -233,8 +233,13 @@ def render_markdown(ir: dict) -> str:
     if declarations:
         lines.append("## Declarations")
         lines.append("")
+        grouped={}
         for claim in declarations:
-            lines.append(f"- {claim['text']}")
+            entity_id=claim["subject"]["entity_id"]
+            key=entity_id.rsplit("@",1)[0]
+            grouped.setdefault(key,[]).append(claim)
+        for group in grouped.values():
+            lines.append(f"- {group[0]['text']}"+(f" {len(group)} stored declarations/signatures share this name in this file; all spans remain in the citation register." if len(group)>1 else ""))
         lines.append("")
 
     if relationships:

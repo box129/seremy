@@ -1,5 +1,7 @@
 """Structured developer-guide projections of immutable analysis records."""
 import json
+import re
+from collections import defaultdict
 from urllib.parse import quote
 
 
@@ -12,6 +14,8 @@ def guide_sections(loader, claims):
     contents = loader.contents
     dependencies = {key: contents[key]["digest"] for key in ("s02", "s03", "s04", "s05", "s06") if key in contents}
     dependencies["graph"] = loader.meta["content_digest"]
+    if "module_dependencies" in contents:
+        dependencies["module_dependencies"]=contents["module_dependencies"]["digest"]
     sections = []
 
     def section(section_id, title):
@@ -31,6 +35,70 @@ def guide_sections(loader, claims):
         f"{len(loader.edges())} direct static relationships in the captured analysis. "
         "Use the call walkthroughs to inspect source evidence and the coverage section to assess analysis limits.",
         {"scope": "snapshot"}, [{"stage": "s03", "artifact_digest": contents["s03"]["digest"]}])
+    declared_root=contents["snapshot"].get("declared_root","")
+    if "#path=" in declared_root:
+        add(overview,f"Repository input scope: `{declared_root}`. Only the selected source folder was captured. "
+            "Configuration and dependencies outside that folder were not acquired; this is not a full-repository analysis.",
+            {"scope":"source_subdirectory"},[{"stage":"snapshot","declared_root":declared_root}])
+
+    modules=contents.get("module_dependencies",{}).get("artifact",{})
+    module_edges=modules.get("edges",[])
+    if modules:
+        entry=section("entry-points", "Module entry points and dependencies")
+        by_file=defaultdict(list)
+        for edge in module_edges:
+            by_file[edge["source_file"]].append(edge)
+        if not by_file:
+            add(entry,"No in-snapshot module dependencies were resolved. This does not establish that the repository has no dependencies.",
+                {"scope":"snapshot"},[{"stage":"module_dependencies","artifact_digest":contents["module_dependencies"]["digest"]}])
+        for file,edges in sorted(by_file.items(),key=lambda item:(not item[0].endswith(("index.ts","index.js","index.tsx","index.jsx")),-len(item[1]),item[0])):
+            targets=", ".join(f"`{e['target_file']}` ({e['kind']})" for e in edges)
+            citations=[{"file_id":file,"span":e["span"],"blob_sha256":e["blob_sha256"],"role":"module_dependency","candidate_id":"module:"+e["candidate_id"]} for e in edges]
+            add(entry,f"`{file}` connects to {targets}. Follow these module boundaries before drilling into individual calls. "
+                "Imports and re-exports describe static dependencies, not execution order.",{"file_id":file},
+                [{"stage":"module_dependencies","edge_ids":[e["edge_id"] for e in edges]}],citations)
+
+    descriptions=section("source-descriptions","Source descriptions")
+    for file,text in sorted(contents.get("source_texts",{}).items()):
+        # Quote the repository's own leading JSDoc as source evidence, never as accepted purpose inference.
+        match=re.search(r"/\*\*([\s\S]*?)\*/",text)
+        if not match:
+            continue
+        description=" ".join(re.sub(r"^\s*\* ?","",line).strip() for line in match[1].splitlines()).strip()
+        description=description.split("@param",1)[0].strip()
+        if not description:
+            continue
+        start=len(text[:match.start()].encode());end=len(text[:match.end()].encode())
+        citation={"file_id":file,"span":[start,end],"blob_sha256":contents["snapshot"]["source_blobs"][file]["analysis_sha256"],"role":"source_comment"}
+        # Keep raw source syntax as quoted text; the renderer never interprets HTML.
+        add(descriptions,f"Source comment in `{file}` (author-provided, not independently verified):\n\n> "+description[:1200].replace("\n"," "),
+            {"file_id":file},[{"stage":"snapshot","file_id":file}], [citation])
+    if not descriptions["claim_ids"]:
+        add(descriptions,"No JSDoc source descriptions were available in this snapshot. Architectural responsibilities still need an evidence-backed author or agent draft.",
+            {"scope":"snapshot"},[{"stage":"snapshot"}])
+
+    flows=section("static-flows","Static call paths to explore")
+    entities={e["entity_id"]:e for e in contents["s03"]["artifact"]["entities"]}
+    outgoing=defaultdict(list)
+    for edge in loader.edges():
+        outgoing[edge["source"]].append(edge)
+    paths=[]
+    for first in loader.edges():
+        for second in outgoing[first["target"]]:
+            if second["target"] in {first["source"],first["target"]}:
+                continue
+            paths.append((first,second))
+    for first,second in paths[:8]:
+        names=[entities.get(key,{"name":key})["name"] for key in [first["source"],first["target"],second["target"]]]
+        citations=[]
+        for edge in (first,second):
+            site=edge["occurrences"][0]
+            citations.append({"file_id":site["file_id"],"span":site["span"],"blob_sha256":site["evidence"]["blob_sha256"],"role":"call_site"})
+        add(flows," → ".join(f"`{name}`" for name in names)+". These two observed static calls provide a reading path; they do not prove that this sequence executes at runtime.",
+            {"scope":"static_path"},[{"stage":"s03","edges":[[e["source"],e["target"],e["kind"]] for e in (first,second)]}],citations)
+    if not paths:
+        add(flows,"No two-edge direct-call paths were observed. Use individual call evidence and module dependencies to navigate this scope.",
+            {"scope":"snapshot"},[{"stage":"s03","artifact_digest":contents["s03"]["digest"]}])
 
     walkthroughs = section("walkthroughs", "Call walkthroughs")
     for edge in loader.edges():

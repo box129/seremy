@@ -63,7 +63,9 @@ def test_jsx_tags_and_limitations_match_independent_truth(observed):
     assert sorted(actual,key=str)==sorted(truth['jsx_tags'],key=str)
     assert limits==truth['limitations']
     assert c['coverage']['s02']==dict(source_file_count=5,parsed_file_records=5,complete=5,partial=0,failed=0,not_processed=0)
-    assert c['coverage']['s03']['candidate_count']==22 and c['coverage']['s03']['attempted_count']==9
+    assert c['coverage']['s03']['candidate_count']==23 and c['coverage']['s03']['attempted_count']==9
+    assert sum(record['candidate_kind']=='export_specifier' for record in c['s03']['artifact']['resolutions'])==1
+    assert c['coverage']['modules']['site_count']>0
 
 
 def test_versioned_profiles_script_kinds_and_compiler_provenance(observed):
