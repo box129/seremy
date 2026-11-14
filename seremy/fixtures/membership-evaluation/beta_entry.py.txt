@@ -1,0 +1,4 @@
+from beta.logic import step
+
+def start(value, depth=1):
+    return step(value, depth - 1) if depth > 0 else value

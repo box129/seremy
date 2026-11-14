@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "profile": "seremy-membership-comparison-v0.1",
+  "producer": "seremy.reciprocal-call-core/0.1",
+  "source_runs": 18,
+  "snapshots": 6,
+  "cold_repeats_per_snapshot": 3,
+  "full_python_tests": 246,
+  "final_targeted_tests": 12,
+  "semantic_quality": "not_run",
+  "historical_benchmark": "not_run",
+  "recommendation": "Retain experimental status. Dependency cores require responsibility evidence and singleton coverage before promotion.",
+  "metric_contract_sha256": "3d83667a79f5d369b736c469e4979239d9d6e06e827128fe7442695fa0feef7e",
+  "implementation_sha256": {
+    "evaluate_membership.py": "11a513d9564f18c42e78a90aec08b40766bf87eb8bbe6981488a22dc207bc7a9",
+    "membership_metrics.py": "c2ca4bd1d06c76a02fa84e1079bb82691d88cecd503d1c9dd941faaa5e7fa42a",
+    "membership_candidate.py": "5b4cc1d129d586cb86c8c93e4d26ec8397b9b161211109569e4edc8a4b08d3ca",
+    "membership.py": "214c9cfbbcdd89cbdbac0dad3f41b9063ebd032db80cefcb581a97258ec2546f",
+    "architecture.py": "50aa736d44fa929e50a57e6c998c6d712197a3742aa5714bbac8efd283449d70",
+    "product.py": "71c4f2e278d102ae38ff6b7de544571353a65f809e02be828a9f6ec117dd02f8",
+    "python_adapter.py": "9beb756dccb1b50cfc489a41c8543ce090fe7664fae5d5bb0af120e2b1c4d3e0",
+    "resolver.py": "3aade6df255646ed781a5ea013644341b90c2913fcc6a8a2af11a261798dca8a",
+    "parsing.py": "8fbbdde13822c690d4b0fc6b90777a000fabbab89322205f2fc1d5dbc35dca1c",
+    "snapshot.py": "66f63c1a6c7c9f37e18f1d16483cfa15f70e8e280edd796d17c6fd834d80cc0e"
+  }
+}

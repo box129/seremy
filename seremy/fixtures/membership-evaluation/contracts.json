@@ -1,0 +1,37 @@
+{
+  "profile": "seremy-membership-comparison-corpus-v0.1",
+  "authorship": "Developer-authored controls, specified independently of candidate output. Human semantic adjudication pending.",
+  "files": {
+    "alpha_entry":{"path":"alpha/entry.py","source":"alpha_entry.py.txt","owner":"alpha"},
+    "alpha_logic":{"path":"alpha/logic.py","source":"alpha_logic.py.txt","owner":"alpha"},
+    "beta_entry":{"path":"beta/entry.py","source":"beta_entry.py.txt","owner":"beta"},
+    "beta_logic":{"path":"beta/logic.py","source":"beta_logic.py.txt","owner":"beta"},
+    "shared":{"path":"shared.py","source":"shared.py.txt","owner":"infrastructure"},
+    "isolated":{"path":"isolated.py","source":"isolated.py.txt","owner":"operations"}
+  },
+  "aliases":{"alpha":["Alpha"],"beta":["Beta"],"infrastructure":["Infrastructure"],"operations":["Operations"],"audit":["Audit"]},
+  "cases": [
+    {"id":"base","edits":[],"unchanged":["alpha_entry","alpha_logic","beta_entry","beta_logic","shared","isolated"],"cross_interactions":[["alpha_logic","shared"],["beta_logic","shared"]]},
+    {"id":"relocation","edits":[
+      {"kind":"move","file":"alpha_entry","path":"alpha/gateway.py"},
+      {"kind":"replace","file":"alpha_logic","old":"from alpha.entry import start","new":"from alpha.gateway import start"}
+    ],"unchanged":["alpha_entry","beta_entry","beta_logic","shared","isolated"],"cross_interactions":[["alpha_logic","shared"],["beta_logic","shared"]]},
+    {"id":"isolated-add","edits":[
+      {"kind":"add","file":"audit","path":"audit.py","text":"def check(value):\n    return value is not None\n","owner":"audit"}
+    ],"unchanged":["alpha_entry","alpha_logic","beta_entry","beta_logic","shared","isolated"],"cross_interactions":[["alpha_logic","shared"],["beta_logic","shared"]]},
+    {"id":"one-way","edits":[
+      {"kind":"replace","file":"alpha_logic","old":"return start(value, depth - 1) if depth > 0 else value","new":"return value"}
+    ],"unchanged":["alpha_entry","beta_entry","beta_logic","shared","isolated"],"cross_interactions":[["alpha_logic","shared"],["beta_logic","shared"]]},
+    {"id":"cross-contract-cycle","edits":[
+      {"kind":"replace","file":"alpha_logic","old":"from shared import trace","new":"from shared import trace\nfrom beta.entry import start as other_start"},
+      {"kind":"replace","file":"alpha_logic","old":"    trace(value)","new":"    trace(value)\n    if depth > 0:\n        other_start(value, depth - 1)"},
+      {"kind":"replace","file":"beta_logic","old":"from shared import trace","new":"from shared import trace\nfrom alpha.entry import start as other_start"},
+      {"kind":"replace","file":"beta_logic","old":"    trace(value)","new":"    trace(value)\n    if depth > 0:\n        other_start(value, depth - 1)"}
+    ],"unchanged":["alpha_entry","beta_entry","shared","isolated"],"cross_interactions":[["alpha_logic","shared"],["beta_logic","shared"],["alpha_logic","beta_entry"],["beta_logic","alpha_entry"]]},
+    {"id":"ambiguous-probes","edits":[
+      {"kind":"add","file":"probe_one","path":"probe_one.py","text":"def probe(value):\n    return value\n","owner":null},
+      {"kind":"add","file":"probe_two","path":"probe_two.py","text":"def probe(value):\n    return value\n","owner":null}
+    ],"unchanged":["alpha_entry","alpha_logic","beta_entry","beta_logic","shared","isolated"],"cross_interactions":[["alpha_logic","shared"],["beta_logic","shared"]],
+     "ambiguous":["probe_one","probe_two"],"alternative_owners":["operations","infrastructure",null]}
+  ]
+}

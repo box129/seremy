@@ -74,3 +74,5 @@ Files now has per-file and subtree visibility checkboxes, a visible/total count 
 The [documentation evaluation](docs/documentation-evaluation.md) runs a separately specified Python/TSX corpus and prepares source-linked human review records. Run `python -B -m seremy.evaluate_documentation --output test-results/documentation-evaluation` from the repository root.
 
 The opt-in [Stage 5 membership interface](docs/membership-views.md) accepts snapshot-bound authored or candidate views through `--membership-plan`, with explicit evidence, hierarchy, roles, disputes and unassigned endpoints. Semantic quality assessment remains open.
+
+The [experimental membership comparison](docs/membership-comparison.md) runs a dependency-only candidate in three fresh processes per fixture snapshot, with coverage, ambiguity, lineage and failure companions. Its findings support retaining experimental status.

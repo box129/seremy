@@ -1,0 +1,6 @@
+from beta.entry import start
+from shared import trace
+
+def step(value, depth):
+    trace(value)
+    return start(value, depth - 1) if depth > 0 else value
