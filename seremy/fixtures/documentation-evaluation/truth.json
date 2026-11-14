@@ -1,0 +1,29 @@
+{
+  "profile": "seremy-documentation-corpus-v0.1",
+  "authorship": "Hand-authored source and expected facts. Independent of generated IR; authored by the implementing agent. Human adjudication remains pending.",
+  "required_topics": ["overview", "walkthroughs", "frameworks", "groups", "component-relations", "limits"],
+  "cases": [
+    {
+      "case_id": "python-static-and-dynamic",
+      "folder": "python",
+      "relationships": [
+        {"source_file":"app.py","source_name":"process","target_file":"helper.py","target_name":"normalize","call_line":6,"call_token":"normalize","declaration_line":1}
+      ],
+      "outcomes": [{"file":"app.py","name":"callback","line":9,"outcome":"UNSUPPORTED","reason":"dynamic_or_unsupported_binding"}],
+      "frameworks": [{"framework":"FastAPI","declared":true,"imports":1}],
+      "misleading_comment": "payment ownership layer",
+      "forbidden_assertion": "process always executes normalize in production and owns the payment layer."
+    },
+    {
+      "case_id": "tsx-alias-and-tag",
+      "folder": "tsx",
+      "relationships": [
+        {"source_file":"Panel.tsx","source_name":"Panel","target_file":"helper.ts","target_name":"normalize","call_line":4,"call_token":"clean","declaration_line":1},
+        {"source_file":"Panel.tsx","source_name":"launch","target_file":"Panel.tsx","target_name":"Panel","call_line":7,"call_token":"Panel","declaration_line":3}
+      ],
+      "outcomes": [{"file":"Panel.tsx","name":"section","line":4,"outcome":"NOT_PROCESSED","reason":"jsx_runtime_semantics_outside_profile"}],
+      "frameworks": [{"framework":"React","declared":true,"imports":0}],
+      "forbidden_assertion": "Panel always renders in production and React owns the business layer."
+    }
+  ]
+}

@@ -70,3 +70,5 @@ Outputs remain scoped drafts. Direct calls have qualified language profiles. Uns
 The map now exposes the active profile, parse limits, exclusions and resolution coverage through Coverage. Empty and unsupported-only repositories have explicit guidance. See the [feature ledger, eight-stage boundaries and next implementation task](docs/implementation-readiness.md).
 
 Files now has per-file and subtree visibility checkboxes, a visible/total count and Restore all. Hidden sources remain searchable and evidence stays intact; navigation reveals targets, while Back and saved views restore visibility. See [file visibility and working sets](docs/file-visibility.md).
+
+The [documentation evaluation](docs/documentation-evaluation.md) runs a separately specified Python/TSX corpus and prepares source-linked human review records. Run `python -B -m seremy.evaluate_documentation --output test-results/documentation-evaluation` from the repository root.

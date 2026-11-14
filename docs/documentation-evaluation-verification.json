@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "profile": "seremy-documentation-evaluation-v0.1",
+  "run_digest": "975a1e2036eeb5cb607dc86f41447b37dba67dbf0e4f0a7e3dd580154bf43f5a",
+  "evaluator_sha256": "bb8053b8976e4ce225f008e7483cad373182f54c00469b27c7aa02874e4c4c2d",
+  "corpus_digest": "e37bc34d819608218ee35694f28ddcc3eb058ac6606a67bff2c6ad4fb16303a1",
+  "full_python_tests": 214,
+  "final_targeted_tests": 15,
+  "corpus_cases": 2,
+  "automated_checks": 44,
+  "human_review": "not_run",
+  "review_units": 5,
+  "metrics": {
+    "expected_relationships": {
+      "numerator": 3,
+      "denominator": 3,
+      "rate": 1.0
+    },
+    "required_citations": {
+      "numerator": 6,
+      "denominator": 6,
+      "rate": 1.0
+    },
+    "required_topic_presence": {
+      "numerator": 12,
+      "denominator": 12,
+      "rate": 1.0
+    },
+    "expected_outcomes": {
+      "numerator": 2,
+      "denominator": 2,
+      "rate": 1.0
+    }
+  },
+  "scope": "developer-authored conformance corpus and reviewer workflow"
+}

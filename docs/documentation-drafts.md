@@ -37,3 +37,5 @@ node seremy/tools/check-documentation-drafts.cjs test-results/drafts/fresh-model
 ```
 
 For the model lane, use a fresh directory. Read `section-context.json` after `MODEL_CONTEXT_READY` and write `model-submission.json` with request_id, context_digest, statements and generation. The browser session waits for that real model submission. The helper provides a five-minute window for this local integration exercise.
+
+The [evaluation corpus and review workflow](documentation-evaluation.md) now exercise exact facts, negative claims and evidence freshness. Human judgment records remain separate from protocol qualification.
