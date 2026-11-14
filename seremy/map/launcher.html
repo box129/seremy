@@ -160,7 +160,7 @@ function showDocumentation(markdown){
       list=null;table=null;const level=heading[1].length,title=heading[2];
       if(level<=2)container=doc;
       if(level===2&&folded.has(title)){const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=title;details.append(summary);doc.append(details);container=details;}
-      const node=document.createElement('h'+level);node.id='guide-section-'+(++headingCount);appendGuideInline(node,title);if(level===1)doc.prepend(node);else container.append(node);
+      const node=document.createElement('h'+level);node.id='guide-section-'+(++headingCount);appendGuideInline(node,title);if(level===1&&headingCount===1)doc.prepend(node);else container.append(node);
       if(level===2){const link=document.createElement('a');link.href='#'+node.id;link.textContent=title;link.onclick=event=>{event.preventDefault();const target=document.getElementById(node.id);target.closest('details')?.setAttribute('open','');target.scrollIntoView({block:'start'});};toc.append(link);}continue;
     }
     if(line.startsWith('|')){

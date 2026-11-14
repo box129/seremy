@@ -206,7 +206,7 @@ class MapBridge:
                 return {"binds": document["binds"], "sections": sections(document), "coverage": loader.contents["coverage"]}
             if tool == "documentation_section":
                 context = evidence_context(document, request.get("section_id"), request.get("offset", 0), request.get("limit", 10),
-                                           lambda span: self.citation(loader, span))
+                                           lambda span: self.citation(loader, span), loader=loader)
                 context["coverage"] = loader.contents["coverage"]
                 context.pop("context_digest")
                 context["context_digest"] = sha256_hex(canonical_bytes(context))
