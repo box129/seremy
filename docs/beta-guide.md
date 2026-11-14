@@ -53,6 +53,7 @@ Keep sharing enabled while using local server saves. **Stop sharing selection** 
 | Agent cannot connect | Check the Python executable, install `requirements-mcp.txt` in that environment, and match the launcher's running port. |
 | Returned draft is still queued | Return to Documentation to refresh delivery. Check the map's sharing status if it remains unavailable. |
 | Large repository import fails | Choose a source subfolder, upload a smaller source ZIP or analyze the local checkout. |
+| GitHub reports an API limit | Branches and tags automatically try the public Git reference endpoint. You can also enter a full 40-character revision SHA, upload a source ZIP or retry later. |
 | Save reports a missing folder or existing file | Choose an existing directory and a new filename. An identical repeated save succeeds. |
 | Native destination picker is unavailable | Use Save to local path in the local launcher or the download link's browser menu. |
 | Zero relationships or unsupported source | Open Coverage. Confirm the files fall within the supported lowercase `.py`, `.ts`, `.js`, `.jsx` and `.tsx` profiles. |

@@ -115,3 +115,54 @@ def test_scoped_archive_rejects_traversal(tmp_path):
         archive.writestr("repo/src/../escape.ts","export function bad(){}")
     with pytest.raises(ValueError,match="unsafe"):
         github_input.scoped_archive(raw.getvalue(),"src")
+
+
+def advertisement(*lines):
+    return b"".join(f"{len(line) + 4:04x}".encode() + line for line in lines) + b"0000"
+
+
+def test_rate_limited_api_uses_bounded_git_refs_and_pins_archive(tmp_path, monkeypatch):
+    commit = "b" * 40
+    calls = []
+    raw = base64.b64decode(upload()["value"])
+    def fetch(url, limit, accept):
+        calls.append((url, limit))
+        if "api.github.com" in url:
+            raise github_input.InputFailure("GITHUB_RATE_LIMIT", "Limited")
+        if "info/refs" in url:
+            return advertisement(commit.encode() + b" HEAD\0symref=HEAD:refs/heads/main\n")
+        return raw
+    monkeypatch.setattr(github_input, "fetch", fetch)
+    result = github_input.import_repository("https://github.com/example/repository", None, tmp_path)
+    assert result["revision"] == commit
+    assert calls[1] == ("https://github.com/example/repository.git/info/refs?service=git-upload-pack", github_input.MAX_REFS)
+    assert calls[2][0] == "https://codeload.github.com/example/repository/zip/" + commit
+
+
+def test_advertised_branch_precedence_and_peeled_tags():
+    raw = advertisement(b"a" * 40 + b" refs/tags/release\n", b"b" * 40 + b" refs/tags/release^{}\n",
+                        b"c" * 40 + b" refs/heads/release\n", b"d" * 40 + b" refs/heads/refs/tags/release\n")
+    assert github_input.advertised_commit(raw, "release") == "c" * 40
+    assert github_input.advertised_commit(raw, "refs/tags/release") == "b" * 40
+    assert github_input.advertised_commit(raw, "refs/heads/release") == "c" * 40
+    with pytest.raises(github_input.InputFailure):
+        github_input.advertised_commit(raw, "missing")
+
+
+@pytest.mark.parametrize("raw", [b"ffffbad0000", b"zzzz0000", b"0001x0000", b"0004", b"0030" + b"a" * 40])
+def test_malformed_git_advertisement_is_rejected(raw):
+    with pytest.raises(github_input.InputFailure):
+        github_input.advertised_commit(raw, "HEAD")
+
+
+def test_full_sha_avoids_api_and_other_failures_do_not_fallback(monkeypatch):
+    calls = []
+    def fetch(*args):
+        calls.append(args)
+        raise github_input.InputFailure("GITHUB_NOT_FOUND", "Missing")
+    monkeypatch.setattr(github_input, "fetch", fetch)
+    assert github_input.resolve_commit("example/repository", "A" * 40) == "a" * 40
+    assert not calls
+    with pytest.raises(github_input.InputFailure, match="Missing"):
+        github_input.resolve_commit("example/repository", "main")
+    assert len(calls) == 1

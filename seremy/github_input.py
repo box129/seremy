@@ -17,6 +17,7 @@ from seremy.input_errors import InputFailure, public_failure
 
 MAX_ARCHIVE = 3 * 1024 * 1024
 MAX_SCOPED_DOWNLOAD = 16 * 1024 * 1024
+MAX_REFS = 4 * 1024 * 1024
 
 
 def source_subdirectory(value):
@@ -102,14 +103,65 @@ def fetch(url, limit, accept):
     return raw
 
 
+def advertised_commit(raw, revision):
+    """Resolve an exact ref from a bounded Git smart-HTTP v0 advertisement."""
+    if revision == "HEAD":
+        wanted = [b"HEAD"]
+    elif revision.startswith("refs/tags/"):
+        wanted = [(revision + "^{}").encode(), revision.encode()]
+    elif revision.startswith("refs/"):
+        wanted = [revision.encode()]
+    else:
+        branch = "refs/heads/" + revision
+        tag = "refs/tags/" + revision
+        wanted = [branch.encode(), (tag + "^{}").encode(), tag.encode()]
+    found = {}
+    position = 0
+    if not raw.endswith(b"0000"):
+        raise InputFailure("GITHUB_UNAVAILABLE", "Incomplete Git reference response.")
+    while position < len(raw):
+        try:
+            length = int(raw[position:position + 4], 16)
+        except ValueError as error:
+            raise InputFailure("GITHUB_UNAVAILABLE", "Invalid Git reference response.") from error
+        if length == 0:
+            position += 4
+            continue
+        if length < 4 or position + length > len(raw):
+            raise InputFailure("GITHUB_UNAVAILABLE", "Invalid Git reference packet.")
+        line = raw[position + 4:position + length].split(b"\0", 1)[0].rstrip(b"\n")
+        position += length
+        commit, separator, name = line.partition(b" ")
+        if separator and name in wanted and re.fullmatch(rb"[0-9a-f]{40}", commit) and commit != b"0" * 40:
+            found[name] = commit.decode("ascii")
+    for name in wanted:
+        if name in found:
+            return found[name]
+    raise InputFailure("GITHUB_NOT_FOUND", "The selected Git reference was not advertised.")
+
+
+def resolve_commit(repository, revision):
+    if re.fullmatch(r"[0-9a-fA-F]{40}", revision):
+        return revision.lower()
+    try:
+        commit = fetch(f"https://api.github.com/repos/{repository}/commits/{quote(revision, safe='')}",
+                       256, "application/vnd.github.sha").decode().strip()
+    except InputFailure as error:
+        if error.code != "GITHUB_RATE_LIMIT":
+            raise
+        raw = fetch(f"https://github.com/{repository}.git/info/refs?service=git-upload-pack",
+                    MAX_REFS, "application/x-git-upload-pack-advertisement")
+        return advertised_commit(raw, revision)
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("GitHub returned an invalid commit identifier.")
+    return commit
+
+
 def import_repository(url, revision, output, subdirectory=None):
     url, revision = github_source(url, revision)
     subdirectory=source_subdirectory(subdirectory)
     repository = url.removeprefix("https://github.com/")
-    commit = fetch(f"https://api.github.com/repos/{repository}/commits/{quote(revision, safe='')}",
-                   256, "application/vnd.github.sha").decode().strip()
-    if not re.fullmatch(r"[0-9a-f]{40}", commit):
-        raise ValueError("GitHub returned an invalid commit identifier.")
+    commit = resolve_commit(repository, revision)
     raw = fetch(f"https://codeload.github.com/{repository}/zip/{commit}", MAX_SCOPED_DOWNLOAD if subdirectory else MAX_ARCHIVE, "application/zip")
     if subdirectory:
         raw=scoped_archive(raw,subdirectory)
