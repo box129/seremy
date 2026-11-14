@@ -1,0 +1,22 @@
+{
+  "status": "live_workload_verified",
+  "commit": "c74591bc6521bb73da547d605e2833912a4cc54c",
+  "deploy_id": "dep-dbrls0gae00c73fvulf0",
+  "finished_at": "2026-11-13T18:59:37.896097Z",
+  "url": "https://seremy-analysis.onrender.com",
+  "python_full": 188,
+  "python_final_targeted": 43,
+  "local_browser_groups": 17,
+  "generation": "deterministic",
+  "next": "section-scoped local MCP evidence and reviewed draft submission",
+  "hosted_browser_groups": 15,
+  "total_browser_groups": 32,
+  "log_query": {
+    "start": "2026-11-13T18:59:37.896097Z",
+    "end": "2026-11-13T19:02:26.401041914Z",
+    "type": "app",
+    "level": "error",
+    "logs": [],
+    "hasMore": false
+  }
+}
