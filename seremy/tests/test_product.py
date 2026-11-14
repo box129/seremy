@@ -122,7 +122,7 @@ def test_connected_mixed_pipeline_and_deterministic_output(mixed_repo):
     bundle,ir,markdown,report=analyze(mixed_repo)
     c=bundle["contents"]
     assert len(c["s03"]["artifact"]["edges"])==2
-    assert c["s03"]["artifact"]["binding_profile"]=="mixed-static-v0.1"
+    assert c["s03"]["artifact"]["binding_profile"]=="mixed-callable-static-v0.1"
     assert c["coverage"]["s02"]["parsed_file_records"]==4
     assert {f["framework"] for f in c["s04"]["artifact"]["frameworks"]}=={"Preact","FastAPI"}
     assert not report["pre_generation"]["errors"]

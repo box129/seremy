@@ -1,7 +1,7 @@
-"""S03 consumes snapshot-bound observations from the TypeScript checker.
+"""S03 consumes versioned snapshot-bound TypeScript/Python observations.
 
-The supported profile binds direct identifier calls to function implementations.
-Callable values and member calls retain explicit unsupported outcomes.
+The callable extension adds immutable lexical values and namespace member calls.
+Dynamic callbacks and mutable object dispatch retain explicit outcomes.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ from seremy.language_profiles import ECMASCRIPT_BINDING_PROFILE, ECMASCRIPT_PROF
 
 PRODUCER_RESOLVER = "seremy.resolver/0.2"
 BINDING_PROFILE = "typescript-checker-v0.2"
+CALLABLE_BINDING_PROFILE = "typescript-callable-checker-v0.1"
 PYTHON_BINDING_PROFILE = "python-ast-static-v0.1"
 EXPECTED_S02_PRODUCER = "seremy.parsing/0.1"
 
@@ -207,6 +208,12 @@ class Resolver:
         self.by_file: Dict[str, ParsedFileResult] = {r.file_id: r for r in results}
         self.universe = frozenset(self.by_file)
         self.script_binding_profile=ECMASCRIPT_BINDING_PROFILE if self.profile_id==ECMASCRIPT_PROFILE else BINDING_PROFILE
+        script_results=[result for result in results if not result.file_id.endswith(".py")]
+        extensions={result.construct_coverage.get("binding_extension") for result in script_results}
+        if CALLABLE_BINDING_PROFILE in extensions:
+            if extensions!={CALLABLE_BINDING_PROFILE}:
+                raise ValueError("mixed callable binding extensions in one script snapshot")
+            self.script_binding_profile=CALLABLE_BINDING_PROFILE
 
     # -- helpers ------------------------------------------------------------
 
@@ -343,7 +350,7 @@ class Resolver:
             edge.occurrences.append(record.occurrence)
 
         profiles={PYTHON_BINDING_PROFILE if r.file_id.endswith(".py") else self.script_binding_profile for r in self.results}
-        profile=next(iter(profiles)) if len(profiles)==1 else "mixed-ecmascript-static-v0.1" if ECMASCRIPT_BINDING_PROFILE in profiles else "mixed-static-v0.1"
+        profile=next(iter(profiles)) if len(profiles)==1 else "mixed-callable-static-v0.1" if CALLABLE_BINDING_PROFILE in profiles else "mixed-ecmascript-static-v0.1" if ECMASCRIPT_BINDING_PROFILE in profiles else "mixed-static-v0.1"
         return ResolutionSet(
             entities=entities,
             resolutions=resolutions,

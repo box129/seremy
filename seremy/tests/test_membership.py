@@ -236,5 +236,7 @@ def test_extended_language_profile_retains_nonbound_outcomes(baseline):
     assert bundle["contents"]["s03"] == c["s03"]
     membership = bundle["contents"]["s05"]["artifact"]["experimental_membership"]["artifact"]
     assert membership["views"][0]["coverage"]["assigned"] == 1
-    assert len(membership["views"][0]["relationships"]["unassigned_edge_ids"]) == 3
+    assert len(membership["views"][0]["relationships"]["unassigned_edge_ids"]) == 4
+    entities={entity["entity_id"]:entity for entity in c["s03"]["artifact"]["entities"]}
+    assert any(entities[edge["target"]]["name"]=="callable" for edge in c["s03"]["artifact"]["edges"])
     assert membership["upstream_coverage"] == c["coverage"]

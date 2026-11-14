@@ -10,6 +10,8 @@ def render_map(bundle):
     loader=BundleLoader(bundle)
     sources=loader.contents["source_texts"]
     entities={e["entity_id"]:e for e in loader.contents["s03"]["artifact"]["entities"]}
+    candidates={f"cand:{record['file_id']}#{candidate['kind']}:{candidate['name']}@{candidate['span'][0]}":candidate
+                for record in loader.contents["s02"]["artifact"]["files"] for candidate in record["candidates"]}
     edges=[]
     for edge in loader.edges():
         target=entities.get(edge["target"])
@@ -21,6 +23,8 @@ def render_map(bundle):
                 "from":{"file":occurrence["file_id"],"start":occurrence["span"][0],"end":occurrence["span"][1]},
                 "to":{"file":target["file_id"],"start":target["name_span"][0],"end":target["name_span"][1]},
                 "origin":edge["origin"],"method":occurrence["evidence"]["method"]})
+            if candidates.get(occurrence["candidate_id"],{}).get("source_owner_reason"):
+                edges[-1]["source_owner_reason"]=candidates[occurrence["candidate_id"]]["source_owner_reason"]
     bound_ids={edge["id"] for edge in edges}
     modules=loader.contents.get("module_dependencies",{}).get("artifact",{})
     for edge in modules.get("edges",[]):

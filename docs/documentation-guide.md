@@ -1,5 +1,7 @@
 # Developer guide generation
 
+Guide v0.4 adds [named callable structure](callable-bindings.md): cited lexical identities, observed outgoing targets, incoming-site counts and file-owner qualifications. Callback/event invocation is explicitly unestablished, and zero incoming calls do not establish unused code. Existing MCP section tools include these claims and their evidence for reviewed drafting.
+
 The deterministic generator creates a repository overview, direct-call walkthroughs, package and directory summaries, framework evidence and coverage limits. Each guide section references structured claims. Walkthroughs include both the recorded call sites and the target declaration. The graph, Markdown and Docs source navigation share the same snapshot binding.
 
 Open Documentation after analysis. Click a call-site or target-declaration link to focus its exact source range in the map. Back restores the previous map location. The Markdown action downloads `architecture.md`. To follow its relative links offline, download the map as `map.html` into the same directory and open it through a browser that supports the map's source verification. Hosted saved reports retain Markdown and its in-app source navigation after server expiry.

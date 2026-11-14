@@ -3,14 +3,15 @@ import * as ts from "typescript";
 import { readFileSync, existsSync, realpathSync } from "node:fs";
 import { resolve, relative, dirname, isAbsolute } from "node:path";
 import { createHash } from "node:crypto";
+import {createCallableBinder,CALLABLE_METHOD} from './callable_binding.mjs';
 
 const hash = data => createHash("sha256").update(data).digest("hex");
-export function createSnapshotProgram(root, fileIds, profile=null) {
+export function createSnapshotProgram(root, fileIds, profile=null, callableBindings=false) {
   if (ts.version !== "5.9.3") throw new Error("unsupported TypeScript version: " + ts.version);
   if(profile!==null&&!['seremy-m1-profile-v0.1','seremy-ecmascript-static-v0.1'].includes(profile))throw new Error('unsupported source profile');
   const extended=profile==='seremy-ecmascript-static-v0.1'||fileIds.some(id=>/\.(js|jsx|tsx)$/.test(id));
   if(extended&&profile==='seremy-m1-profile-v0.1')throw new Error('extended source cannot use the legacy profile');
-  const method=extended?"typescript-ecmascript-checker-v0.1":"typescript-checker-v0.2";
+  const method=callableBindings?CALLABLE_METHOD:extended?"typescript-ecmascript-checker-v0.1":"typescript-checker-v0.2";
   const scriptKind=path=>path.endsWith('.tsx')?ts.ScriptKind.TSX:path.endsWith('.jsx')?ts.ScriptKind.JSX:path.endsWith('.js')?ts.ScriptKind.JS:ts.ScriptKind.TS;
   const inputs = new Map();
   for (const id of fileIds) {
@@ -82,9 +83,17 @@ export function createSnapshotProgram(root, fileIds, profile=null) {
     return symbol;
   }
   const writtenSymbols=new Set();
-  if(extended){
+  if(extended||callableBindings){
     const record=node=>{
-      if(ts.isPropertyAccessExpression(node)||ts.isElementAccessExpression(node))return;
+      if(ts.isPropertyAccessExpression(node)||ts.isElementAccessExpression(node)){
+        if(callableBindings&&ts.isPropertyAccessExpression(node)&&ts.isIdentifier(node.expression)){
+          const receiver=checker.getSymbolAtLocation(node.expression);
+          if(receiver?.declarations?.some(ts.isNamespaceImport)){
+            const symbol=checker.getSymbolAtLocation(node.name);if(symbol)writtenSymbols.add(unalias(symbol));
+          }
+        }
+        return;
+      }
       if(ts.isIdentifier(node)){
         const symbol=ts.isShorthandPropertyAssignment(node.parent)?checker.getShorthandAssignmentValueSymbol(node.parent):checker.getSymbolAtLocation(node);
         if(symbol)writtenSymbols.add(unalias(symbol));
@@ -94,12 +103,15 @@ export function createSnapshotProgram(root, fileIds, profile=null) {
     const visit=node=>{
       if(ts.isBinaryExpression(node)&&node.operatorToken.kind>=ts.SyntaxKind.FirstAssignment&&node.operatorToken.kind<=ts.SyntaxKind.LastAssignment)record(node.left);
       if((ts.isPrefixUnaryExpression(node)||ts.isPostfixUnaryExpression(node))&&[ts.SyntaxKind.PlusPlusToken,ts.SyntaxKind.MinusMinusToken].includes(node.operator))record(node.operand);
+      if(callableBindings&&(ts.isForOfStatement(node)||ts.isForInStatement(node))&&!ts.isVariableDeclarationList(node.initializer))record(node.initializer);
       ts.forEachChild(node,visit);
     };
     for(const path of inputs.keys()){const source=program.getSourceFile(path);if(source)visit(source);}
   }
 
+  const bindCallable=callableBindings?createCallableBinder({checker,inputs,program,context,options,syntaxDiagnostics,writtenSymbols}):null;
   function bind(sourceFile, call, mapRange) {
+    if(bindCallable)return bindCallable(sourceFile,call,mapRange);
     const missing = reason => ({ outcome: "MISSING", reason, context });
     if (syntaxDiagnostics(sourceFile).length) return {outcome:"UNSUPPORTED", reason:"syntax_diagnostics",context};
     if(extended)for(let parent=call.parent;parent&&!ts.isSourceFile(parent);parent=parent.parent){

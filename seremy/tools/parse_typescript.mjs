@@ -19,6 +19,7 @@
 
 import * as ts from "typescript";
 import { createSnapshotProgram } from "./compiler_binding.mjs";
+import {lexicalCallableDeclaration,CALLABLE_METHOD} from './callable_binding.mjs';
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve, posix, sep } from "node:path";
@@ -34,8 +35,8 @@ if (!rootArg || !filesArg) {
 }
 
 const root = resolve(rootArg);
-const { files,profile=null,moduleDependencies=false } = JSON.parse(readFileSync(filesArg, "utf-8"));
-const snapshotProgram = createSnapshotProgram(root, files,profile);
+const { files,profile=null,moduleDependencies=false,callableBindings=false } = JSON.parse(readFileSync(filesArg, "utf-8"));
+const snapshotProgram = createSnapshotProgram(root, files,profile,callableBindings);
 const scriptKinds=new Map(snapshotProgram.context.script_kinds||[]);
 
 // UTF-16 code-unit index -> UTF-8 byte offset table for one text.
@@ -95,7 +96,7 @@ function identifierRecord(kind, name, node, sourceFile, map, extra = {}) {
 }
 
 function extractFile(relPath) {
-  const languageCoverage={...(snapshotProgram.extended?{language_profile:'seremy-ecmascript-static-v0.1',script_kind:scriptKinds.get(relPath),typescript_version:ts.version,semantic_diagnostics:'not_run'}:{}),...(moduleDependencies?{module_dependency_profile:'typescript-file-dependencies-v0.1'}:{})};
+  const languageCoverage={...(snapshotProgram.extended?{language_profile:'seremy-ecmascript-static-v0.1',script_kind:scriptKinds.get(relPath),typescript_version:ts.version,semantic_diagnostics:'not_run'}:{}),...(moduleDependencies?{module_dependency_profile:'typescript-file-dependencies-v0.1'}:{}),...(callableBindings?{binding_extension:CALLABLE_METHOD}:{})};
   const absolute = resolve(root, relPath);
   const raw = snapshotProgram.inputs.get(absolute).raw;
   const contentSha256 = createHash("sha256").update(raw).digest("hex");
@@ -133,6 +134,14 @@ function extractFile(relPath) {
   };
 
   const visit = (node) => {
+    const callable=callableBindings?lexicalCallableDeclaration(node):null;
+    if(callable){
+      bump(extractedCounts,callable.kind);
+      const name=rangeToUtf16(callable.nameNode,sourceFile),declaration=rangeToUtf16(node,sourceFile);
+      declarations.push({kind:callable.kind,name:callable.nameNode.text,name_utf16:name,name_byte:utf16ToByte(map,name),
+        decl_utf16:declaration,decl_byte:utf16ToByte(map,declaration)});
+      ts.forEachChild(node,visit);return;
+    }
     if(snapshotProgram.extended&&(ts.isJsxOpeningElement(node)||ts.isJsxSelfClosingElement(node))){
       bump(extractedCounts,'jsx_tag');candidates.push(identifierRecord('jsx_tag',node.tagName.getText(sourceFile),node.tagName,sourceFile,map));
       ts.forEachChild(node,visit);return;
@@ -226,10 +235,13 @@ function extractFile(relPath) {
       bump(extractedCounts, "call_expression");
       const callUtf16 = rangeToUtf16(node, sourceFile);
       const expression = node.expression;
+      const binding=(ts.isIdentifier(expression)||ts.isPropertyAccessExpression(expression))?
+        snapshotProgram.bind(sourceFile,node,(text,range)=>utf16ToByte(buildUtf16ToByteMap(text),range)):null;
       if (ts.isIdentifier(expression)) {
         candidates.push(
           identifierRecord("call", expression.text, expression, sourceFile, map, {
-            binding: snapshotProgram.bind(sourceFile, node, (text, range) => utf16ToByte(buildUtf16ToByteMap(text), range)),
+            binding,
+            ...(binding.source_owner?{source_owner:binding.source_owner,source_owner_reason:binding.source_owner_reason}:{}),
             arg_count: node.arguments.length,
             call_utf16: callUtf16,
             call_byte: utf16ToByte(map, callUtf16),
@@ -244,9 +256,10 @@ function extractFile(relPath) {
             sourceFile,
             map,
             {
-              binding: snapshotProgram.bind(sourceFile, node, (text, range) => utf16ToByte(buildUtf16ToByteMap(text), range)),
+              binding,
+              ...(binding.source_owner?{source_owner:binding.source_owner,source_owner_reason:binding.source_owner_reason}:{}),
             arg_count: node.arguments.length,
-              receiver_unbound: true,
+              receiver_unbound: binding.outcome!=='RESOLVED_SINGLE',
               call_utf16: callUtf16,
               call_byte: utf16ToByte(map, callUtf16),
             }
@@ -315,6 +328,8 @@ const output = {
     "import_declaration",
     "call_expression",
     "member_call",
+    ...(callableBindings?["callable_declaration","function_expression","method_declaration"]:[]),
+    ...(moduleDependencies?["export_declaration"]:[]),
   ],
   files: files.map(extractFile),
 };

@@ -1,0 +1,11 @@
+{
+  "relationships": [
+    {"source_file":"helper.ts","source_name":"make","target_file":"helper.ts","target_name":"leaf","token":"leaf","line":2},
+    {"source_file":"helper.ts","source_name":"named","target_file":"helper.ts","target_name":"named","token":"recur","line":3},
+    {"source_file":"helper.ts","source_name":"named","target_file":"helper.ts","target_name":"leaf","token":"leaf","line":3},
+    {"source_file":"entry.tsx","source_name":"onClick","target_file":"helper.ts","target_name":"make","token":"run","line":4},
+    {"source_file":"entry.tsx","source_name":"App","target_file":"helper.ts","target_name":"leaf","token":"leaf","line":5},
+    {"source_file":"entry.tsx","source_name":"App","target_file":"helper.ts","target_name":"make","token":"forwarded","line":5}
+  ],
+  "forbidden": ["App -> onClick"]
+}

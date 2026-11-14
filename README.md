@@ -1,12 +1,14 @@
 # SEREMY
 
+The current [callable binding extension](docs/callable-bindings.md) resolves named const arrows/function values, immutable aliases and imported namespace calls. It gives returned named functions and method bodies their own source regions, preserves anonymous-body calls at file level with an ownership limit, and adds corresponding guide/MCP evidence. Dynamic callback invocation and mutable receiver dispatch remain separate work.
+
 The [live interaction follow-up](docs/live-audit-fixes.md) adds compiler-resolved file imports/type imports/re-exports, source-text search, a rendered cited guide and improved file/narrow-window framing. Module dependencies are a separate checked graph layer; they are not runtime call edges. Hosted GitHub failures now identify known limits and recovery actions. Larger-repository ingestion and complete architectural explanations remain qualified follow-up work.
 
 SEREMY turns a source repository into a graph of observed declarations and static calls, a spatial source map, and cited Markdown documentation. The local pipeline has eight stages covering discovery, parsing, dependency resolution, framework evidence, structural components, relationship views, validation, and documentation.
 
 The hosted entry point accepts repository ZIP uploads or public GitHub URLs and provides an interactive map, documentation and downloads. Visitors can save reports on their device and reopen them after server results expire. Its Docker image contains both language runtimes. See [hosted analysis](docs/hosted-analysis.md) for limits, device history, temporary server storage and deployment commands.
 
-Lowercase `.py`, `.ts`, `.js`, `.jsx` and `.tsx` source is supported within the [versioned static language profiles](docs/ecmascript-profile.md). JSX tags retain explicit non-runtime outcomes; arrow/callable/member targets remain limited.
+Lowercase `.py`, `.ts`, `.js`, `.jsx` and `.tsx` source is supported within the [versioned static language profiles](docs/ecmascript-profile.md). JSX tags retain explicit non-runtime outcomes; [the current callable profile](docs/callable-bindings.md) states the supported value/namespace cases and remaining callback/receiver limits.
 
 Python 3.12 or newer and Node.js 22 are required. The TypeScript compiler is pinned to 5.9.3. Python analysis uses the standard-library AST. Run these commands from this repository's root.
 

@@ -77,6 +77,31 @@ def guide_sections(loader, claims):
         add(descriptions,"No JSDoc source descriptions were available in this snapshot. Architectural responsibilities still need an evidence-backed author or agent draft.",
             {"scope":"snapshot"},[{"stage":"snapshot"}])
 
+    callable_entities=[entity for entity in contents["s03"]["artifact"]["entities"] if entity["kind"] in {"callable_declaration","function_expression","method_declaration"}]
+    if "callable" in contents["s03"]["artifact"].get("binding_profile",""):
+        callable_section=section("callable-structure","Named callable structure and callback limits")
+        add(callable_section,"Named const arrow functions and function expressions have their own source identities. "
+            "Immutable aliases and imported namespace calls can resolve to these identities. Passing a value as a callback "
+            "does not itself create a runtime call edge; callback argument propagation and event invocation are not established. "
+            "Named function expressions and ordinary named methods also have lexical body identities; a method identity does not establish receiver dispatch. "
+            "When a callable body has no supported owner identity, a resolved call site is retained at file level, with an explicit ownership reason.",
+            {"scope":"binding_profile"},[{"stage":"s03","binding_profile":contents["s03"]["artifact"]["binding_profile"]}])
+        for entity in callable_entities:
+            outgoing_edges=loader.edges(source=entity["entity_id"])
+            incoming_edges=loader.edges(target=entity["entity_id"])
+            targets=sorted({loader.lookup_entity(edge["target"])["name"] for edge in outgoing_edges})
+            text=f"`{entity['name']}` is a {entity['kind'].replace('_',' ')} in `{entity['file_id']}`. "
+            text+=("Its body has observed static calls to "+", ".join(f"`{name}`" for name in targets)+". " if targets else "No supported outgoing static calls were recorded in its body. ")
+            text+=f"Captured direct incoming call sites: {sum(len(edge['occurrences']) for edge in incoming_edges)}. "
+            if not incoming_edges:
+                text+="This does not establish that the callable is unused; framework/event callbacks and uncaptured consumers may invoke it."
+            citations=[{"file_id":entity["file_id"],"span":entity["name_span"],"blob_sha256":contents["snapshot"]["source_blobs"][entity["file_id"]]["analysis_sha256"],"role":"callable_declaration"}]
+            for edge in outgoing_edges:
+                site=edge["occurrences"][0]
+                citations.append({"file_id":site["file_id"],"span":site["span"],"blob_sha256":site["evidence"]["blob_sha256"],"role":"call_site","candidate_id":site["candidate_id"]})
+            add(callable_section,text,{"entity_id":entity["entity_id"]},
+                [{"stage":"s03","artifact_digest":contents["s03"]["digest"],"entity_id":entity["entity_id"]}],citations)
+
     flows=section("static-flows","Static call paths to explore")
     entities={e["entity_id"]:e for e in contents["s03"]["artifact"]["entities"]}
     outgoing=defaultdict(list)
@@ -118,7 +143,8 @@ def guide_sections(loader, claims):
         add(walkthroughs, f"The analyzer connects `{caller}` to `{target['name']}` because "
             f"the binding profile resolves {len(edge['occurrences'])} call site(s) to the declaration in "
             f"`{target['file_id']}`. Open a call site, then the target declaration to follow the evidence. "
-            "This records a static call relationship. Runtime execution and business purpose require additional evidence.",
+            "This records a static call relationship. Runtime execution and business purpose require additional evidence."+
+            (" This call is recorded at file scope; no enclosing callable identity is asserted." if edge["source_type"]=="file_ref" else ""),
             {"source": edge["source"], "target": edge["target"], "kind": edge["kind"]},
             [{"stage": "s03", "artifact_digest": contents["s03"]["digest"],
               "candidate_ids": [site["candidate_id"] for site in edge["occurrences"]]}], citations)

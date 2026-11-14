@@ -81,10 +81,12 @@ function coverageView(){
   paragraph('Profile: '+a.profile+' · parser '+a.parsing_profile+' · binder '+(a.binding_profile||'not recorded'));
   const extensions=a.source_extensions||['.py','.ts'];
   paragraph('Source inputs in this snapshot: lowercase '+extensions.join(', ')+'. JSON and TOML supply selected manifest/configuration evidence.');
-  paragraph(extensions.includes('.jsx')?'JSX tags are syntax observations with NOT_PROCESSED runtime semantics. Arrow/callback owners, member/callable-value targets and reassigned bindings remain unsupported; semantic type diagnostics are not run.':'This snapshot uses the legacy TS/Python profile. Reanalyzing a repository containing .js, .jsx or .tsx selects the extended static profile.');
+  const callables=(a.binding_profile||'').includes('callable');
+  paragraph(callables?'Named const arrow/function values, immutable aliases and imported namespace calls are supported within the captured snapshot. Named method bodies and returned named functions have lexical identities. Unidentified callable owners retain file-level call sites. Callback argument propagation, mutable receiver dispatch, optional calls and dynamic dispatch remain unsupported. Semantic type diagnostics are not run.':extensions.includes('.jsx')?'JSX tags are syntax observations with NOT_PROCESSED runtime semantics. Arrow/callback owners, member/callable-value targets and reassigned bindings remain unsupported; semantic type diagnostics are not run.':'This snapshot uses its recorded direct-function profile. Current script analyses can use the callable extension; Python retains its separate AST profile.');
   paragraph(c.inventory.input_count+' enumerated entries · '+c.inventory.eligible_count+' eligible entries · '+c.inventory.excluded_count+' excluded entries. Discovery scope: '+(a.scope.mode||'not recorded')+'.');
   paragraph(c.s02.source_file_count+' eligible source files · '+c.s02.parsed_file_records+' parse records: '+c.s02.complete+' complete, '+c.s02.partial+' partial, '+c.s02.failed+' failed; '+c.s02.not_processed+' not processed. Complete refers to syntax extraction within this profile.');
   paragraph(Object.keys(data.files).length+' displayable source files are embedded in this map. Files that could not be decoded remain in the parse outcomes.');
+  if(callables)paragraph(data.edges.filter(edge=>edge.source_owner_reason).length+' call sites retain a resolved target at file level because their lexical callable owner is not identified. This does not establish callback invocation.');
   paragraph(c.s03.direct_edge_count+' distinct call relationships · '+data.edges.length+' displayed source sites · '+c.s03.attempted_count+' binding attempts / '+c.s03.candidate_count+' extracted candidates.');
   if(c.modules){paragraph(c.modules.distinct_edge_count+' module dependencies · '+c.modules.site_count+' import/re-export sites. Module relationships do not establish runtime calls.');records('Module dependency outcomes',Object.entries(c.modules.outcome_counts).map(([name,count])=>name+': '+count));}
   records('Resolution outcome counts',Object.entries(c.s03.outcome_counts).map(([name,count])=>name+': '+count));
@@ -93,7 +95,7 @@ function coverageView(){
   records('Excluded entries and reasons',a.exclusions.map(row=>row.path+' · '+row.reason));
   records('Inputs not processed',(a.skipped_inputs||[]).map(row=>row.file_id+' · '+row.bucket+' · '+row.reason));
   records('Discovery limits and diagnostics',[JSON.stringify(a.scope,null,2)]);
-  paragraph('Static direct-function binding only. Dynamic dispatch, TypeScript member/callable-value targets and multi-project tsconfig resolution remain limited or unsupported. Recorded outcomes explain individual candidates.');
+  paragraph(callables?'Static lexical calls only. Namespace calls are distinguished from mutable object methods. Mutable/reassigned targets, dynamic eval/with scopes and complex TypeScript project graphs remain outside this binding profile. Recorded outcomes explain individual candidates.':'Static direct-function binding only. Dynamic dispatch, TypeScript member/callable-value targets and multi-project tsconfig resolution remain limited or unsupported. Recorded outcomes explain individual candidates.');
   paragraph('Components are structural directory/package groups. Framework manifests/imports do not establish routes, dependency injection, ORM or runtime behavior. Documentation uses cited templates; independent semantic and generated-prose acceptance is not established.');
   if(a.membership){
     paragraph('Experimental membership · '+a.membership.producer+' · '+a.membership.origin+' · execution '+a.membership.execution+' · assessment not_run.');
@@ -387,6 +389,7 @@ function controls(){
     ' · source bytes ['+selected.from.start+', '+selected.from.end+') · target bytes ['+selected.to.start+', '+selected.to.end+') · bundle '+data.bundle.content_digest:
     selectedOutcome?'operation '+selectedOutcome.operation+' · attempted '+selectedOutcome.attempted+
       ' · source bytes ['+selectedOutcome.candidate_span.join(', ')+') · bundle '+data.bundle.content_digest:'';
+  if(selected?.source_owner_reason)el('evidence').textContent+=' · Call site retained at file level; lexical callable owner is not identified.';
   inspection();
   connectionControls();
   el('arrange').setAttribute('aria-pressed',String(arranging));el('layout-mode').value=layoutMode;

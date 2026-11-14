@@ -149,6 +149,12 @@ class MapBridge:
             target = loader.lookup_entity(edge["target"])
             result["connection"] = {"source": edge["source"], "target": target, "kind": edge["kind"],
                                     "origin": edge["origin"], "site_count": len(edge["occurrences"]), "evidence": site["evidence"]}
+            result["connection"]["source_type"]=edge["source_type"]
+            owner_reason=next((candidate.get("source_owner_reason") for record in loader.contents["s02"]["artifact"]["files"]
+                               if record["file_id"]==site["file_id"] for candidate in record["candidates"]
+                               if candidate["span"]==site["span"] and candidate.get("source_owner_reason")),None)
+            if owner_reason:
+                result["connection"]["source_owner_reason"]=owner_reason
             result["citations"] = [self.citation(loader, {"file": site["file_id"], "start": site["span"][0], "end": site["span"][1]}),
                                    self.citation(loader, {"file": target["file_id"], "start": target["name_span"][0], "end": target["name_span"][1]})]
         if selection.get("outcome"):

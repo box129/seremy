@@ -31,7 +31,9 @@ def seal(contents):
             "contents":contents}
 
 
-def analyze(root, *, policy=None, membership_plan=None, snapshot_identity=None, use_git=True, progress=lambda message:None):
+def analyze(root, *, policy=None, membership_plan=None, snapshot_identity=None, use_git=True, callable_bindings=True, progress=lambda message:None):
+    if type(callable_bindings) is not bool:
+        raise ValueError("callable_bindings must be a boolean")
     root=Path(root).resolve()
     membership_plan=copy.deepcopy(membership_plan)
     if policy is not None:
@@ -62,7 +64,7 @@ def analyze(root, *, policy=None, membership_plan=None, snapshot_identity=None, 
                 path=temp/p
                 path.parent.mkdir(parents=True,exist_ok=True)
                 path.write_bytes(raw)
-            results+=build_parsed_results(run_adapter(temp,list(ts_inputs),language_profile=manifest.profile_id,module_dependencies=True),blobs,language_profile=manifest.profile_id)
+            results+=build_parsed_results(run_adapter(temp,list(ts_inputs),language_profile=manifest.profile_id,module_dependencies=True,callable_bindings=callable_bindings),blobs,language_profile=manifest.profile_id)
     results.sort(key=lambda r:r.file_id)
     progress("S03 · binding")
     if results:

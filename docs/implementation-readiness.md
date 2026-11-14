@@ -1,5 +1,7 @@
 # SEREMY implementation readiness audit
 
+Current follow-up: [callable bindings and lexical ownership](callable-bindings.md) supersede the earlier blanket arrow/callable limitation for the documented immutable-value and namespace cases. Method-body identities do not establish receiver dispatch. The guide/MCP now expose that scope; independent architectural prose review, framework source semantics and larger project acquisition remain next work.
+
 14 November follow-up: the [live interaction audit fixes](live-audit-fixes.md) supersede the earlier file/symbol-only search, raw-guide presentation and call-only map scope. The new file dependency layer has separate semantics and counts. Its remaining ingestion/binding/documentation gaps take priority alongside the roadmap below; the prior qualification receipts do not imply those gaps are closed.
 
 Reviewed 13 November 2026 against the original CodeCanvas comparison and the current static-analysis profile. This is a scoped implementation assessment. A working source map does not establish complete architecture extraction or exact CodeCanvas parity.

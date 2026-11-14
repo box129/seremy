@@ -14,7 +14,7 @@ from seremy.contracts import PROFILE_ID, canonical_bytes, sha256_hex
 from seremy.language_profiles import SOURCE_EXTENSIONS
 
 PRODUCER_DOCUMENTATION = "seremy.documentation/0.1"
-TEMPLATE_VERSION = "developer-guide-v0.3"
+TEMPLATE_VERSION = "developer-guide-v0.4"
 
 
 def build_document_ir(loader: BundleLoader) -> dict:

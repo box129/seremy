@@ -12,6 +12,7 @@ from seremy.product import analyze, publish
 from seremy.snapshot import collect_snapshot
 from seremy.staleness import check_staleness, citation_is_current
 from seremy.tests.test_resolver import _pipeline
+from seremy.resolver import CALLABLE_BINDING_PROFILE
 from seremy.viewer import render_map
 
 FIXTURE=Path(__file__).resolve().parents[1]/'fixtures/ecmascript-slice'
@@ -29,7 +30,8 @@ def line(source,span):
 
 @pytest.fixture(scope='module')
 def observed():
-    return analyze(FIXTURE)
+    # Preserve the frozen profile's independent truth; the callable extension has its own corpus.
+    return analyze(FIXTURE,callable_bindings=False)
 
 
 def test_exact_independent_relationship_truth_and_no_jsx_runtime_edges(observed):
@@ -152,15 +154,15 @@ def test_properties_and_shadowed_parameters_do_not_reassign_the_function(tmp_pat
 
 def test_arrow_callback_is_not_invented_as_an_app_to_helper_relationship(tmp_path):
     make_sources(tmp_path,{'main.jsx':'function helper(){} export function App(){return <div onClick={()=>helper()}/>;}'})
-    bundle,*_=analyze(tmp_path,use_git=False);c=bundle['contents'];assert not c['s03']['artifact']['edges']
-    assert any(r['reason']=='source_owner_not_established' for r in c['s03']['artifact']['resolutions'])
+    bundle,*_=analyze(tmp_path,use_git=False);c=bundle['contents'];edges=c['s03']['artifact']['edges']
+    assert len(edges)==1 and edges[0]['source']=='file:main.jsx' and edges[0]['source_type']=='file_ref'
 
 
 def test_legacy_universe_and_binding_options_stay_unchanged(tmp_path):
     make_sources(tmp_path,{'main.ts':'function chosen(){return 1;} export function entry(){return chosen();}','node_modules/ignored.js':'export function hidden(){}'})
     manifest,_,_=collect_snapshot(tmp_path,use_git=False);assert manifest.profile_id==PROFILE_ID
     assert manifest.policy.included_extensions==frozenset({'.ts','.py','.json','.toml'})
-    bundle,*_=analyze(tmp_path,use_git=False);c=bundle['contents'];assert c['profile']=='seremy-local-product-v0.1'
+    bundle,*_=analyze(tmp_path,use_git=False,callable_bindings=False);c=bundle['contents'];assert c['profile']=='seremy-local-product-v0.1'
     assert c['s02']['artifact']['profile']==PROFILE_ID and c['s03']['artifact']['binding_profile']=='typescript-checker-v0.2'
     context=next(candidate['binding']['context'] for row in c['s02']['artifact']['files'] for candidate in row['candidates'] if 'binding' in candidate)
     assert context['method']=='typescript-checker-v0.2' and 'allowJs' not in context['compiler_options'] and 'script_kinds' not in context
@@ -169,7 +171,7 @@ def test_legacy_universe_and_binding_options_stay_unchanged(tmp_path):
 def test_new_profile_keeps_python_separate_and_conserves_all_sources(tmp_path):
     make_sources(tmp_path,{'main.js':'function chosen(){} export function entry(){chosen();}','main.py':'def chosen(): pass\ndef entry(): chosen()\n'})
     bundle,*_=analyze(tmp_path,use_git=False);c=bundle['contents'];assert c['coverage']['s02']['source_file_count']==2
-    assert c['s03']['artifact']['binding_profile']=='mixed-ecmascript-static-v0.1' and len(c['s03']['artifact']['edges'])==2
+    assert c['s03']['artifact']['binding_profile']=='mixed-callable-static-v0.1' and len(c['s03']['artifact']['edges'])==2
 
 
 def test_config_staleness_even_without_a_call_observation(tmp_path):
@@ -199,7 +201,7 @@ def test_skipped_extended_source_preserves_the_declared_profile(tmp_path,readabl
     assert c['profile']==ECMASCRIPT_PRODUCT_PROFILE
     assert c['s02']['artifact']['profile']==c['s03']['artifact']['profile']==ECMASCRIPT_PROFILE
     assert c['coverage']['s02']['source_file_count']==1+readable and c['coverage']['s02']['not_processed']==1
-    assert not c['s03']['artifact']['edges']
+    assert len(c['s03']['artifact']['edges'])==int(readable)
     if readable:
-        assert c['s03']['artifact']['binding_profile']==ECMASCRIPT_BINDING_PROFILE
-        assert c['s03']['artifact']['resolutions'][0]['reason']=='source_owner_not_established'
+        assert c['s03']['artifact']['binding_profile']==CALLABLE_BINDING_PROFILE
+        assert c['s03']['artifact']['edges'][0]['source']=='file:main.ts'
