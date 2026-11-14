@@ -34,9 +34,11 @@ def source_packet(loader, claims, read_citation):
             entity = entities.get(identity)
             if entity:
                 request(entity["file_id"], entity["decl_span"], "identified_declaration", claim["claim_id"], identity)
-            elif key == "source" and identity in contents["source_texts"]:
-                request(identity, [0, len(contents["source_texts"][identity].encode("utf8"))],
-                        "file_preview_no_callable_owner_asserted", claim["claim_id"])
+            elif key == "source" and isinstance(identity, str):
+                file = identity.removeprefix("file:")
+                if file in contents["source_texts"]:
+                    request(file, [0, len(contents["source_texts"][file].encode("utf8"))],
+                            "file_preview_no_callable_owner_asserted", claim["claim_id"])
         file = subject.get("file_id")
         if file in contents["source_texts"]:
             request(file, [0, len(contents["source_texts"][file].encode("utf8"))], "file_preview", claim["claim_id"])
