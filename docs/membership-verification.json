@@ -1,5 +1,5 @@
 {
-  "status": "local_passed",
+  "status": "live_workload_verified",
   "profile": "seremy-membership-v0.1",
   "full_python_tests": 232,
   "final_targeted_membership_tests": 21,
@@ -12,5 +12,19 @@
     "before": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289",
     "after": "e812a13f976ee861824a68a9d6a24717783849eec29501483d005458c48aa289"
   },
-  "origin_of_example": "authored_contract"
+  "origin_of_example": "authored_contract",
+  "runtime_commit": "b15cd203f17a96f52e52ed323712136288bcf83e",
+  "deploy_id": "dep-dbrt232fngtc73b2n2h0",
+  "url": "https://seremy-analysis.onrender.com",
+  "finished_at": "2026-11-14T03:10:30.683353Z",
+  "hosted_browser_groups": 12,
+  "total_browser_groups": 22,
+  "log_query": {
+    "start": "2026-11-14T03:10:30.683353Z",
+    "end": "2026-11-14T03:12:55.429755282Z",
+    "type": "app",
+    "level": "error",
+    "logs": [],
+    "hasMore": false
+  }
 }

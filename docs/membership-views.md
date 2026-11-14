@@ -59,4 +59,6 @@ The optional S05 experimental_membership artifact retains both the plan and norm
 
 Documentation adds a labelled experimental section. The map's Coverage panel exposes assignments, disputes, input coverage and evidence. The source canvas continues to show source files and observed calls. MCP selection context supplies the experimental artifact, and section reads expose the generated documentation. An invalid or stale plan fails before a new publication pointer is installed.
 
+For local MCP access to a CLI-generated report, start `python -B -m seremy.server --output PATH_TO_PUBLICATION` and open `/reports/PUBLICATION_ID/map.html` on that launcher's address. Use the published directory's hexadecimal ID. Enable Share selection with agent in Inspect, then use the existing MCP connection and view/digest selection workflow.
+
 The authored mechanics fixture covers shared infrastructure, cross-group coupling, isolated declarations, ambiguous adapter ownership, empty files and failed parsing. Browser checks cover SVG/Pixi navigation and saved views. The complete default Redux graph matches the stored pre-membership object. Semantic algorithm accuracy, historical F09/F12 ownership and F11 equivalence adjudication, and lineage-aware comparison remain separate qualification work. Experimental quality assessment stays not_run.
