@@ -155,6 +155,9 @@ class MapBridge:
         result["selected_files"] = sorted(selected_files)[:200]
         result["selected_file_count"] = len(selected_files)
         result["structural_views"] = loader.contents["s05"]["artifact"]["views"]
+        experiment = loader.contents["s05"]["artifact"].get("experimental_membership")
+        if experiment:
+            result["experimental_membership"] = experiment["artifact"]
         result["framework_evidence"] = loader.contents["s04"]["artifact"]
         return result
 

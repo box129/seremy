@@ -1,0 +1,2 @@
+def adapter():
+    return True

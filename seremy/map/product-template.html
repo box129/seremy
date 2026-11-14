@@ -92,6 +92,13 @@ function coverageView(){
   records('Discovery limits and diagnostics',[JSON.stringify(a.scope,null,2)]);
   paragraph('Static direct-function binding only. Dynamic dispatch, TypeScript member/callable-value targets and multi-project tsconfig resolution remain limited or unsupported. Recorded outcomes explain individual candidates.');
   paragraph('Components are structural directory/package groups. Framework manifests/imports do not establish routes, dependency injection, ORM or runtime behavior. Documentation uses cited templates; independent semantic and generated-prose acceptance is not established.');
+  if(a.membership){
+    paragraph('Experimental membership · '+a.membership.producer+' · '+a.membership.origin+' · execution '+a.membership.execution+' · assessment not_run.');
+    records('Experimental membership coverage',[...a.membership.views,...a.membership.role_views].map(view=>view.view_id+' · '+view.target+' · cut '+view.cut_id+' · '+view.coverage.assigned+'/'+view.coverage.eligible+' assigned · '+view.coverage.unassigned+' unassigned including '+view.coverage.disputed+' disputed · '+view.version));
+    records('Experimental membership diagnostics',a.membership.diagnostics);
+    records('Files without observed declarations',a.membership.files_without_observed_entities);
+    records('Membership records and evidence',[JSON.stringify(a.membership,null,2)]);
+  }
   if(!Object.keys(data.files).length){
     const section=document.createElement('section'),heading=document.createElement('h2'),text=document.createElement('p'),button=document.createElement('button');
     section.id='map-empty';heading.textContent=c.s02.source_file_count?'No displayable source':'No supported source files';

@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "browser": "157.0.4341.42",
+  "renderer": "svg",
+  "graph_digest": "16bf12379571a73c408023e33a520b18a7a8d6ab88b8cab251d29fd0396bd564",
+  "membership_version": "37824f2d13a6795cb62528a40849b705a57d223a5c55202f612c7b63741c9eff",
+  "checks": [
+    "Opt-in membership, disputes and failed source coverage are exported without changing the three observed calls or four source sites",
+    "Call navigation, Back and saved-view restoration preserve source evidence and membership lineage"
+  ],
+  "page_errors": []
+}

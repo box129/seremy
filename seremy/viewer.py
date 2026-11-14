@@ -37,6 +37,9 @@ def render_map(bundle):
                          "parse_files":[{key:record.get(key) for key in ("file_id","bucket","reason","diagnostics")}
                                         for record in loader.contents["s02"]["artifact"]["files"]]},
              "repository":loader.contents["snapshot"]["repository_id"]}
+    experiment=loader.contents["s05"]["artifact"].get("experimental_membership")
+    if experiment:
+        fixture["analysis"]["membership"]=experiment["artifact"]
     assets=Path(__file__).parent/"map"
     template=(assets/"product-template.html").read_text(encoding="utf8")
     template=template.replace("SCENE_RECORDS_JS",(assets/"scene-records.js").read_text(encoding="utf8"))

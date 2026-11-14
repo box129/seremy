@@ -1,0 +1,2 @@
+def policy():
+    return True

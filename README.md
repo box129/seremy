@@ -72,3 +72,5 @@ The map now exposes the active profile, parse limits, exclusions and resolution 
 Files now has per-file and subtree visibility checkboxes, a visible/total count and Restore all. Hidden sources remain searchable and evidence stays intact; navigation reveals targets, while Back and saved views restore visibility. See [file visibility and working sets](docs/file-visibility.md).
 
 The [documentation evaluation](docs/documentation-evaluation.md) runs a separately specified Python/TSX corpus and prepares source-linked human review records. Run `python -B -m seremy.evaluate_documentation --output test-results/documentation-evaluation` from the repository root.
+
+The opt-in [Stage 5 membership interface](docs/membership-views.md) accepts snapshot-bound authored or candidate views through `--membership-plan`, with explicit evidence, hierarchy, roles, disputes and unassigned endpoints. Semantic quality assessment remains open.

@@ -109,6 +109,7 @@ def main(argv=None):
     scan.add_argument("--revision")
     scan.add_argument("--output",required=True)
     scan.add_argument("--policy",help="JSON forbidden-boundary rules and reject_cycles flag")
+    scan.add_argument("--membership-plan",help="Snapshot-bound experimental membership plan JSON")
     path=commands.add_parser("path")
     path.add_argument("--graph",required=True)
     path.add_argument("--from-id",required=True)
@@ -125,13 +126,14 @@ def main(argv=None):
         if args.revision and not args.git_url:
             raise ValueError("--revision requires --git-url")
         policy=json.loads(Path(args.policy).read_text(encoding="utf8")) if args.policy else None
+        membership_plan=json.loads(Path(args.membership_plan).read_text(encoding="utf8")) if args.membership_plan else None
         with input_root(args) as root:
             output=Path(args.output).resolve()
             if output==root or root.is_relative_to(output):
                 raise ValueError("output must not contain the input repository")
             if output.is_relative_to(root) and output!=root/".seremy-artifacts":
                 raise ValueError("use .seremy-artifacts or an output directory outside the input")
-            bundle,ir,markdown,checks=analyze(root,policy=policy,
+            bundle,ir,markdown,checks=analyze(root,policy=policy,membership_plan=membership_plan,
                 snapshot_identity=args.snapshot_identity,use_git=args.use_git,
                 progress=lambda msg:print(msg,file=sys.stderr,flush=True))
             target=publish(output,bundle,ir,markdown,checks,render_map(bundle))

@@ -6,6 +6,7 @@ import tempfile
 import shutil
 import uuid
 import base64
+import copy
 from types import SimpleNamespace
 from seremy.contracts import AnalysisTextBlob, SourceBlob, canonical_bytes, sha256_hex
 from seremy.snapshot import collect_snapshot, read_contained
@@ -16,6 +17,7 @@ from seremy.bundle import build_bundle, BundleLoader
 from seremy.documentation import build_document_ir, validate_document, render_markdown
 from seremy.architecture import framework_evidence, structural_views, aggregate, component_cycles
 from seremy.language_profiles import SCRIPT_EXTENSIONS, SOURCE_EXTENSIONS, ECMASCRIPT_PROFILE, ECMASCRIPT_PRODUCT_PROFILE
+from seremy.membership import build_membership
 
 PROFILE="seremy-local-product-v0.1"
 
@@ -28,8 +30,9 @@ def seal(contents):
             "contents":contents}
 
 
-def analyze(root, *, policy=None, snapshot_identity=None, use_git=True, progress=lambda message:None):
+def analyze(root, *, policy=None, membership_plan=None, snapshot_identity=None, use_git=True, progress=lambda message:None):
     root=Path(root).resolve()
+    membership_plan=copy.deepcopy(membership_plan)
     if policy is not None:
         if not isinstance(policy,dict) or set(policy)-{"forbidden","reject_cycles"}:
             raise ValueError("unsupported policy keys")
@@ -88,6 +91,13 @@ def analyze(root, *, policy=None, snapshot_identity=None, use_git=True, progress
     for key,value in [("s04",framework),("s05",components),("s06",relationships)]:
         contents[key]={"digest":sha256_hex(canonical_bytes(value)),"artifact":value}
     contents["policy"]=policy or {"forbidden":[],"reject_cycles":False}
+    if membership_plan is not None:
+        membership=build_membership(contents,membership_plan)
+        components["experimental_membership"]={"plan":copy.deepcopy(membership_plan),"artifact":membership}
+        relationships["membership_views"]=[{"view_id":view["view_id"],"version":view["version"],"target":view["target"],
+                                             "origin":membership["origin"],"view":view["relationships"]} for view in membership["views"]]
+        for key,value in [("s05",components),("s06",relationships)]:
+            contents[key]={"digest":sha256_hex(canonical_bytes(value)),"artifact":value}
     progress("S07 · graph validation")
     loader=BundleLoader(seal(contents))
     pre_errors=validate_graph(loader)
@@ -174,6 +184,21 @@ def validate_graph(loader):
     if set(view["membership"])!=set(entities):
         errors.append("structural membership universe mismatch")
     actual_components=structural_views(list(entities.values()),c["s04"]["artifact"],source)
+    experiment=c["s05"]["artifact"].get("experimental_membership")
+    if experiment is not None:
+        try:
+            if not isinstance(experiment,dict) or set(experiment)!={"plan","artifact"}:
+                raise ValueError("invalid experimental membership envelope")
+            membership=build_membership(c,experiment["plan"])
+            actual_components["experimental_membership"]={"plan":experiment["plan"],"artifact":membership}
+            expected_views=[{"view_id":view["view_id"],"version":view["version"],"target":view["target"],
+                             "origin":membership["origin"],"view":view["relationships"]} for view in membership["views"]]
+            if c["s06"]["artifact"].get("membership_views")!=expected_views:
+                errors.append("experimental relationship views disagree with membership lineage")
+        except (KeyError,ValueError) as error:
+            errors.append("experimental membership validation failed: "+str(error))
+    elif "membership_views" in c["s06"]["artifact"]:
+        errors.append("experimental relationship views lack a membership producer")
     if actual_components!=c["s05"]["artifact"]:
         errors.append("component membership does not match source paths and package manifests")
     expected=aggregate(loader.edges(),view)

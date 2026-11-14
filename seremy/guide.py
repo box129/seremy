@@ -80,6 +80,26 @@ def guide_sections(loader, claims):
             add(groups, f"`{group}` contains {count} observed declarations under the `{view['target']}` view.",
                 {"group_id": group}, [{"stage": "s05", "membership_version": view["version"], "target": view["target"]}])
 
+    experiment = contents.get("s05", {}).get("artifact", {}).get("experimental_membership")
+    if experiment:
+        membership = experiment["artifact"]
+        experimental = section("experimental-membership", "Experimental membership views")
+        add(experimental, f"Membership adapter `{membership['producer']}` has origin `{membership['origin']}` and "
+            f"execution `{membership['execution']}`. Quality assessment remains not_run. "
+            "The declared universe contains observed declarations; upstream parse and resolution limits remain applicable.",
+            {"scope": "membership"}, [{"stage": "s05", "artifact_digest": contents["s05"]["digest"]}])
+        for view in [*membership["views"], *membership["role_views"]]:
+            count = view["coverage"]
+            add(experimental, f"View `{view['view_id']}` targets `{view['target']}` at cut `{view['cut_id']}`. "
+                f"Assigned {count['assigned']} of {count['eligible']} observed declarations. "
+                f"Unassigned {count['unassigned']}, including {count['disputed']} disputed. "
+                f"Membership map `{view['membership_map_version']}`. Interpretation `{view['rationale']}`.",
+                {"view_id": view["view_id"]}, [{"stage": "s05", "view_version": view["version"], "origin": view["origin"]}])
+            if view["mode"] == "primary_partition":
+                add(experimental, f"View `{view['view_id']}` retains {len(view['relationships']['unassigned_edge_ids'])} "
+                    "distinct source edges with unassigned endpoints. Aggregates retain source edge IDs and occurrence counts.",
+                    {"view_id": view["view_id"]}, [{"stage": "s06", "view_version": view["version"]}])
+
     relationships = section("component-relations", "Component relationships")
     for edge in contents.get("s06", {}).get("artifact", {}).get("view", {}).get("edges", []):
         add(relationships, f"`{edge['source']}` → `{edge['target']}` · {edge['kind']} · "
