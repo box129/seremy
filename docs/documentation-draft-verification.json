@@ -1,0 +1,25 @@
+{
+  "status": "live_workload_verified",
+  "runtime_commit": "594759d152735699df47c2e3d89b1e42d16bb54a",
+  "deploy_id": "dep-dbrsc2tg1s2s73dfh3o0",
+  "finished_at": "2026-11-14T02:23:30.237445Z",
+  "url": "https://seremy-analysis.onrender.com",
+  "python_tests": 200,
+  "targeted_draft_bridge_tests": 20,
+  "local_browser_groups": 14,
+  "live_mcp_transport": "local stdio and loopback bridge",
+  "model_example": "active Codex gpt-6.1-sol via official SDK transport bridge",
+  "human_review": "not_run",
+  "independent_semantic_quality": "not_run",
+  "generation_metadata": "client_reported",
+  "hosted_browser_groups": 12,
+  "total_browser_groups": 26,
+  "log_query": {
+    "type": "app",
+    "level": "error",
+    "start": "2026-11-14T02:23:30.237445Z",
+    "end": "2026-11-14T02:25:22.514451514Z",
+    "logs": [],
+    "hasMore": false
+  }
+}
