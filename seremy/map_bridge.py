@@ -7,9 +7,10 @@ import time
 import uuid
 
 from seremy.bundle import BundleLoader
-from seremy.contracts import sha256_hex
+from seremy.contracts import sha256_hex, canonical_bytes
 from seremy.documentation import validate_document
 from seremy.product import validate_graph
+from seremy.document_drafts import sections, evidence_context, submit_draft
 
 
 PUBLICATION = re.compile(r"[0-9a-f]{64}\Z")
@@ -82,12 +83,14 @@ class MapBridge:
             if not view:
                 if len(self.views) >= 32:
                     raise ValueError("Too many active browser views")
-                view = {"publication": data["publication"], "digest": data["digest"], "sequence": ack, "commands": []}
+                view = {"publication": data["publication"], "digest": data["digest"], "sequence": ack, "commands": [],
+                        "contexts": {}, "drafts": {}}
                 self.views[view_id] = view
             view.update(seen=time.monotonic(), selection=selection, verified=data.get("verified") is True, ack=ack)
             view["commands"] = [command for command in view["commands"] if command["sequence"] > ack]
             if not view["verified"]:
                 view["commands"].clear()
+                view["contexts"].clear()
             return {"view_id": view_id, "ack": ack, "commands": view["commands"]}
 
     def list_views(self):
@@ -118,7 +121,8 @@ class MapBridge:
         lines = sources[file].splitlines()
         excerpt = "\n".join(f"{index + 1}  {lines[index]}" for index in range(max(0, line - 3), min(len(lines), line + 2)))
         return {"file": file, "start": start, "end": end, "sha256": blob["analysis_sha256"], "line": line,
-                "text": selected[:8192], "text_truncated": len(selected) > 8192, "excerpt": excerpt[:16384]}
+                "text": selected[:8192], "text_truncated": len(selected) > 8192, "excerpt": excerpt[:16384],
+                "excerpt_truncated": len(excerpt) > 16384}
 
     def context(self, view, loader):
         selection = view["selection"]
@@ -164,10 +168,63 @@ class MapBridge:
                 raise ValueError("Stale or unverified browser snapshot")
             loader, document = self.publication(view["publication"])
             tool = request.get("tool")
+
+            def draft_result(entry):
+                result = entry["result"]
+                delivery = "acknowledged" if result["sequence"] <= view["ack"] else "queued"
+                if delivery == "queued" and not any(command["sequence"] == result["sequence"] for command in view["commands"]):
+                    delivery = "cancelled"
+                return {**result, "delivery": delivery}
             if tool == "context":
                 return self.context(view, loader)
             if tool == "source":
                 return self.citation(loader, request.get("span"))
+            if tool == "documentation_sections":
+                return {"binds": document["binds"], "sections": sections(document), "coverage": loader.contents["coverage"]}
+            if tool == "documentation_section":
+                context = evidence_context(document, request.get("section_id"), request.get("offset", 0), request.get("limit", 10),
+                                           lambda span: self.citation(loader, span))
+                context["coverage"] = loader.contents["coverage"]
+                context.pop("context_digest")
+                context["context_digest"] = sha256_hex(canonical_bytes(context))
+                if len(view["contexts"]) >= 16:
+                    view["contexts"].pop(next(iter(view["contexts"])))
+                view["contexts"][context["context_digest"]] = context
+                return context
+            if tool == "documentation_draft":
+                if not isinstance(request.get("request_id"), str):
+                    raise ValueError("Draft request_id required")
+                draft = view["drafts"].get(request.get("request_id"))
+                if draft is None:
+                    raise ValueError("Documentation draft unavailable in this view")
+                return draft_result(draft)
+            if tool == "submit_documentation_draft":
+                request_id = request.get("request_id")
+                if not isinstance(request_id, str) or not 0 < len(request_id) <= 100:
+                    raise ValueError("A bounded idempotent request_id is required")
+                payload = {key: request.get(key) for key in ("context_digest", "statements", "generation")}
+                payload_hash = sha256_hex(canonical_bytes(payload))
+                previous = view["drafts"].get(request_id)
+                if previous:
+                    if previous["payload_hash"] != payload_hash:
+                        raise ValueError("Draft request_id already has a different submission")
+                    return draft_result(previous)
+                if not isinstance(request.get("context_digest"), str):
+                    raise ValueError("Section context_digest required")
+                context = view["contexts"].get(request.get("context_digest"))
+                if context is None:
+                    raise ValueError("Retrieve fresh section evidence before submitting a draft")
+                if len(view["drafts"]) >= 16 or len(view["commands"]) >= 32:
+                    raise ValueError("Draft or command limit reached for this browser view")
+                draft = submit_draft(context, request.get("statements"), request.get("generation"))
+                if len(canonical_bytes(draft)) > 256 * 1024:
+                    raise ValueError("Draft is too large. Narrow the section and statement references.")
+                view["sequence"] += 1
+                command = {"type": "documentation_draft", "draft": draft, "sequence": view["sequence"], "digest": view["digest"]}
+                view["commands"].append(command)
+                result = {"delivery": "queued", "sequence": command["sequence"], "draft": draft}
+                view["drafts"][request_id] = {"payload_hash": payload_hash, "result": result}
+                return result
             if tool == "documentation":
                 claim_id = request.get("claim_id")
                 claims = document["claims"]

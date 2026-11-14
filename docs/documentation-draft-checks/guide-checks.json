@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "hosted_url": null,
+  "renderer": "pixi",
+  "browser": "157.0.4341.42",
+  "checks": [
+    "Redux walkthrough opens its call site and declaration, and Back restores the call camera",
+    "A source citation from a different graph digest cannot change map focus",
+    "Downloaded Markdown retains snapshot-bound links that open the standalone map"
+  ],
+  "page_errors": []
+}

@@ -148,7 +148,7 @@ let camera={x:0,y:0,k:1},collapsed=false,selected=null,focus=null,bound=false;
 let repositoryScroll=0;
 el('repository').addEventListener('scroll',()=>{repositoryScroll=el('repository').scrollTop;});
 let connectionMode='all',scopeFile=null,selectedOutcome=null;
-let agentSharing=false,agentBusy=false,agentSyncNeeded=false,agentTimer=null,agentAck=0,agentNotes=[];
+let agentSharing=false,agentBusy=false,agentSyncNeeded=false,agentTimer=null,agentAck=0,agentNotes=[],documentationDrafts=[];
 const agentViewId=crypto.randomUUID();
 const agentPublication=location.protocol==='http:'&&['localhost','127.0.0.1'].includes(location.hostname)?location.pathname.match(/^\/reports\/([0-9a-f]{64})\/map.html$/)?.[1]:null;
 const outcomes=data.outcomes||[];
@@ -227,7 +227,7 @@ function saveView(){
   const state={schema:1,repository:data.repository,digest:data.bundle.content_digest,camera,arrangement:arrangementState(),
     closedFolders:[...closedFolders],expandedFiles:[...expandedFiles],collapsed,focus,connectionMode,scopeFile,
     edge:selected?.id||null,outcome:selectedOutcome?.candidate_id||null,
-    tree:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),treeScroll:repositoryScroll,agentNotes,renderer,sourceOffsets:sourceOffsets(),hiddenFiles:[...hiddenFiles]};
+    tree:[...el('tree').querySelectorAll('details[open]')].map(node=>node.dataset.directory),treeScroll:repositoryScroll,agentNotes,documentationDrafts,renderer,sourceOffsets:sourceOffsets(),hiddenFiles:[...hiddenFiles]};
   try{localStorage.setItem(viewKey,JSON.stringify(state));el('view-status').textContent='View saved on this browser for this snapshot.';}
   catch(error){el('view-status').textContent='Could not save this view. Browser storage is unavailable or full.';}
 }
@@ -258,6 +258,7 @@ function validView(state){
     try{const decoder=new TextDecoder('utf-8',{fatal:true});decoder.decode(files[file].raw.subarray(0,start));decoder.decode(files[file].raw.subarray(start,end));}catch{return false;}
   }
   if(state.agentNotes!==undefined&&(!Array.isArray(state.agentNotes)||state.agentNotes.length>100||!state.agentNotes.every(validAgentNote)))return false;
+  if(state.documentationDrafts!==undefined&&(!Array.isArray(state.documentationDrafts)||state.documentationDrafts.length>16||!state.documentationDrafts.every(validDocumentationDraft)))return false;
   if(state.renderer!==undefined&&!['svg','pixi'].includes(state.renderer))return false;
   if(state.hiddenFiles!==undefined&&(!Array.isArray(state.hiddenFiles)||state.hiddenFiles.length>Object.keys(files).length||new Set(state.hiddenFiles).size!==state.hiddenFiles.length||!state.hiddenFiles.every(path=>typeof path==='string'&&files[path])))return false;
   if(state.sourceOffsets!==undefined&&(!state.sourceOffsets||typeof state.sourceOffsets!=='object'||Array.isArray(state.sourceOffsets)||!Object.entries(state.sourceOffsets).every(([path,value])=>files[path]&&finite(value)&&value>=0&&value<=sourceLimit(files[path])+1)))return false;
@@ -276,7 +277,7 @@ function restoreView(){
     expandedFiles.clear();state.expandedFiles.forEach(id=>expandedFiles.add(id));layout();
     if(state.sourceOffsets===undefined&&focus){revealSource(focus);center(anchor(focus),camera.k);}
     for(const node of el('tree').querySelectorAll('details'))node.open=state.tree.includes(node.dataset.directory);
-    repositoryScroll=state.treeScroll;el('repository').scrollTop=repositoryScroll;agentNotes=state.agentNotes||[];renderAgentNotes();draw();chooseRenderer(state.renderer||'svg');el('view-status').textContent=state.sourceOffsets===undefined&&focus?'Saved view restored. Source framing updated.':'Saved view restored.';
+    repositoryScroll=state.treeScroll;el('repository').scrollTop=repositoryScroll;agentNotes=state.agentNotes||[];documentationDrafts=state.documentationDrafts||[];renderAgentNotes();draw();chooseRenderer(state.renderer||'svg');el('view-status').textContent=state.sourceOffsets===undefined&&focus?'Saved view restored. Source framing updated.':'Saved view restored.';
   }catch(error){el('view-status').textContent='Could not read the saved view. Browser storage may be unavailable.';}
 }
 function revealFile(path){
@@ -693,6 +694,13 @@ function validAgentSpan(span){
   try{const decoder=new TextDecoder('utf-8',{fatal:true});decoder.decode(files[span.file].raw.subarray(0,span.start));decoder.decode(files[span.file].raw.subarray(span.start,span.end));return true;}catch{return false;}
 }
 function validAgentNote(note){return note&&typeof note.note_id==='string'&&typeof note.text==='string'&&note.text.length<=4000&&Array.isArray(note.citations)&&note.citations.length>0&&note.citations.length<=8&&note.citations.every(validAgentSpan);}
+function validDocumentationDraft(draft){
+  return draft?.profile==='seremy-section-draft-v0.1'&&typeof draft.draft_id==='string'&&draft.binds?.content_digest===data.bundle.content_digest&&draft.accepted===false&&
+    ['review_required','rejected'].includes(draft.status)&&typeof draft.title==='string'&&typeof draft.markdown==='string'&&draft.markdown.length<=262144&&
+    Array.isArray(draft.statements)&&draft.statements.length>0&&draft.statements.length<=20&&draft.statements.every(statement=>typeof statement.text==='string'&&statement.text.length<=4000&&
+      ['verified_projection','review_required','rejected'].includes(statement.status)&&Array.isArray(statement.citations)&&statement.citations.length<=16&&
+      statement.citations.every(c=>validAgentSpan(c)&&c.sha256===data.hashes[c.file]));
+}
 function openDocumentCitation(citation){
   if(!bound||!citation||citation.digest!==data.bundle.content_digest||citation.blob_sha256!==data.hashes[citation.file_id]||!Array.isArray(citation.span))return;
   const span={file:citation.file_id,start:citation.span[0],end:citation.span[1]};
@@ -714,6 +722,22 @@ function renderAgentNotes(){
     for(const citation of note.citations){const button=document.createElement('button');button.textContent=citation.file+':'+position(citation).line;button.onclick=()=>follow(citation);article.append(button);}
     container.append(article);
   }
+  for(const draft of documentationDrafts){
+    const article=document.createElement('article');article.className='documentation-draft';
+    const title=document.createElement('strong');title.textContent='Documentation draft · '+draft.status.replaceAll('_',' ');article.append(title);
+    const section=document.createElement('p');section.textContent=draft.title+' · Human review pending';article.append(section);
+    const provenance=document.createElement('p');provenance.textContent='Client-reported model '+(draft.generation?.model||'unavailable')+' · '+draft.coverage?.referenced_claim_count+' of '+draft.coverage?.section_claim_count+' section claims referenced';article.append(provenance);
+    for(const statement of draft.statements){
+      const text=document.createElement('p');text.textContent=statement.text;article.append(text);
+      const outcome=document.createElement('p');outcome.textContent=statement.status.replaceAll('_',' ')+' · '+statement.reason;article.append(outcome);
+      for(const citation of statement.citations){const button=document.createElement('button');button.textContent=citation.file+':'+citation.line;button.onclick=()=>follow(citation);article.append(button);}
+    }
+    const download=document.createElement('button');download.textContent='Download draft Markdown';download.onclick=()=>{
+      const url=URL.createObjectURL(new Blob([draft.markdown],{type:'text/markdown;charset=utf-8'}));
+      const link=document.createElement('a');link.href=url;link.download='documentation-draft.md';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    };article.append(download);container.append(article);
+  }
+  if(parent!==window)parent.postMessage({type:'seremy-documentation-drafts',drafts:documentationDrafts.map(draft=>({markdown:draft.markdown,digest:draft.binds.content_digest}))},'*');
 }
 function scheduleAgentReport(){
   if(!agentSharing||agentTimer)return;
@@ -733,6 +757,10 @@ async function reportAgent(){
       if(command.sequence<=agentAck)continue;
       if(command.digest!==data.bundle.content_digest||!bound)throw new Error('Snapshot changed');
       if(command.type==='focus'&&validAgentSpan(command.span))follow(command.span);
+      else if(command.type==='documentation_draft'&&validDocumentationDraft(command.draft)){
+        if(!documentationDrafts.some(draft=>draft.draft_id===command.draft.draft_id))documentationDrafts.push(command.draft);
+        if(documentationDrafts.length>16)documentationDrafts.shift();renderAgentNotes();setPanel('inspector',true);el('mcp-tools').open=true;
+      }
       else if(command.type==='note'&&validAgentNote(command)){
         if(!agentNotes.some(note=>note.note_id===command.note_id))agentNotes.push({note_id:command.note_id,text:command.text,citations:command.citations});
         if(agentNotes.length>100)agentNotes.shift();renderAgentNotes();setPanel('inspector',true);el('mcp-tools').open=true;

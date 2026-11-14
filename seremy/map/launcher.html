@@ -112,7 +112,18 @@ get('cancel').onclick=async()=>{
   if(job){await post('/api/cancel/'+job,{});status('Cancellation requested. Waiting for the current stage to finish.');}
 };
 get('map-tab').onclick=()=>{get('map').hidden=false;get('doc').hidden=true;get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');};
+let documentationMarkdown='',visibleDrafts=[];
+get('map').addEventListener('load',()=>{visibleDrafts=[];});
+window.addEventListener('message',event=>{
+  if(event.source!==get('map').contentWindow||event.data?.type!=='seremy-documentation-drafts')return;
+  const drafts=event.data.drafts;
+  if(!Array.isArray(drafts)||drafts.length>16||!drafts.every(draft=>typeof draft.markdown==='string'&&draft.markdown.length<=262144))return;
+  visibleDrafts=drafts;
+  if(!get('doc').hidden)showDocumentation(documentationMarkdown);
+});
 function showDocumentation(markdown){
+  documentationMarkdown=markdown;
+  markdown+="\n\n"+visibleDrafts.map(draft=>draft.markdown).join('\n\n');
   const doc=get('doc');doc.replaceChildren();
   const links=/\[([^\n]*?)\]\((map\.html#seremy-source=[^\s)]+)\)/g;
   let cursor=0;

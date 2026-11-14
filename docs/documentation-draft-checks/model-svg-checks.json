@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "model_lane": "Codex model with SDK stdio bridge",
+  "renderer": "svg",
+  "browser": "157.0.4341.42",
+  "checks": [
+    "A real stdio client lists sections, pages to Redux call evidence and receives source omissions and dependencies",
+    "Submitted prose retains review status and reported provenance; one retry yields one visible draft, Docs, source focus and Markdown work",
+    "Unsupported runtime and ownership projection is rejected and a foreign claim reference fails through the real protocol",
+    "Revoked sharing blocks draft reads; Save/Restore retains review labels and citations without changing the canonical graph"
+  ],
+  "page_errors": []
+}

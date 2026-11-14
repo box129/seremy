@@ -53,7 +53,7 @@ The inspector filters incoming, outgoing and neighboring connections by the sele
 
 Arrange supports dragging files and folders, Shift selection, named visual groups and keyboard movement. The inspector switches layouts and saves a browser-local view for the current snapshot. Source breadcrumbs support directory navigation. See [arrangement and saved views](docs/arrangement.md).
 
-The local launcher's MCP bridge lets an agent read selected evidence and documentation, focus source and add cited annotations. Install the optional SDK and connect a stdio client using [the MCP setup](docs/mcp.md).
+The local launcher's MCP bridge lets an agent read selected evidence and documentation, focus source, add cited annotations and submit section drafts with review labels. Install the optional SDK and connect a stdio client using [the MCP setup](docs/mcp.md).
 
 SVG remains the default renderer. Inspect → Arrangement and saved view → Renderer offers a Pixi / WebGL preview using the same navigation, source highlighting, filters, arrangement and MCP controller. Saved views retain the renderer choice. The preview paints through WebGL while SVG supplies accessible elements and pointer targets; WebGL failure returns to SVG. See [the integration and checks](docs/pixi-integration.md).
 

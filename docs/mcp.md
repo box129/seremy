@@ -20,6 +20,10 @@ Open a repository in the local launcher. In Inspect, open MCP and agent notes an
 | `get_selection` | Returns source and connection evidence, enclosing declarations, structural component views, framework evidence and coverage. Unresolved candidates retain their outcomes and reasons. |
 | `read_source` | Reads a verified UTF-8 range with its hash, line and excerpt. |
 | `read_documentation` | Returns validated claims for the selection or one claim ID, with source ranges ready for map navigation. |
+| `list_documentation_sections` | Lists section identities and claim counts for drafting. |
+| `read_documentation_section` | Returns bounded section claims, source excerpts, dependencies, pagination and omissions. |
+| `submit_documentation_draft` | Submits statements and reported generation metadata against a retrieved context. New prose retains review labels. |
+| `read_documentation_draft` | Reads the submitted draft, Markdown, checks and current delivery acknowledgement. |
 | `focus_source` | Queues focusing an exact source range in the chosen browser view. Back restores the prior navigation state. |
 | `add_agent_note` | Queues an agent annotation with one to eight validated source citations. Its citation buttons focus source. |
 
@@ -29,7 +33,7 @@ Focus and annotation responses report `queued`. Browser reports acknowledge appl
 
 Annotations are labelled Agent annotation. Their source citations are validated against the publication. Annotation prose requires review. Save view also stores annotations in the current browser, scoped to the graph snapshot. Restoring the view restores their citation buttons.
 
-Live sharing uses the loopback launcher. Hosted and exported maps display saved annotations and identify the local-launcher requirement for live MCP. The hosted deployment remains a separate verification task.
+Live sharing uses the loopback launcher. Hosted and exported maps display saved annotations and identify the local-launcher requirement for live MCP. The [section drafting workflow](documentation-drafts.md) adds evidence-scoped submissions, separate review labels, draft downloads and saved-view restoration. The `draft_documentation_section` prompt guides a connected model through that workflow.
 
 The dedicated integration check starts the local launcher, analyzes Redux, opens two browser views and uses an official SDK client over an actual stdio connection. It reads the selected call and documentation, checks stale-digest errors, focuses a declaration in one tab, sends a cited annotation, restores it from browser storage and verifies access revocation.
 
