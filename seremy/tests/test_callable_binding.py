@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from seremy.product import analyze
-from seremy.resolver import CALLABLE_BINDING_PROFILE
+from seremy.resolver import CALLABLE_BINDING_PROFILE, RELATION_KIND_TABLE
 from seremy.map_bridge import MapBridge
 from seremy.product import publish
 from seremy.viewer import render_map
@@ -29,6 +29,9 @@ def test_callable_and_namespace_truth_without_callback_execution_claim():
     assert sorted(observed,key=str)==sorted(truth["relationships"],key=str)
     assert not any(row["source_name"]=="App" and row["target_name"]=="onClick" for row in observed)
     assert c["s03"]["artifact"]["binding_profile"]==CALLABLE_BINDING_PROFILE
+    for record in c["s03"]["artifact"]["resolutions"]:
+        if record["outcome"]=="RESOLVED_SINGLE":
+            assert "CALLS" in RELATION_KIND_TABLE[record["candidate_kind"]+"+"+record["operation"]]
     assert {entity["name"] for entity in entities.values() if entity["kind"]=="callable_declaration"}=={"make","named","onClick"}
     assert checks["pre_generation"]["status"]==checks["post_generation"]["status"]=="pass"
     section=next(section for section in ir["sections"] if section["section_id"]=="callable-structure")

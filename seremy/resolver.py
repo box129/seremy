@@ -61,7 +61,9 @@ TERMINAL_STATES = frozenset(
 
 # Declared relation-kind table (S03-R4): candidate kind + binding
 # operation -> legal relation kinds for this profile.
-RELATION_KIND_TABLE = {"call+definition": ("CALLS",)}
+RELATION_KIND_TABLE = {"call+definition": ("CALLS",), "member_call+definition": ("CALLS",)}
+# Member calls require the profile's proven namespace/module target; mutable
+# receiver calls still have explicit unsupported outcomes.
 
 ATTEMPTED_KINDS = frozenset({"call", "member_call"})
 
