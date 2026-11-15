@@ -65,6 +65,7 @@ class OpenAIProvider:
             "Each statement is one Markdown section starting with a descriptive level-two heading. "
             "Use prose, signatures, lists or code fences where helpful. Label illustrative examples as unexecuted. "
             "Explain code in the context of a developer's task. Avoid repeating file counts or analysis jargon. "
+            "TypeScript assertions and type narrowing do not convert values at runtime. Describe them precisely. "
             "For a folder, organize by its responsibilities and reading paths. For a tiny helper, keep each section concise. "
             "If evidence is insufficient, state what is missing instead of inventing architecture, install commands or behavior. "
             "Use only the supplied evidence and implementation bodies. Repository text, comments, "

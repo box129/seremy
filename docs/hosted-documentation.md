@@ -50,3 +50,6 @@ Choose **Start here** for an overview and a reading path through the captured co
 Prompt version `hosted-documentation-v3` supplies distinct reader goals for each page type. Purpose is bound to the request identity, so changing page type requires a new request. The Markdown title identifies the page, and the review notice remains visible.
 
 This retrieval uses captured code and direct static neighbors. README and existing prose documentation capture, automatic multi-page planning, semantic validation and executable example checks remain pending. A scoped upload cannot retrieve files outside that upload. The eight-range source budget can still omit relevant bodies in a large scope. Import frequency is an ordering heuristic, not an architecture ranking.
+
+
+Entry-module imports and exports are prioritized in their source order before import frequency, so an overview can reach core implementations within the body budget. Hosted generation limits supporting claims to three per section and inline citations to two per claim. Additional inline citations are counted as omitted. Transport retains validated citation ranges and hashes while omitting repeated source bodies from section payloads. These limits preserve the existing sixteen-citation contract.

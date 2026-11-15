@@ -65,13 +65,20 @@ def scoped_context(loader, document, scope, question, offset, limit, read_citati
     terms = set(re.findall(r"[a-zA-Z_][a-zA-Z_0-9]{2,}", question.lower()))
     terms -= {"the", "does", "what", "how", "this", "that", "with", "from", "and", "for"}
     importance = {}
-    for edge in loader.contents.get("module_dependencies", {}).get("artifact", {}).get("edges", []):
+    modules = loader.contents.get("module_dependencies", {}).get("artifact", {}).get("edges", [])
+    entry_files = {file for file in files if file.rsplit("/", 1)[-1].split(".")[0]
+                   in {"index", "main", "app", "__init__"}}
+    entry_targets = {}
+    for edge in sorted(modules, key=lambda edge: (edge["source_file"], edge["span"][0])):
         target = edge["target_file"]
         importance[target] = importance.get(target, 0) + 1
+        if edge["source_file"] in entry_files:
+            entry_targets.setdefault(target, len(entry_targets))
     def rank(file):
         words = set(re.findall(r"[a-zA-Z_][a-zA-Z_0-9]{2,}", file.lower()))
         entry = file.rsplit("/", 1)[-1].split(".")[0] in {"index", "main", "app", "__init__"}
-        return (-len(terms & words), -int(entry), -importance.get(file, 0), file)
+        return (-len(terms & words), -int(entry), entry_targets.get(file, len(entry_targets)),
+                -importance.get(file, 0), file)
 
     ordered_files = sorted(files, key=rank) + sorted(neighbors, key=rank)
     related = set(ordered_files)
@@ -107,7 +114,7 @@ def scoped_context(loader, document, scope, question, offset, limit, read_citati
     selected = copy.copy(document)
     selected["claims"] = claims
     dependencies = document["dependencies"]
-    selected["sections"] = [{"section_id": "selected-scope", "title": f"{kind.title()} Â· {value}",
+    selected["sections"] = [{"section_id": "selected-scope", "title": f"{kind.title()} - {value}",
                              "claim_ids": [c["claim_id"] for c in claims], "dependencies": dependencies}]
     result = evidence_context(selected, "selected-scope", offset, limit, read_citation, loader)
     result["document_digest"] = document_digest(document)
@@ -119,7 +126,7 @@ def scoped_context(loader, document, scope, question, offset, limit, read_citati
     result["retrieval_policy"] = "Selected scope and direct captured static imports/consumers. File ordering uses question terms and entry filenames."
     result["available_files"] = ordered_files[:100]
     result["omitted_file_inventory_count"] = max(0, len(related) - 100)
-    result["title"] = ("Start here" if purpose == "overview" else "How it works") + " Â· " + value
+    result["title"] = ("Start here" if purpose == "overview" else "How it works") + " - " + value
     result.pop("context_digest")
     result["context_digest"] = sha256_hex(canonical_bytes(result))
     return result
