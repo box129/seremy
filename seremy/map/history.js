@@ -65,10 +65,15 @@
     if(job)throw new Error('Wait for the current analysis to finish before opening a saved report.');
     await verify(report.files);
     release();active=report;publication=report.id;repositoryName=report.name;
-    get('map').src=fileUrl(report.files['map.html'],'text/html');
-    get('map').addEventListener('load',()=>{
+    const restoreDrafts=()=>{
+      if(active!==report)return;
       visibleDrafts=Array.isArray(report.drafts)?report.drafts.filter(draft=>typeof draft.markdown==='string'&&draft.markdown.length<=262144).slice(0,16):[];
-    },{once:true});
+      selectedDocument=null;
+      if(!get('doc').hidden)showDocumentation(report.files['architecture.md']);
+    };
+    restoreDrafts();
+    get('map').src=fileUrl(report.files['map.html'],'text/html');
+    get('map').addEventListener('load',restoreDrafts,{once:true});
     get('download-map').href=get('map').src;get('download-map').hidden=false;
     get('download').href=fileUrl(report.files['graph.json'],'application/json');
     get('download-doc').href=fileUrl(report.files['architecture.md'],'text/markdown');
