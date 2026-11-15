@@ -14,3 +14,5 @@ htmlcov/
 work/
 test-results/
 seremy/artifacts/
+
+seremy/example-report.json

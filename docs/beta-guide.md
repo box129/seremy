@@ -67,3 +67,14 @@ Keep sharing enabled while using local server saves. **Stop sharing selection** 
 Try a repository you know. Record the source commit, selected folder, browser, analysis coverage, the action you attempted, expected result and actual result. Include a failing source example if it can be shared. Keep result URLs and screenshots private when they contain private code. For generated prose, check factual support, citation relevance and whether it helps you complete a concrete reading task.
 
 The current scope covers bounded static analysis. Dynamic callbacks, general receiver dispatch, deeper framework semantics, broad accessibility acceptance and independent prose quality assessment retain separate qualification work.
+
+
+## First visit
+
+Choose **Try the Redux example** to open a prepared map and its source-linked guide. It uses public bundled Redux source and does not upload a repository or request AI generation. The optional guided task opens Find, selection details, Back, the Repository guide and device saving. Dismiss it at any time. **Help with SEREMY** explains the main actions and opens their controls. Replay the example from Help.
+
+**Repository guide** opens the analyzed repository's documentation. **Generate a page** opens the overview or walkthrough request. The prepared example can be read immediately. New AI pages require your own completed online analysis and its generation capability.
+
+When analysis finishes, the open tab retrieves and verifies the report's five export files in memory. This allows reading and Save on this device after the server report expires. Browser persistence happens only when you choose Save. Close or reload the tab before saving and the memory copy is lost. Saved reports include the displayed generated pages, and can be reopened from Saved on this device. A report that expired before all exports reached the tab still needs another analysis.
+
+For pilot evaluation, ask three first-time users to explain isAction, open its supporting source and reopen their saved report without coaching. Record where help is needed. Human pilot testing remains pending.

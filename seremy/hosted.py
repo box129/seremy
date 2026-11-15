@@ -208,6 +208,9 @@ def make_app(application):
                 body = (Path(__file__).parent / "map/launcher.html").read_text(encoding="utf8").replace(
                     "<script>", "<script>window.SEREMY_HOSTED=true;", 1).replace(
                         "</html>", '<script src="/history.js"></script></html>').encode()
+            elif method == "GET" and path == "/example-report":
+                from seremy.example_report import example_report
+                body = example_report()
             elif method == "GET" and path == "/history.js":
                 content_type = "text/javascript; charset=utf-8"
                 body = (Path(__file__).parent / "map/history.js").read_bytes()

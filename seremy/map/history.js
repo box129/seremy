@@ -1,7 +1,7 @@
 // Private device history. Reports are saved only after the visitor chooses Save.
 (()=>{
   const names=['map.html','architecture.md','graph.json','validation.json','manifest.json'];
-  let active=null,urls=[];
+  let active=null,captured=null,capturing=null,urls=[];
   const history=document.createElement('button');
   history.id='history';history.textContent='Saved on this device';
   get('connect').after(history);
@@ -61,7 +61,7 @@
   }
   function release(){for(const url of urls)URL.revokeObjectURL(url);urls=[];}
   function fileUrl(text,type){const url=URL.createObjectURL(new Blob([text],{type}));urls.push(url);return url;}
-  async function openReport(report){
+  async function openReport(report,saved=true){
     if(job)throw new Error('Wait for the current analysis to finish before opening a saved report.');
     await verify(report.files);
     release();active=report;publication=report.id;repositoryName=report.name;
@@ -73,6 +73,7 @@
     };
     restoreDrafts();
     get('map').src=fileUrl(report.files['map.html'],'text/html');
+    get('map').srcdoc=report.files['map.html'];
     get('map').addEventListener('load',restoreDrafts,{once:true});
     get('download-map').href=get('map').src;get('download-map').hidden=false;
     get('download').href=fileUrl(report.files['graph.json'],'application/json');
@@ -81,8 +82,8 @@
     get('map').hidden=false;get('doc').hidden=true;get('outputs').hidden=false;get('empty').hidden=true;
     document.body.classList.add('loaded');get('connect').textContent=report.name;
     get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');
-    get('summary').textContent='Saved on this device · '+new Date(report.saved).toLocaleString();
-    status('Saved report opened');save.disabled=true;dialog.close();
+    get('summary').textContent=saved?'Saved on this device · '+new Date(report.saved).toLocaleString():'Prepared public example · Save on this device to keep a copy';
+    status('Report opened');save.disabled=false;dialog.close();
     window.dispatchEvent(new Event('seremy-restored-report'));
   }
   async function showHistory(){
@@ -105,29 +106,53 @@
     try{await showHistory();dialog.showModal();}catch(error){status('Device history could not be opened.');}
   };
   save.onclick=async()=>{
-    if(!publication||active||job)return;
+    if(!publication||job)return;
     const id=publication,name=repositoryName;
     save.disabled=true;
     try{
-      const files={};
-      for(const filename of names){
-        const response=await fetch('/reports/'+id+'/'+filename);
-        if(!response.ok)throw new Error('The report expired before saving. Analyze the repository again.');
-        files[filename]=await response.text();
-      }
-      await verify(files);
+      const report=active?{...active,saved:Date.now(),drafts:visibleDrafts}:await capture(id,name);
       if(publication!==id)throw new Error('The active report changed. Save the current report again.');
-      const report={id,name,saved:Date.now(),files,drafts:visibleDrafts};
+      report.saved=Date.now();report.drafts=visibleDrafts;
       await persistReport(report);
-      status('Saved on this device');
+      status('Saved on this device');get('summary').textContent='Saved on this device · '+new Date(report.saved).toLocaleString();
     }catch(error){status(error.message||'Device history could not be saved. Download the files instead.');}
-    finally{save.disabled=!!active;}
+    finally{save.disabled=false;}
   };
   const liveDocumentation=get('doc-tab').onclick;
   get('doc-tab').onclick=()=>{
-    if(!active)return liveDocumentation();
-    showDocumentation(active.files['architecture.md']);get('doc').hidden=false;get('map').hidden=true;
+    const report=active||(captured?.id===publication?captured:null);
+    if(!report)return liveDocumentation();
+    showDocumentation(report.files['architecture.md']);get('doc').hidden=false;get('map').hidden=true;
     get('doc-tab').setAttribute('aria-pressed','true');get('map-tab').setAttribute('aria-pressed','false');
   };
-  window.addEventListener('seremy-publication',()=>{active=null;save.disabled=false;release();});
+  async function capture(id,name){
+    if(captured?.id===id)return captured;
+    if(capturing?.id===id)return capturing.promise;
+    const promise=(async()=>{
+      const files={};
+      for(const filename of names){
+        const response=await fetch('/reports/'+id+'/'+filename);
+        if(!response.ok)throw new Error('Report files are unavailable. Keep this tab open and download available documentation.');
+        files[filename]=await response.text();
+      }
+      await verify(files);
+      const report={id,name,saved:Date.now(),files};
+      if(publication===id)captured=report;
+      return report;
+    })();
+    capturing={id,promise};
+    try{return await promise;}finally{if(capturing?.id===id)capturing=null;}
+  }
+  window.addEventListener('seremy-publication',()=>{
+    active=null;captured=null;save.disabled=false;release();
+    capture(publication,repositoryName).catch(error=>status(error.message));
+  });
+  window.addEventListener('seremy-open-example',async()=>{
+    try{
+      const response=await fetch('/example-report');
+      if(!response.ok)throw new Error('The example is unavailable. Try analyzing your repository.');
+      await openReport(await response.json(),false);
+      window.dispatchEvent(new Event('seremy-example-opened'));
+    }catch(error){status(error.message);}
+  });
 })();

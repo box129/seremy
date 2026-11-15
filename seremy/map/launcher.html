@@ -31,12 +31,12 @@ dialog{max-height:90dvh;overflow:auto}
 @media(max-width:700px){header{flex-wrap:wrap;gap:4px;padding:6px 8px}#connect{flex:1;max-width:60%;min-width:0}#outputs{margin:0;width:100%;justify-content:space-between;gap:0;min-width:0}#outputs button,#outputs summary{padding:6px;font-size:11px}#doc{padding:20px}#summary{min-width:0}#history{font-size:11px}}
 </style>
 <header><button id="connect" aria-label="Connect repository" aria-haspopup="dialog">No folder <span aria-hidden="true">⌄</span></button>
-<nav id="outputs" aria-label="Workspace views" hidden><button id="map-tab" aria-pressed="true">Interactive map</button><button id="doc-tab" aria-pressed="false">Documentation</button><button id="generate-documentation">Generate documentation</button><button id="workspace-help">Help</button>
+<nav id="outputs" aria-label="Workspace views" hidden><button id="map-tab" aria-pressed="true">Interactive map</button><button id="doc-tab" aria-pressed="false">Repository guide</button><button id="generate-documentation">Generate a page</button><button id="workspace-help">Help with SEREMY</button>
 <details id="downloads"><summary>Downloads</summary><div class="download-menu"><a id="download" download>Graph JSON</a><a id="download-doc" download="architecture.md">Markdown</a><a id="download-map" download="map.html" hidden>Download map</a><a id="checks" target="_blank" rel="noopener">Validation results</a></div></details></nav></header>
-<main><div id="empty"><button id="empty-connect">Connect repository</button><p>Local folder, ZIP or Git repository</p></div>
+<main><div id="empty"><h1>Explore a codebase</h1><button id="try-example" hidden>Try the Redux example</button><button id="empty-connect">Analyze your repository</button><p>Local folder, ZIP or Git repository</p></div>
 <div id="analysis-progress" class="analysis-progress" hidden><p><span class="progress-stage"></span><span class="progress-percent"></span></p><progress aria-label="Repository analysis stage progress" max="100" value="0"></progress></div>
 <iframe id="map" title="Interactive source map" hidden></iframe><article id="doc" aria-label="Developer guide" tabindex="0" hidden></article>
-<button id="docs" aria-haspopup="dialog">Docs</button></main>
+<button id="docs" aria-haspopup="dialog">Help with SEREMY</button></main>
 <footer><div id="status" role="status" aria-live="polite">Ready</div><p id="summary"></p></footer>
 <dialog id="connect-dialog" aria-labelledby="connect-title"><button class="close" id="close-connect" aria-label="Close connection">×</button><h2 id="connect-title">Connect repository</h2>
 <form id="form">
@@ -49,8 +49,8 @@ dialog{max-height:90dvh;overflow:auto}
 <div id="dialog-progress" class="analysis-progress" hidden><p><span class="progress-stage"></span><span class="progress-percent"></span></p><progress aria-label="Repository analysis stage progress" max="100" value="0"></progress><small>Progress follows completed analysis stages.</small></div>
 <div class="actions"><button id="cancel" type="button" hidden>Cancel</button><button id="start">Analyze repository</button></div>
 </form></dialog>
-<dialog id="help-dialog" aria-labelledby="help-title"><button class="close" id="close-help" aria-label="Close Docs">×</button><h2 id="help-title">Explore a repository</h2>
-<ol><li>Connect a local folder, ZIP or HTTPS Git repository.</li><li>Expand folders in Files and open a source file.</li><li>Select a call, then choose Follow target to visit its declaration.</li><li>Use Back to restore your position and selection.</li></ol><p>Scroll to zoom and drag to pan. Documentation opens the cited guide for this analysis.</p><h3>AI documentation</h3><p>Run the local launcher and connect your MCP agent using the setup guide below. Choose Generate documentation, select a file or folder, add an optional question and copy the request into your agent. Returned drafts appear in Documentation. Their citations open the corresponding source on the map.</p><p>Save Markdown downloads a draft. In the local launcher, Save to local path accepts a complete destination filename in an existing folder.</p><p id="hosted-ai-help" hidden>This public app provides repository analysis and its generated guide. AI drafting uses your local launcher and connected agent.</p><p><a href="https://github.com/box129/seremy/blob/main/docs/beta-guide.md" target="_blank" rel="noopener">Setup guide and troubleshooting</a></p><p>Results are drafts. Validation results show the analysis coverage.</p></dialog>
+<dialog id="help-dialog" aria-labelledby="help-title"><button class="close" id="close-help" aria-label="Close help">×</button><h2 id="help-title">Explore a repository</h2>
+<ol><li>Connect a local folder, ZIP or HTTPS Git repository.</li><li>Expand folders in Files and open a source file.</li><li>Select a call, then choose Follow target to visit its declaration.</li><li>Use Back to restore your position and selection.</li></ol><p>Scroll to zoom and drag to pan. Repository guide opens the cited guide for this analysis.</p><h3>AI documentation</h3><p>Run the local launcher and connect your MCP agent using the setup guide below. Choose Generate a page, select a file or folder, add an optional question and copy the request into your agent. Returned drafts appear in Documentation. Their citations open the corresponding source on the map.</p><p>Save Markdown downloads a draft. In the local launcher, Save to local path accepts a complete destination filename in an existing folder.</p><p id="hosted-ai-help" hidden>This public app provides repository analysis and its generated guide. AI drafting uses your local launcher and connected agent.</p><p><a href="https://github.com/box129/seremy/blob/main/docs/beta-guide.md" target="_blank" rel="noopener">Setup guide and troubleshooting</a></p><p>Results are drafts. Validation results show the analysis coverage.</p></dialog>
 <script>
 const get=id=>document.getElementById(id);
 const hosted=window.SEREMY_HOSTED===true;
@@ -110,6 +110,7 @@ async function poll(){
     if(state.status==='completed'){
       publication=state.publication;
       repositoryName=pendingRepositoryName;
+      get('map').removeAttribute('srcdoc');
       get('map').src='/reports/'+publication+'/map.html';
       get('map').hidden=false;get('doc').hidden=true;get('outputs').hidden=false;
       document.body.classList.add('loaded');get('empty').hidden=true;
@@ -300,9 +301,11 @@ get('doc-tab').onclick=async()=>{
   }catch(error){status(error.message);}
 };
 if(hosted){
+  get('try-example').hidden=false;
+  get('try-example').onclick=()=>window.dispatchEvent(new Event('seremy-open-example'));
   get('hosted-ai-help').hidden=false;
-  get('hosted-ai-help').textContent='Choose Generate documentation, select a scope and enter an optional question. Online drafting becomes available when the service owner connects a model. Returned drafts include source citations and a Markdown download.';
-  get('help-dialog').querySelector('h3').nextElementSibling.textContent='Generate documentation creates an explanation for a file, folder or map selection. The form identifies the model provider and the source excerpts sent for generation. Follow citations and review the explanation before using it.';
+  get('hosted-ai-help').textContent='Choose Generate a page, select a scope and enter an optional question. Online drafting becomes available when the service owner connects a model. Returned drafts include source citations and a Markdown download.';
+  get('help-dialog').querySelector('h3').nextElementSibling.textContent='Generate a page creates an explanation for a file, folder or map selection. The form identifies the model provider and the source excerpts sent for generation. Follow citations and review the explanation before using it.';
   get('kind').querySelector('[value=folder]').remove();
   get('kind').querySelector('[value=git]').textContent='Public GitHub repository';
   get('kind').value='zip';get('kind').onchange();
@@ -318,4 +321,37 @@ if(hosted){
     }
   }catch(error){}
 }
+</script><script>
+const helpActions=document.createElement('div');
+const helpIntro=document.createElement('p');helpIntro.textContent='Choose what you want to do. These actions open the matching workspace control.';
+get('help-dialog').append(helpIntro,helpActions);
+for(const [label,action] of [['Find code','find'],['Follow a dependency','inspect'],['Arrange the map','arrange'],['Check analysis coverage','coverage'],['Read the repository guide','guide'],['Save or reopen work','save'],['Try the guided example','tour']]){
+  const button=document.createElement('button');button.textContent=label;button.style.margin='4px';
+  const descriptions={find:'Search filenames, symbols and source text.',inspect:'Select a call to see its source and target, then follow it.',arrange:'Move files and groups to organize your view.',coverage:'See analyzed files, supported relationships and missing evidence.',guide:'Read explanations and open their source citations.',save:'Reopen reports stored in this browser. Use Save on this device to store the current report.',tour:'Explore Redux through a short, dismissible task.'};
+  const description=document.createElement('p');description.textContent=descriptions[action];
+  button.onclick=()=>{get('help-dialog').close();
+    if(action==='guide'){get('doc-tab').click();return;}
+    if(action==='save'){get('history')?.click();return;}
+    if(action==='tour'){if(!hosted){status('The prepared example is available in the hosted app.');return;}if(repositoryName==='Redux example (bundled source)')startTour();else get('try-example').click();return;}
+    if(!publication){status('Open the example or analyze a repository first.');return;}
+    get('map-tab').click();get('map').contentWindow.postMessage({type:'seremy-help-action',action},'*');
+  };helpActions.append(button,description);
+}
+const tour=document.createElement('aside');tour.hidden=true;tour.setAttribute('aria-label','Guided exploration');
+tour.style.cssText='position:absolute;bottom:12px;left:12px;z-index:10;max-width:min(360px,calc(100% - 24px));background:#252525;padding:16px;border:1px solid #555;border-radius:8px;box-shadow:0 4px 20px #0008';
+const tourText=document.createElement('p'),tourAction=document.createElement('button'),tourNext=document.createElement('button'),tourClose=document.createElement('button');
+tourText.setAttribute('role','status');tourNext.textContent='Next';tourClose.textContent='Dismiss';tour.append(tourText,tourAction,tourNext,tourClose);document.querySelector('main').append(tour);
+let tourStep=0;
+const tourSteps=[
+ ['What does Redux check before accepting a value as an action? Open Find, search for isAction, and open its source.','Open Find','find'],
+ ['Select the isPlainObject call inside isAction. Inspect its evidence and choose Follow target to read the helper.','Open selection details','inspect'],
+ ['Use Back to return to isAction. It restores the earlier map position and selection.','Go Back','back'],
+ ['Open the Repository guide and follow a source citation. On your own analysis, Explain selection can generate a focused page.','Read the guide','guide'],
+ ['Save this report on your device. Use Saved on this device to reopen it later in this browser.','Save this report','save']
+];
+function renderTour(){const [text,label]=tourSteps[tourStep];tourText.textContent=text;tourAction.textContent=label;tourNext.textContent=tourStep===tourSteps.length-1?'Finish':'Next';}
+function startTour(){if(!publication){status('Choose Try the Redux example to begin.');return;}tourStep=0;tour.hidden=false;renderTour();}
+tourAction.onclick=()=>{const action=tourSteps[tourStep][2];if(action==='guide'){get('doc-tab').click();return;}if(action==='save'){get('save-device')?.click();return;}get('map-tab').click();get('map').contentWindow.postMessage({type:'seremy-help-action',action},'*');};
+tourNext.onclick=()=>{if(tourStep===tourSteps.length-1){tour.hidden=true;return;}tourStep++;renderTour();};tourClose.onclick=()=>tour.hidden=true;
+window.addEventListener('seremy-example-opened',startTour);
 </script></html>

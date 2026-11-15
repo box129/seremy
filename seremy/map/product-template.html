@@ -830,6 +830,14 @@ el('connect-agent').onclick=()=>{
   el('agent-status').textContent=agentSharing?'Connecting to local MCP tools…':'Selection sharing stopped.';reportAgent();
 };
 setInterval(()=>{if(agentSharing)reportAgent();},1000);
+window.addEventListener('message',event=>{
+  if(event.source!==parent||event.data?.type!=='seremy-help-action')return;
+  const actions={find:'toggle-search',inspect:'inspect',arrange:'inspect',coverage:'show-coverage',back:'back'};
+  const action=event.data.action,id=actions[action];if(!id)return;
+  if(action==='find'&&el(id).getAttribute('aria-expanded')==='true')return;
+  if((action==='inspect'||action==='arrange')&&!el('inspector').hidden){}else el(id).click();
+  if(action==='arrange'){el('arrangement-tools').open=true;el('arrangement-tools').scrollIntoView({block:'nearest'});}
+});
 // Scope requests use the same verified bridge and draft delivery as section requests.
 const documentationDialog=document.createElement('dialog');
 documentationDialog.setAttribute('aria-label','Generate documentation');
