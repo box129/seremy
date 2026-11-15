@@ -20,6 +20,8 @@ The adapter caps serialized evidence at 160 KiB and completion tokens at 2,048, 
 
 The approved pilot configuration uses `gpt-6-luna`, low reasoning and 10 requests per UTC day across the service, with a $3 monthly project spending cap in the OpenAI account. The adapter explicitly sends `reasoning_effort: low` and records it with the returned draft. The account spending cap is configured separately from these deployment variables.
 
+Prompt version `hosted-documentation-v2` asks for a sectioned developer page rather than a short annotation. The document picker displays each generated page separately from the architecture guide. Existing shorter drafts can still be read and saved. See the [DeepWiki comparison](documentation-comparison.md) for the observed quality gaps and remaining repository-wiki work.
+
 ## Results and access
 
 Only the browser that submitted the analysis receives its generation capability. That capability is kept in session storage, sent in a request header and excluded from the shared report and public job status. Opening a shared report permits reading its source and guide. Generate a fresh analysis in that browser to obtain generation access.

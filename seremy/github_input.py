@@ -158,10 +158,13 @@ def resolve_commit(repository, revision):
 
 
 def import_repository(url, revision, output, subdirectory=None):
+    from seremy.progress import report_progress
     url, revision = github_source(url, revision)
     subdirectory=source_subdirectory(subdirectory)
     repository = url.removeprefix("https://github.com/")
+    report_progress("Resolving revision")
     commit = resolve_commit(repository, revision)
+    report_progress("Downloading repository")
     raw = fetch(f"https://codeload.github.com/{repository}/zip/{commit}", MAX_SCOPED_DOWNLOAD if subdirectory else MAX_ARCHIVE, "application/zip")
     if subdirectory:
         raw=scoped_archive(raw,subdirectory)
@@ -179,8 +182,9 @@ def import_repository(url, revision, output, subdirectory=None):
             root = entries[0]
         if subdirectory:
             root=root.joinpath(*subdirectory.split("/"))
-        bundle, ir, markdown, checks = analyze(root, use_git=False,
+        bundle, ir, markdown, checks = analyze(root, use_git=False, progress=report_progress,
             snapshot_identity={"repository_id": "git:" + url, "declared_root": "git:" + url + "@" + commit+("#path="+quote(subdirectory,safe="/") if subdirectory else "")})
+        report_progress("Publishing draft")
         result = publish(output, bundle, ir, markdown, checks, render_map(bundle))
     return {"publication": str(result), "revision": commit,"source_subdirectory":subdirectory or None}
 

@@ -16,6 +16,7 @@ from seremy.viewer import render_map
 from seremy.bundle import BundleLoader
 from seremy.architecture import shortest_path
 from seremy.git_input import run_git
+from seremy.progress import report_progress
 
 
 def extract_zip(archive, destination):
@@ -133,9 +134,13 @@ def main(argv=None):
                 raise ValueError("output must not contain the input repository")
             if output.is_relative_to(root) and output!=root/".seremy-artifacts":
                 raise ValueError("use .seremy-artifacts or an output directory outside the input")
+            def progress(message):
+                report_progress(message)
+                print(message,file=sys.stderr,flush=True)
             bundle,ir,markdown,checks=analyze(root,policy=policy,membership_plan=membership_plan,
                 snapshot_identity=args.snapshot_identity,use_git=args.use_git,
-                progress=lambda msg:print(msg,file=sys.stderr,flush=True))
+                progress=progress)
+            progress("Publishing draft")
             target=publish(output,bundle,ir,markdown,checks,render_map(bundle))
         print(json.dumps({"publication":str(target),"acceptance":"draft","map":str(target/"map.html"),
                           "documentation":str(target/"architecture.md")},indent=2))

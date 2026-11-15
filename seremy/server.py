@@ -4,6 +4,7 @@ import base64
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from seremy.progress import milestone
 from types import SimpleNamespace
 import json
 import threading
@@ -38,7 +39,7 @@ class Application:
             raise ValueError("repository input is required")
         job=uuid.uuid4().hex
         with self.lock:
-            self.jobs[job]={"id":job,"status":"queued","stage":"Queued","cancel":threading.Event()}
+            self.jobs[job]={"id":job,"status":"queued","stage":"Queued","progress":0,"cancel":threading.Event()}
         self.worker.submit(self.run,job,request)
         return job
 
@@ -59,7 +60,7 @@ class Application:
         def progress(stage):
             if self.jobs[job]["cancel"].is_set():
                 raise Cancelled()
-            self.update(job,stage=stage,status="running")
+            self.update(job,**milestone(stage),status="running")
         try:
             progress("Preparing repository")
             with tempfile.TemporaryDirectory(prefix="seremy-web-") as directory:
@@ -85,7 +86,7 @@ class Application:
                         snapshot_identity=args.snapshot_identity,use_git=args.use_git)
                     progress("Publishing draft")
                     publication=publish(self.output,bundle,ir,markdown,checks,render_map(bundle))
-            self.update(job,status="completed",stage="Draft ready",publication=publication.name,
+            self.update(job,status="completed",stage="Draft ready",progress=100,publication=publication.name,
                         coverage=bundle["contents"]["coverage"])
         except Cancelled:
             self.update(job,status="cancelled",stage="Cancelled")

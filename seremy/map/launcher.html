@@ -20,12 +20,17 @@ iframe{display:block;width:100%;height:100%;border:0;background:#181818}
 footer{display:flex;align-items:center;gap:12px;padding:0 12px;border-top:1px solid #303030;background:#202020;color:#8c8c8c;font-size:11px}#status{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#summary{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#docs{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);border:0;color:#a0a0a0;background:#242424;padding:8px 18px}body.loaded #docs{display:none}
 dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;width:min(440px,calc(100% - 32px));padding:24px;box-shadow:0 24px 80px #0008}dialog::backdrop{background:#0007}dialog h2{font-size:17px;margin:0 0 22px;font-weight:600}dialog .close{position:absolute;top:12px;right:12px;background:transparent;border:0;font-size:18px}dialog p{color:#aaa;line-height:1.7}form{display:grid;gap:16px}label{display:grid;gap:8px;color:#aaa}input,select{width:100%}.actions{display:flex;gap:8px;justify-content:flex-end}#start{background:#d0d0d0;color:#181818;border-color:#d0d0d0;font-weight:600}#connection-status{color:#b0becf;min-height:18px;margin:0}#help-dialog ol{padding-left:20px;color:#bbb;line-height:1.9}#help-dialog code{color:#dedede}
 [hidden]{display:none!important}
+.analysis-progress{padding:12px;background:#232323;border:1px solid #424242;border-radius:6px}
+.analysis-progress progress{display:block;width:100%;height:6px;margin-top:9px;accent-color:#6dc99a}
+.analysis-progress p{display:flex;justify-content:space-between;gap:16px;margin:0!important;color:#ddd}
+#analysis-progress{position:absolute;top:12px;left:12px;right:12px;z-index:9;pointer-events:none}
 @media(max-width:700px){header{flex-wrap:wrap;gap:4px;padding:6px 8px}#connect{flex:1;max-width:60%;min-width:0}#outputs{margin:0;width:100%;justify-content:space-between;gap:0;min-width:0}#outputs button,#outputs summary{padding:6px;font-size:11px}#doc{padding:20px}#summary{min-width:0}#history{font-size:11px}}
 </style>
 <header><button id="connect" aria-label="Connect repository" aria-haspopup="dialog">No folder <span aria-hidden="true">⌄</span></button>
 <nav id="outputs" aria-label="Workspace views" hidden><button id="map-tab" aria-pressed="true">Interactive map</button><button id="doc-tab" aria-pressed="false">Documentation</button><button id="generate-documentation">Generate documentation</button><button id="workspace-help">Help</button>
 <details id="downloads"><summary>Downloads</summary><div class="download-menu"><a id="download" download>Graph JSON</a><a id="download-doc" download="architecture.md">Markdown</a><a id="download-map" download="map.html" hidden>Download map</a><a id="checks" target="_blank" rel="noopener">Validation results</a></div></details></nav></header>
 <main><div id="empty"><button id="empty-connect">Connect repository</button><p>Local folder, ZIP or Git repository</p></div>
+<div id="analysis-progress" class="analysis-progress" hidden><p><span class="progress-stage"></span><span class="progress-percent"></span></p><progress aria-label="Repository analysis stage progress" max="100" value="0"></progress></div>
 <iframe id="map" title="Interactive source map" hidden></iframe><article id="doc" aria-label="Developer guide" tabindex="0" hidden></article>
 <button id="docs" aria-haspopup="dialog">Docs</button></main>
 <footer><div id="status" role="status" aria-live="polite">Ready</div><p id="summary"></p></footer>
@@ -37,6 +42,7 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 <label id="zip-label" hidden>ZIP file<input id="zip" type="file" accept=".zip"></label>
 <label id="revision-label" hidden>Branch or tag<input id="revision" placeholder="Default branch"></label><label id="source-folder-label" hidden>Source folder (optional)<input id="source-folder" placeholder="src" maxlength="128"><small>Only this folder is analyzed. Configuration outside it is not used. Source-folder imports allow a bounded 16 MiB GitHub download; selected files still have extraction limits.</small></label>
 <p id="connection-status" role="status" aria-live="polite"></p>
+<div id="dialog-progress" class="analysis-progress" hidden><p><span class="progress-stage"></span><span class="progress-percent"></span></p><progress aria-label="Repository analysis stage progress" max="100" value="0"></progress><small>Progress follows completed analysis stages.</small></div>
 <div class="actions"><button id="cancel" type="button" hidden>Cancel</button><button id="start">Analyze repository</button></div>
 </form></dialog>
 <dialog id="help-dialog" aria-labelledby="help-title"><button class="close" id="close-help" aria-label="Close Docs">×</button><h2 id="help-title">Explore a repository</h2>
@@ -48,6 +54,17 @@ let job=null,publication=null,repositoryName='',pendingRepositoryName='';
 let generationTokens={};
 try{generationTokens=JSON.parse(sessionStorage.getItem('seremy-generation-tokens'))||{};}catch(error){}
 function status(message){get('status').textContent=get('connection-status').textContent=message;}
+let progressHideTimer=null;
+function analysisProgress(state){
+  clearTimeout(progressHideTimer);
+  const percent=state.status==='completed'?100:Math.max(0,Math.min(98,Number(state.progress)||0));
+  for(const id of ['analysis-progress','dialog-progress']){
+    const box=get(id);box.hidden=false;box.querySelector('progress').value=percent;
+    box.querySelector('.progress-stage').textContent=state.error||state.stage;
+    box.querySelector('.progress-percent').textContent=percent+'%';
+  }
+  if(state.status==='completed')progressHideTimer=setTimeout(()=>{get('analysis-progress').hidden=true;},2500);
+}
 const savePathDialog=document.createElement('dialog');
 savePathDialog.setAttribute('aria-label','Save documentation to a local path');
 savePathDialog.innerHTML='<form method="dialog"><button class="close" aria-label="Close save path">×</button></form><h2>Save documentation</h2><form id="save-path-form"><label>Destination path<input id="save-path" required placeholder="C:\\path\\to\\documentation.md"></label><p>Choose an existing folder and include the .md filename.</p><button id="save-path-submit">Save Markdown</button><p id="save-path-status" role="status" aria-live="polite"></p></form>';
@@ -84,6 +101,7 @@ async function poll(){
   try{
     const response=await fetch('/api/jobs/'+job),state=await response.json();
     if(!response.ok)throw new Error(state.error);
+    analysisProgress(state);
     status(state.error||state.stage);
     if(state.status==='completed'){
       publication=state.publication;
@@ -113,6 +131,7 @@ async function poll(){
 }
 get('form').onsubmit=async event=>{
   event.preventDefault();get('start').disabled=true;status('Preparing input…');
+  analysisProgress({status:'queued',progress:0,stage:'Preparing upload'});
   try{
     const kind=get('kind').value;let value=get('value').value;
     if(kind==='zip'){
@@ -141,8 +160,8 @@ get('cancel').onclick=async()=>{
 };
 get('map-tab').onclick=()=>{get('map').hidden=false;get('doc').hidden=true;get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');};
 get('generate-documentation').onclick=()=>{get('map-tab').click();get('map').contentWindow.postMessage({type:'seremy-generate-documentation'},'*');};
-let documentationMarkdown='',visibleDrafts=[],documentationBlobUrls=[];
-get('map').addEventListener('load',()=>{visibleDrafts=[];});
+let documentationMarkdown='',visibleDrafts=[],documentationBlobUrls=[],selectedDocument=null;
+get('map').addEventListener('load',()=>{visibleDrafts=[];selectedDocument=null;});
 async function configureHostedDocumentation(){
   if(!hosted)return;
   const frame=get('map'),requested=frame.contentWindow,source=frame.src;
@@ -185,6 +204,7 @@ window.addEventListener('message',event=>{
   if(event.source!==get('map').contentWindow||event.data?.type!=='seremy-documentation-drafts')return;
   const drafts=event.data.drafts;
   if(!Array.isArray(drafts)||drafts.length>16||!drafts.every(draft=>typeof draft.markdown==='string'&&draft.markdown.length<=262144))return;
+  if(drafts.length>visibleDrafts.length)selectedDocument=drafts.length-1;
   visibleDrafts=drafts;
   if(!get('doc').hidden)showDocumentation(documentationMarkdown);
 });
@@ -207,8 +227,17 @@ function appendGuideInline(parent,text){
 }
 function showDocumentation(markdown){
   documentationBlobUrls.forEach(url=>URL.revokeObjectURL(url));documentationBlobUrls=[];
-  documentationMarkdown=markdown;markdown+='\n\n'+visibleDrafts.map(draft=>draft.markdown).join('\n\n');
+  documentationMarkdown=markdown;
+  if(selectedDocument===null&&visibleDrafts.length)selectedDocument=visibleDrafts.length-1;
+  const activeDraft=visibleDrafts[selectedDocument];
+  if(activeDraft)markdown=activeDraft.markdown;
   const doc=get('doc');doc.replaceChildren();const toc=document.createElement('nav');toc.setAttribute('aria-label','Guide contents');const contents=document.createElement('details'),contentsTitle=document.createElement('summary');contentsTitle.textContent='Contents';contents.append(contentsTitle,toc);doc.append(contents);
+  if(visibleDrafts.length){
+    const label=document.createElement('label');label.textContent='Document';const picker=document.createElement('select');picker.setAttribute('aria-label','Choose documentation');
+    const guide=document.createElement('option');guide.value='-1';guide.textContent='Architecture guide';picker.append(guide);
+    visibleDrafts.forEach((draft,index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=draft.title||'Generated document';picker.append(option);});
+    picker.value=activeDraft?String(selectedDocument):'-1';picker.onchange=()=>{selectedDocument=Number(picker.value);showDocumentation(documentationMarkdown);doc.scrollTop=0;};label.append(picker);doc.append(label);
+  }
   let container=doc,list=null,table=null,fence=null,headingCount=0;const folded=new Set(['Declarations','Relationships','Citation register','Call walkthroughs']);
   const lines=markdown.split(/\r?\n/);
   for(let index=0;index<lines.length;index++){
@@ -232,7 +261,7 @@ function showDocumentation(markdown){
     if(/^\s*- /.test(line)){if(!list){list=document.createElement('ul');container.append(list);}const item=document.createElement('li');appendGuideInline(item,line.replace(/^\s*- /,''));list.append(item);continue;}
     list=null;table=null;const node=document.createElement(line.startsWith('> ')?'blockquote':'p');appendGuideInline(node,line.replace(/^> /,''));container.append(node);
   }
-  for(const draft of visibleDrafts){
+  for(const draft of activeDraft?[activeDraft]:[]){
     const saveActions=document.createElement('div');saveActions.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:16px 0';
     const save=document.createElement('a');save.textContent='Save Markdown · '+(draft.title||'documentation draft');save.download='documentation-draft.md';
     const localDownload=typeof draft.download_url==='string'&&draft.download_url.startsWith('/api/mcp/draft.md?');

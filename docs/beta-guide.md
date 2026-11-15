@@ -8,6 +8,8 @@ Use Files or Find to open source. Select a call and follow its target, then use 
 
 Choose **Generate documentation** for an explanation of a file, folder or map selection. Online AI drafts become available after the owner completes the [model connection setup](hosted-documentation.md). The form identifies the source excerpts sent to the provider. Returned explanations include citations and require review. Save the report after generation to keep its displayed drafts on this device.
 
+During analysis, the loading line shows the current stage and its milestone percentage. Successful publication reaches 100%. Generated pages open directly in Documentation. Use **Choose documentation** to switch between a generated page and the architecture guide. New pages include sections for purpose, interfaces, implementation, dependencies, examples and limitations when evidence supports them.
+
 ## Start the local launcher for AI documentation
 
 Install Python 3.12 or later, Node.js 22 and Git. Clone this repository, then run these commands from its root in PowerShell.

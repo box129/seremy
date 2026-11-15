@@ -93,6 +93,7 @@ class HostedApplication:
             else:
                 (folder / "input.zip").write_bytes(raw)
             self.jobs[job] = {"id": job, "status": "queued", "stage": "Queued", "expires_at": time.time() + RESULT_TTL,
+                              "progress": 0,
                               "generation_token": secrets.token_hex(32)}
             self.update(job)
             self.worker.submit(self.run, job)
@@ -128,8 +129,9 @@ class HostedApplication:
             if job in self.cancelled:
                 outcome = {"status": "cancelled", "stage": "Cancelled"}
                 return
-            self.update(job, status="running", stage="Analyzing repository")
-            environment = dict(os.environ, NODE_OPTIONS="--max-old-space-size=192", PYTHONDONTWRITEBYTECODE="1")
+            self.update(job, status="running", stage="Preparing repository", progress=2)
+            environment = dict(os.environ, NODE_OPTIONS="--max-old-space-size=192", PYTHONDONTWRITEBYTECODE="1",
+                               SEREMY_PROGRESS_FILE=str(folder / "progress.json"))
             if (folder / "source.json").exists():
                 source = json.loads((folder / "source.json").read_text(encoding="utf8"))
                 command = ["seremy.github_input", source["url"], "--revision", source["revision"]]
@@ -143,6 +145,12 @@ class HostedApplication:
                                        start_new_session=os.name != "nt")
             deadline = time.monotonic() + self.timeout
             while True:
+                try:
+                    progress = json.loads((folder / "progress.json").read_text(encoding="utf8"))
+                    if type(progress.get("progress")) is int and self.jobs[job].get("progress", 0) < progress["progress"] <= 98:
+                        self.update(job, progress=progress["progress"], stage=progress["stage"])
+                except (OSError, ValueError):
+                    pass
                 if job in self.cancelled:
                     self.stop(process)
                     outcome = {"status": "cancelled", "stage": "Cancelled"}
@@ -170,6 +178,7 @@ class HostedApplication:
                 outcome = {"status": "cancelled", "stage": "Cancelled"}
                 return
             outcome = {"status": "completed", "stage": "Draft ready", "publication": job,
+                       "progress": 100,
                        "version": publication.name, "coverage": coverage,"source_subdirectory":result.get("source_subdirectory")}
         except Exception as error:
             if process is not None and process.poll() is None:

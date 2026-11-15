@@ -50,6 +50,9 @@ def test_hosted_upload_uses_both_adapters_and_private_results(tmp_path):
         job = json.loads(raw)["id"]
         state = finished(service, job)
         assert state["status"] == "completed", state
+        assert state["progress"] == 100
+        milestone = json.loads((tmp_path / job / "progress.json").read_text(encoding="utf8"))
+        assert milestone == {"progress": 98, "stage": "Publishing map and guide"}
         assert state["coverage"]["s03"]["direct_edge_count"] == 2
         assert not (tmp_path / job / "input.zip").exists()
         assert request(app, f"/reports/{job}/map.html")[0] == 200
@@ -81,6 +84,7 @@ def test_hosted_timeout_terminates_analysis(tmp_path):
         state = finished(service, service.start(upload()))
         assert state["status"] == "failed"
         assert "time limit" in state["error"]
+        assert state["progress"] < 100
     finally:
         service.worker.shutdown()
 
