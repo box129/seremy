@@ -28,7 +28,7 @@ Only the browser that submitted the analysis receives its generation capability.
 
 Results carry the source snapshot identity. Provider output must reference claims from the retrieved context and pass the existing draft validator. Exact citation checks establish the referenced source ranges. Explanatory meaning still requires review. The server records the provider, requested model, prompt version and token cap with a `server_observed` basis. The exact underlying model snapshot is not inferred from an alias.
 
-The initial pilot uses the first 20 relevant claims and the existing bounded implementation excerpts. Draft coverage records omitted claims, partial bodies and the next evidence offset. Large folder requests can therefore produce a partial explanation. Narrow the scope to obtain additional detail.
+The writer uses a bounded page of 20 claims, ranked by question terms, entry filenames and observed import frequency. Retrieval includes direct captured static imports and consumers. One evidence-bearing claim per file is selected before additional claims, and implementation bodies are distributed across files within the existing eight-range budget. Draft coverage records omitted claims, partial bodies and the next evidence offset. Large folder requests can therefore produce a partial explanation. Narrow the scope to obtain additional detail.
 
 **Save on this device** stores the displayed drafts alongside the report. Download the Markdown for a separate copy. Device storage can be cleared or evicted. Saved reports remain readable when their server reports expire. Starting a new draft from a saved report requires a new analysis.
 
@@ -41,3 +41,12 @@ Draft jobs and attempt counts use SQLite on the service filesystem. A process re
 After connecting the provider, repeat the real-provider acceptance case from the implementation handoff using Redux's `src/utils/isAction.ts` or `utils/isAction.ts` when scoped to `src`. Review its explanation against the source. This step requires a valid credential and an owner-approved usage allowance.
 
 The adapter follows the [official structured output API](https://developers.openai.com/api/docs/guides/structured-outputs). Hosting retention follows the [Render Free service documentation](https://render.com/docs/free).
+
+
+## Overview and walkthrough pages
+
+Choose **Start here** for an overview and a reading path through the captured code. Choose **How it works** for a focused feature walkthrough, optionally adding a question. Selecting a map item defaults to a walkthrough. Repository generation defaults to an overview. Each action generates one page and consumes one model request. Generate the second page separately when needed. Both pages remain selectable in Documentation and travel with Save on this device.
+
+Prompt version `hosted-documentation-v3` supplies distinct reader goals for each page type. Purpose is bound to the request identity, so changing page type requires a new request. The Markdown title identifies the page, and the review notice remains visible.
+
+This retrieval uses captured code and direct static neighbors. README and existing prose documentation capture, automatic multi-page planning, semantic validation and executable example checks remain pending. A scoped upload cannot retrieve files outside that upload. The eight-range source budget can still omit relevant bodies in a large scope. Import frequency is an ordering heuristic, not an architecture ranking.

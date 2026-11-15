@@ -209,7 +209,7 @@ class MapBridge:
                 if tool == "documentation_scope":
                     context = scoped_context(loader, document, request.get("scope"), request.get("question", ""),
                                              request.get("offset", 0), request.get("limit", 10),
-                                             lambda span: self.citation(loader, span))
+                                             lambda span: self.citation(loader, span), purpose=request.get("purpose", "overview"))
                 else:
                     context = evidence_context(document, request.get("section_id"), request.get("offset", 0), request.get("limit", 10),
                                                lambda span: self.citation(loader, span), loader=loader)

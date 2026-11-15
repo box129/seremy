@@ -109,6 +109,7 @@ def submit_draft(context, statements, generation):
         result["requested_scope"] = context["requested_scope"]
         result["question"] = context["question"]
         result["scope_file_count"] = context["scope_file_count"]
+        result["documentation_purpose"] = context.get("documentation_purpose", "overview")
     if packet is not None:
         result["coverage"].update(source_context_profile=packet["profile"], source_body_count=len(packet["records"]),
                                   omitted_source_body_count=packet["omitted_range_count"],
@@ -120,7 +121,7 @@ def submit_draft(context, statements, generation):
 
 
 def render_draft(draft):
-    lines = [f"# Documentation draft — {draft['title']}", "",
+    lines = [f"# {draft['title']}", "",
              "Human review pending. Check the explanation against its source citations before using it.", ""]
     if "requested_scope" in draft:
         scope = draft["requested_scope"]

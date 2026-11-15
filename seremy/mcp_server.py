@@ -70,13 +70,14 @@ def create_server(url):
         return tool("documentation_section", view_id, digest, section_id=section_id, offset=offset, limit=limit)
 
     @server.tool()
-    def read_documentation_scope(view_id: str, digest: str, scope: dict, question: str = "", offset: int = 0, limit: int = 10) -> dict:
+    def read_documentation_scope(view_id: str, digest: str, scope: dict, question: str = "", offset: int = 0, limit: int = 10,
+                                 purpose: str = "overview") -> dict:
         """Read snapshot-bound file/folder/entity/connection documentation evidence.
 
         scope contains kind and value. Preserve the question, inspect omissions and page with offset.
         Submit explanation statements using returned claim IDs and context_digest.
         """
-        return tool("documentation_scope", view_id, digest, scope=scope, question=question, offset=offset, limit=limit)
+        return tool("documentation_scope", view_id, digest, scope=scope, question=question, offset=offset, limit=limit, purpose=purpose)
 
     @server.tool()
     def submit_documentation_draft(view_id: str, digest: str, request_id: str, context_digest: str,

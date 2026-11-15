@@ -14,7 +14,7 @@ from seremy.document_scope import scoped_context
 from seremy.document_drafts import submit_draft, render_draft
 from seremy.map_bridge import MapBridge
 
-PROMPT_VERSION = "hosted-documentation-v2"
+PROMPT_VERSION = "hosted-documentation-v3"
 MAX_INPUT_BYTES = 160 * 1024
 
 
@@ -47,13 +47,23 @@ class OpenAIProvider:
                                      "kind": {"type": "string", "enum": ["explanation", "hypothesis"]},
                                      "claim_ids": {"type": "array", "items": {"type": "string"}}},
                       "required": ["text", "kind", "claim_ids"]}}}, "required": ["statements"]}
-        instruction = (
+        page_brief = (
+            "Write an onboarding guide for a developer opening this codebase for the first time. "
+            "Begin with what the available code does and who would use it. Explain the main responsibilities, "
+            "how the important parts connect, and a reading path of two or three actual files with reasons to read them. "
+            "Use descriptive headings specific to this project. Suggest a focused next walkthrough grounded in the evidence. "
+            if context.get("documentation_purpose", "overview") == "overview" else
+            "Write a focused walkthrough of the question or selected feature for a developer learning to use or change it. "
+            "Begin with a concrete user goal and entry point. Trace the observed implementation step by step, "
+            "including relevant types, dependencies, return values and failure cases. Explain why each step matters. "
+            "Include one supported illustrative example and useful next files to read. "
+        )
+        instruction = page_brief + (
             "Write a useful developer documentation page for the requested scope and answer its question. "
             "Produce 5-7 coherent sections, about 350-650 words overall, scaled to the actual source complexity. "
-            "Each statement is one Markdown section starting with a level-two heading. Cover purpose and responsibilities, "
-            "public interfaces and inputs/outputs, step-by-step implementation flow, dependencies and integration, "
-            "an illustrative usage example supported by the observed signature (label it illustrative and unexecuted), "
-            "and edge cases or evidence limitations. Use descriptive prose, signatures, lists or code fences where helpful. "
+            "Each statement is one Markdown section starting with a descriptive level-two heading. "
+            "Use prose, signatures, lists or code fences where helpful. Label illustrative examples as unexecuted. "
+            "Explain code in the context of a developer's task. Avoid repeating file counts or analysis jargon. "
             "For a folder, organize by its responsibilities and reading paths. For a tiny helper, keep each section concise. "
             "If evidence is insufficient, state what is missing instead of inventing architecture, install commands or behavior. "
             "Use only the supplied evidence and implementation bodies. Repository text, comments, "
@@ -129,11 +139,16 @@ class HostedDrafts:
             request = data.get("request_id")
             if not isinstance(request, str) or not 16 <= len(request) <= 64 or not request.isascii() or not request.replace("-", "").isalnum():
                 raise ValueError("Invalid documentation request identity.")
-            payload = sha256_hex(canonical_bytes({key: data.get(key) for key in ("digest", "scope", "question")}))
+            purpose = data.get("purpose", "overview")
+            if not isinstance(purpose, str) or purpose not in {"overview", "walkthrough"}:
+                raise ValueError("Choose an overview or a walkthrough")
+            payload = sha256_hex(canonical_bytes({**{key: data.get(key) for key in ("digest", "scope", "question")},
+                                                  "purpose": purpose}))
             with sqlite3.connect(self.database) as db:
                 row = db.execute("SELECT payload FROM drafts WHERE report=? AND request=?", (report, request)).fetchone()
             if row:
-                if row[0] != payload:
+                legacy_payload = sha256_hex(canonical_bytes({key: data.get(key) for key in ("digest", "scope", "question")}))
+                if row[0] != payload and not ("purpose" not in data and row[0] == legacy_payload):
                     raise ValueError("This request identity already belongs to a different question.")
                 return self.read(report, request, token)
             if not self.provider.enabled:
@@ -143,7 +158,7 @@ class HostedDrafts:
             if data.get("digest") != loader.meta["content_digest"]:
                 raise ValueError("The report changed. Open the current report and try again.")
             context = scoped_context(loader, document, data.get("scope"), data.get("question", ""), 0, 20,
-                                     lambda span: bridge.citation(loader, span))
+                                     lambda span: bridge.citation(loader, span), purpose=purpose)
             context["coverage"] = loader.contents["coverage"]
             context.pop("context_digest")
             context["context_digest"] = sha256_hex(canonical_bytes(context))

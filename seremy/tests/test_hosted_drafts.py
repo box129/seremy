@@ -164,3 +164,16 @@ def test_provider_contract_and_error_redaction(monkeypatch):
     with pytest.raises(DraftUnavailable) as error:
         provider.generate({})
     assert "private-secret" not in str(error.value)
+
+
+def test_purpose_is_validated_and_bound_to_retry_identity(service):
+    app, provider, job, token, data = service
+    with pytest.raises(ValueError, match="overview"):
+        app.drafts.start(job, {**data, "purpose": "unknown"}, token)
+    app.drafts.start(job, {**data, "purpose": "walkthrough"}, token)
+    done = result(app, job, token, data)
+    assert done["draft"]["documentation_purpose"] == "walkthrough"
+    assert done["draft"]["title"].startswith("How it works")
+    with pytest.raises(ValueError, match="identity"):
+        app.drafts.start(job, {**data, "purpose": "overview"}, token)
+    assert provider.calls == 1

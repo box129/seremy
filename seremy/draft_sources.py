@@ -43,8 +43,17 @@ def source_packet(loader, claims, read_citation):
         if file in contents["source_texts"]:
             request(file, [0, len(contents["source_texts"][file].encode("utf8"))], "file_preview", claim["claim_id"])
 
+    # Read across files before spending the body budget on more declarations in
+    # one file. This keeps an imported type or consumer available to the writer.
+    file_counts = {}
+    ordered = []
+    for position, record in enumerate(requested.values()):
+        file = record["file"]
+        depth = file_counts.get(file, 0)
+        file_counts[file] = depth + 1
+        ordered.append((depth, position, record))
     records = []
-    for record in requested.values():
+    for _, _, record in sorted(ordered, key=lambda item: item[:2]):
         if len(records) == MAX_RANGES:
             break
         file = record["file"]

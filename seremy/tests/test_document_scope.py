@@ -34,3 +34,44 @@ def test_folder_entity_and_connection_scopes(bridge_case):
             tool(bridge, request, "documentation_scope", scope=scope)
     with pytest.raises(ValueError):
         tool(bridge, request, "documentation_scope", scope={"kind": "file", "value": "entry.py"}, question="x" * 2001)
+
+
+def test_walkthrough_retrieves_imported_type_and_preserves_scope(tmp_path):
+    from seremy.product import analyze
+    from seremy.bundle import BundleLoader
+    from seremy.documentation import build_document_ir
+    from seremy.document_scope import scoped_context
+    from seremy.map_bridge import MapBridge
+    from seremy.contracts import canonical_bytes, sha256_hex
+    (tmp_path / "entry.ts").write_text("import type { Action } from './types';\nexport function check(value: Action) { return value.type }\n")
+    (tmp_path / "types.ts").write_text("export interface Action { type: string }\n")
+    bundle, document, _, _ = analyze(tmp_path)
+    loader = BundleLoader(bundle)
+    context = scoped_context(loader, document, {"kind": "file", "value": "entry.ts"},
+                             "How is Action used?", 0, 20, lambda span: MapBridge.citation(loader, span),
+                             purpose="walkthrough")
+    assert context["requested_scope"] == {"kind": "file", "value": "entry.ts"}
+    assert context["scope_file_count"] == 1 and context["related_file_count"] == 1
+    assert context["documentation_purpose"] == "walkthrough"
+    records = context["implementation_context"]["records"]
+    assert {r["file"] for r in records} == {"entry.ts", "types.ts"}
+    assert any("interface Action" in r["citation"]["text"] for r in records)
+    assert context["context_digest"] == sha256_hex(canonical_bytes({k: v for k, v in context.items() if k != "context_digest"}))
+
+
+def test_large_folder_prioritizes_named_topic_and_usable_claims(tmp_path):
+    from seremy.product import analyze
+    from seremy.bundle import BundleLoader
+    from seremy.document_scope import scoped_context
+    from seremy.map_bridge import MapBridge
+    for index in range(24):
+        (tmp_path / f"a{index:02}.py").write_text(f"def helper_{index}(): return {index}\n")
+    (tmp_path / "zpayment.py").write_text("def charge(): return 7\n")
+    bundle, document, _, _ = analyze(tmp_path)
+    loader = BundleLoader(bundle)
+    context = scoped_context(loader, document, {"kind": "folder", "value": "."}, "Explain zpayment", 0, 20,
+                             lambda span: MapBridge.citation(loader, span))
+    assert context["available_files"][0] == "zpayment.py"
+    assert context["claims"][0]["map_citations"]
+    assert any(r["file"] == "zpayment.py" for r in context["implementation_context"]["records"])
+    assert context["next_offset"] is not None

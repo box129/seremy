@@ -21,7 +21,7 @@ The scopes differ. DeepWiki's indexed Redux version was `28d433b7` from 23 June 
 
 The analysis worker publishes milestone percentages through an atomic progress file. Both local and hosted jobs report those milestones. The UI shows a loading line, percent and current stage. The percentages represent stage milestones, with 100 reserved for successful publication. They are independent of elapsed time, and stages can be skipped visually on fast analyses. Failures and cancellations retain their last completed progress.
 
-Generated drafts open as individual documents. The document picker switches between the architecture guide and each generated page. The model prompt requests 5–7 Markdown sections with source support and roughly 350–650 words, scaled to the source. The existing 2,048-token ceiling and model settings remain in force, so actual document length can vary. The validator still checks evidence identities and retains human review labels. Prompt version `hosted-documentation-v2` identifies this change.
+Generated drafts open as individual documents. The document picker switches between the architecture guide and each generated page. The model prompt requests 5â€“7 Markdown sections with source support and roughly 350â€“650 words, scaled to the source. The existing 2,048-token ceiling and model settings remain in force, so actual document length can vary. The validator still checks evidence identities and retains human review labels. Prompt version `hosted-documentation-v2` identifies this change.
 
 ## Remaining work toward a repository wiki
 
@@ -31,3 +31,10 @@ Generated drafts open as individual documents. The document picker switches betw
 4. Add examples checked against observed signatures, evidence-backed diagrams and checks for unsupported prose claims.
 
 These remaining items require implementation and evaluation. The current page and progress changes improve the existing product but leave those wiki capabilities open.
+
+
+## Follow-up on reader goals
+
+Overview and walkthrough generation now have separate prompts and a page selector. Scoped retrieval includes captured static dependencies and consumers. Topic terms, entry filenames and import frequency order files, with one evidence-bearing claim per file before additional claims. Body retrieval distributes the eight available ranges across files before returning to additional declarations in the same file. Generated pages retain source links, review notices, document selection and device saving.
+
+This is a bounded first implementation of topic-aware retrieval. It does not complete the remaining repository-wiki items above. In particular, existing prose documentation ingestion and automatic wiki planning still need implementation.

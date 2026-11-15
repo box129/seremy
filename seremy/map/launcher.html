@@ -183,7 +183,7 @@ get('map').addEventListener('load',configureHostedDocumentation);
 window.addEventListener('seremy-restored-report',configureHostedDocumentation);
 window.addEventListener('message',async event=>{
   if(!hosted||event.source!==get('map').contentWindow)return;
-  if(event.data?.type==='seremy-hosted-draft-ready'){get('doc-tab').click();status('Documentation draft ready for review');return;}
+  if(event.data?.type==='seremy-hosted-draft-ready'){get('doc-tab').click();status('Documentation ready for review');return;}
   if(event.data?.type!=='seremy-hosted-draft-request')return;
   const report=publication,frameSource=get('map').src,request=event.data.request;
   const send=result=>{if(publication===report&&get('map').src===frameSource)get('map').contentWindow.postMessage({type:'seremy-hosted-draft-result',...result},'*');};
@@ -194,7 +194,7 @@ window.addEventListener('message',async event=>{
     let result=await response.json();if(!response.ok)throw new Error(result.error||'Generation unavailable');
     const deadline=Date.now()+120000;
     while(['queued','running'].includes(result.status)){
-      if(Date.now()>deadline)throw new Error('Generation is taking longer than expected. Choose Generate draft again to check this request.');
+      if(Date.now()>deadline)throw new Error('Generation is taking longer than expected. Choose Generate documentation again to check this request.');
       await new Promise(resolve=>setTimeout(resolve,1000));
       if(publication!==report||get('map').src!==frameSource)return;
       response=await fetch('/api/documentation/'+report+'/'+request.request_id,{headers});
