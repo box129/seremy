@@ -27,7 +27,7 @@ def milestone(message):
 
 
 def report_progress(message):
-    destination = os.environ.get("SEREMY_PROGRESS_FILE")
+    destination = os.environ.get("ARCHDOC_PROGRESS_FILE", os.environ.get("SEREMY_PROGRESS_FILE"))
     if destination:
         path = Path(destination)
         temporary = path.with_suffix(".pending")

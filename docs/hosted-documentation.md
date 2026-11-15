@@ -8,9 +8,9 @@ The first provider adapter uses OpenAI Chat Completions with strict JSON output.
 
 | Variable | Value |
 | --- | --- |
-| `SEREMY_AI_API_KEY` | A dedicated OpenAI API key, entered as a deployment secret |
-| `SEREMY_AI_MODEL` | An account-accessible model supporting Chat Completions and strict JSON schema output |
-| `SEREMY_AI_DAILY_REQUEST_LIMIT` | A positive integer chosen by the owner for the daily request allowance |
+| `ARCHDOC_AI_API_KEY` | A dedicated OpenAI API key, entered as a deployment secret |
+| `ARCHDOC_AI_MODEL` | An account-accessible model supporting Chat Completions and strict JSON schema output |
+| `ARCHDOC_AI_DAILY_REQUEST_LIMIT` | A positive integer chosen by the owner for the daily request allowance |
 
 Until all three are configured, the form explains that the owner's model connection is pending. It continues to offer analysis, the structural guide and downloads. Visitors use the website without installing an agent or opening a terminal. The server calls the existing evidence functions directly. Desktop users can continue using the local MCP workflow.
 

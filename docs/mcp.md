@@ -1,13 +1,13 @@
 # Local MCP integration
 
-SEREMY exposes selected architecture evidence to an MCP agent through the local launcher. The official Python SDK runs a stdio MCP server. The agent's language model supplies explanations and can send cited annotations back to the map.
+Archdoc exposes selected architecture evidence to an MCP agent through the local launcher. The official Python SDK runs a stdio MCP server. The agent's language model supplies explanations and can send cited annotations back to the map.
 
 Install the optional MCP dependency in a virtual environment from the repository root.
 
 ```powershell
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install -r requirements-mcp.txt
-python -B -m seremy.server
+python -B -m archdoc.server
 ```
 
 Configure your MCP client with the virtual environment's Python executable as its command. Pass the absolute path to `seremy/mcp_server.py`, followed by `--url` and `http://127.0.0.1:8765`, as arguments. The script can start from the client's own working directory. Use the launcher's actual port if it was changed.

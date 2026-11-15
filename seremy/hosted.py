@@ -131,7 +131,7 @@ class HostedApplication:
                 return
             self.update(job, status="running", stage="Preparing repository", progress=2)
             environment = dict(os.environ, NODE_OPTIONS="--max-old-space-size=192", PYTHONDONTWRITEBYTECODE="1",
-                               SEREMY_PROGRESS_FILE=str(folder / "progress.json"))
+                               ARCHDOC_PROGRESS_FILE=str(folder / "progress.json"))
             if (folder / "source.json").exists():
                 source = json.loads((folder / "source.json").read_text(encoding="utf8"))
                 command = ["seremy.github_input", source["url"], "--revision", source["revision"]]
@@ -206,7 +206,7 @@ def make_app(application):
             elif method == "GET" and path == "/":
                 content_type = "text/html; charset=utf-8"
                 body = (Path(__file__).parent / "map/launcher.html").read_text(encoding="utf8").replace(
-                    "<script>", "<script>window.SEREMY_HOSTED=true;", 1).replace(
+                    "<script>", "<script>window.ARCHDOC_HOSTED=true;", 1).replace(
                         "</html>", '<script src="/history.js"></script></html>').encode()
             elif method == "GET" and path == "/example-report":
                 from seremy.example_report import example_report
@@ -220,7 +220,7 @@ def make_app(application):
                 parts = path.split("/")
                 if len(parts) != 5 or not ID.fullmatch(parts[3]):
                     raise KeyError()
-                body = application.drafts.read(parts[3], parts[4], environ.get("HTTP_X_SEREMY_GENERATION"))
+                body = application.drafts.read(parts[3], parts[4], environ.get("HTTP_X_ARCHDOC_GENERATION", environ.get("HTTP_X_SEREMY_GENERATION")))
             elif method == "GET" and path.startswith("/api/jobs/") and ID.fullmatch(path.split("/")[-1]):
                 body = application.state(path.split("/")[-1])
                 body.pop("generation_token", None)
@@ -245,7 +245,7 @@ def make_app(application):
                     job = application.start(request)
                     body, status = {"id": job, "generation_token": application.state(job)["generation_token"]}, 202
                 elif path.startswith("/api/documentation/") and ID.fullmatch(path.split("/")[-1]):
-                    body = application.drafts.start(path.split("/")[-1], request, environ.get("HTTP_X_SEREMY_GENERATION"))
+                    body = application.drafts.start(path.split("/")[-1], request, environ.get("HTTP_X_ARCHDOC_GENERATION", environ.get("HTTP_X_SEREMY_GENERATION")))
                     status = 202
                 elif path.startswith("/api/cancel/") and ID.fullmatch(path.split("/")[-1]):
                     application.cancel(path.split("/")[-1])
@@ -274,4 +274,4 @@ def make_app(application):
 
 
 def create_app():
-    return make_app(HostedApplication(os.environ.get("SEREMY_DATA", "/tmp/seremy-hosted")))
+    return make_app(HostedApplication(os.environ.get("ARCHDOC_DATA", os.environ.get("SEREMY_DATA", "/tmp/seremy-hosted"))))

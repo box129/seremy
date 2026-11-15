@@ -1,8 +1,8 @@
-# Start using the SEREMY beta
+# Start using the Archdoc beta
 
 ## Use the public application
 
-Open [SEREMY](https://seremy-analysis.onrender.com/), choose a repository ZIP or public GitHub URL, and analyze it. A cold start can take time. For a large GitHub repository, enter a source folder such as `src` to analyze only that folder. Configuration outside the chosen folder is excluded. The app shows the supported languages, input limits and analysis coverage.
+Open [Archdoc](https://seremy-analysis.onrender.com/), choose a repository ZIP or public GitHub URL, and analyze it. A cold start can take time. For a large GitHub repository, enter a source folder such as `src` to analyze only that folder. Configuration outside the chosen folder is excluded. The app shows the supported languages, input limits and analysis coverage.
 
 Use Files or Find to open source. Select a call and follow its target, then use Back to return. Open Documentation to read the cited guide. Download the map, graph and Markdown to keep them. **Save on this device** stores the report in this browser. Server results expire after one hour and can disappear earlier when the free service restarts.
 
@@ -18,7 +18,7 @@ Install Python 3.12 or later, Node.js 22 and Git. Clone this repository, then ru
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install -r requirements-mcp.txt
 npm ci --prefix seremy/tools
-.venv/Scripts/python.exe -B -m seremy.server --port 8765
+.venv/Scripts/python.exe -B -m archdoc.server --port 8765
 ```
 
 Open `http://127.0.0.1:8765`. Choose a local source folder or try the full path to `seremy/fixtures/redux-slice` in your checkout.
@@ -71,7 +71,7 @@ The current scope covers bounded static analysis. Dynamic callbacks, general rec
 
 ## First visit
 
-Choose **Try the Redux example** to open a prepared map and its source-linked guide. It uses public bundled Redux source and does not upload a repository or request AI generation. The optional guided task opens Find, selection details, Back, the Repository guide and device saving. Dismiss it at any time. **Help with SEREMY** explains the main actions and opens their controls. Replay the example from Help.
+Choose **Try the Redux example** to open a prepared map and its source-linked guide. It uses public bundled Redux source and does not upload a repository or request AI generation. The optional guided task opens Find, selection details, Back, the Repository guide and device saving. Dismiss it at any time. **Help with Archdoc** explains the main actions and opens their controls. Replay the example from Help.
 
 **Repository guide** opens the analyzed repository's documentation. **Generate a page** opens the overview or walkthrough request. The prepared example can be read immediately. New AI pages require your own completed online analysis and its generation capability.
 

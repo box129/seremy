@@ -1,8 +1,8 @@
-// S02 syntax parser adapter for the SEREMY Milestone 1 slice.
+// S02 syntax parser adapter for the Archdoc Milestone 1 slice.
 //
 // Uses the TypeScript compiler API (pinned in package.json) to extract
 // declaration records and syntax reference candidates with exact source
-// ranges.  TypeScript positions are UTF-16 code-unit offsets; the SEREMY
+// ranges.  TypeScript positions are UTF-16 code-unit offsets; the Archdoc
 // contract (v1.1 addendum) requires zero-based UTF-8 byte offsets against
 // the AnalysisTextBlob.  This adapter therefore emits BOTH the binder-native
 // UTF-16 ranges and the normalized byte ranges, under the declared

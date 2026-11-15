@@ -1,6 +1,6 @@
 # File, folder and selection documentation
 
-Open a repository in the local SEREMY launcher. Choose **Generate documentation**, select a file or folder and optionally enter a question. **Copy request for agent** prepares snapshot-bound evidence, enables local MCP sharing and copies a request for your connected agent. A visible text field provides the request when clipboard access is unavailable. Paste the request into the agent to start generation.
+Open a repository in the local Archdoc launcher. Choose **Generate documentation**, select a file or folder and optionally enter a question. **Copy request for agent** prepares snapshot-bound evidence, enables local MCP sharing and copies a request for your connected agent. A visible text field provides the request when clipboard access is unavailable. Paste the request into the agent to start generation.
 
 For the code currently in view, open Inspect and choose **Explain selection**. The picker offers the selected function or symbol, file or connection. Functions are identified from the selected declaration. Incoming and outgoing facts may include collaborators outside the selected path.
 

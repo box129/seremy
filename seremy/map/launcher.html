@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEREMY</title>
+<title>Archdoc</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;height:100dvh;overflow:hidden;background:#181818;color:#d5d5d5;font:13px 'Segoe UI',system-ui,sans-serif;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
@@ -31,12 +31,12 @@ dialog{max-height:90dvh;overflow:auto}
 @media(max-width:700px){header{flex-wrap:wrap;gap:4px;padding:6px 8px}#connect{flex:1;max-width:60%;min-width:0}#outputs{margin:0;width:100%;justify-content:space-between;gap:0;min-width:0}#outputs button,#outputs summary{padding:6px;font-size:11px}#doc{padding:20px}#summary{min-width:0}#history{font-size:11px}}
 </style>
 <header><button id="connect" aria-label="Connect repository" aria-haspopup="dialog">No folder <span aria-hidden="true">⌄</span></button>
-<nav id="outputs" aria-label="Workspace views" hidden><button id="map-tab" aria-pressed="true">Interactive map</button><button id="doc-tab" aria-pressed="false">Repository guide</button><button id="generate-documentation">Generate a page</button><button id="workspace-help">Help with SEREMY</button>
+<nav id="outputs" aria-label="Workspace views" hidden><button id="map-tab" aria-pressed="true">Interactive map</button><button id="doc-tab" aria-pressed="false">Repository guide</button><button id="generate-documentation">Generate a page</button><button id="workspace-help">Help with Archdoc</button>
 <details id="downloads"><summary>Downloads</summary><div class="download-menu"><a id="download" download>Graph JSON</a><a id="download-doc" download="architecture.md">Markdown</a><a id="download-map" download="map.html" hidden>Download map</a><a id="checks" target="_blank" rel="noopener">Validation results</a></div></details></nav></header>
 <main><div id="empty"><h1>Explore a codebase</h1><button id="try-example" hidden>Try the Redux example</button><button id="empty-connect">Analyze your repository</button><p>Local folder, ZIP or Git repository</p></div>
 <div id="analysis-progress" class="analysis-progress" hidden><p><span class="progress-stage"></span><span class="progress-percent"></span></p><progress aria-label="Repository analysis stage progress" max="100" value="0"></progress></div>
 <iframe id="map" title="Interactive source map" hidden></iframe><article id="doc" aria-label="Developer guide" tabindex="0" hidden></article>
-<button id="docs" aria-haspopup="dialog">Help with SEREMY</button></main>
+<button id="docs" aria-haspopup="dialog">Help with Archdoc</button></main>
 <footer><div id="status" role="status" aria-live="polite">Ready</div><p id="summary"></p></footer>
 <dialog id="connect-dialog" aria-labelledby="connect-title"><button class="close" id="close-connect" aria-label="Close connection">×</button><h2 id="connect-title">Connect repository</h2>
 <form id="form">
@@ -53,7 +53,7 @@ dialog{max-height:90dvh;overflow:auto}
 <ol><li>Connect a local folder, ZIP or HTTPS Git repository.</li><li>Expand folders in Files and open a source file.</li><li>Select a call, then choose Follow target to visit its declaration.</li><li>Use Back to restore your position and selection.</li></ol><p>Scroll to zoom and drag to pan. Repository guide opens the cited guide for this analysis.</p><h3>AI documentation</h3><p>Run the local launcher and connect your MCP agent using the setup guide below. Choose Generate a page, select a file or folder, add an optional question and copy the request into your agent. Returned drafts appear in Documentation. Their citations open the corresponding source on the map.</p><p>Save Markdown downloads a draft. In the local launcher, Save to local path accepts a complete destination filename in an existing folder.</p><p id="hosted-ai-help" hidden>This public app provides repository analysis and its generated guide. AI drafting uses your local launcher and connected agent.</p><p><a href="https://github.com/box129/seremy/blob/main/docs/beta-guide.md" target="_blank" rel="noopener">Setup guide and troubleshooting</a></p><p>Results are drafts. Validation results show the analysis coverage.</p></dialog>
 <script>
 const get=id=>document.getElementById(id);
-const hosted=window.SEREMY_HOSTED===true;
+const hosted=window.ARCHDOC_HOSTED===true||window.SEREMY_HOSTED===true;
 let job=null,publication=null,repositoryName='',pendingRepositoryName='';
 let generationTokens={};
 try{generationTokens=JSON.parse(sessionStorage.getItem('seremy-generation-tokens'))||{};}catch(error){}
@@ -190,7 +190,7 @@ window.addEventListener('message',async event=>{
   const send=result=>{if(publication===report&&get('map').src===frameSource)get('map').contentWindow.postMessage({type:'seremy-hosted-draft-result',...result},'*');};
   try{
     if(!generationTokens[report]||!frameSource.startsWith(location.origin+'/reports/'))throw new Error('Analyze this repository again before generating a draft.');
-    const headers={'Content-Type':'application/json','X-Seremy-Generation':generationTokens[report]};
+    const headers={'Content-Type':'application/json','X-Archdoc-Generation':generationTokens[report]};
     let response=await fetch('/api/documentation/'+report,{method:'POST',headers,body:JSON.stringify(request)});
     let result=await response.json();if(!response.ok)throw new Error(result.error||'Generation unavailable');
     const deadline=Date.now()+120000;
@@ -232,6 +232,7 @@ function appendGuideInline(parent,text){
 }
 function showDocumentation(markdown){
   documentationBlobUrls.forEach(url=>URL.revokeObjectURL(url));documentationBlobUrls=[];
+  markdown=markdown.replace(/^# SEREMY developer guide$/m,'# Archdoc developer guide');
   documentationMarkdown=markdown;
   if(selectedDocument===null&&visibleDrafts.length)selectedDocument=visibleDrafts.length-1;
   const activeDraft=visibleDrafts[selectedDocument];

@@ -89,7 +89,7 @@ async function run(){
     assert.equal(await map.locator('#fixture').textContent(),canonical);
     await page.screenshot({path:path.join(evidence,'drafts.png')});assert.deepEqual(errors,[]);
     checks.push('Revoked sharing blocks draft reads; Save/Restore retains review labels and citations without changing the canonical graph');
-    const result={status:'passed',model_lane:process.argv.includes('--model')?'Codex model with SDK stdio bridge':'authored mechanics fixture',renderer:process.env.SEREMY_RENDERER||'svg',browser:browser.version(),checks,page_errors:errors};
+    const result={status:'passed',model_lane:process.argv.includes('--model')?'Codex model with SDK stdio bridge':'authored mechanics fixture',renderer:(process.env.ARCHDOC_RENDERER||process.env.SEREMY_RENDERER)||'svg',browser:browser.version(),checks,page_errors:errors};
     fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
   }finally{if(browser)await browser.close();server.kill();}
 }

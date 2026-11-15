@@ -11,7 +11,7 @@ The local `read_documentation_section` MCP tool now supplies an additive, versio
 - The same exercise found and fixed a reader ordering bug: only the main guide title is prepended, while later draft titles stay with their text. A fresh page load showed the main guide followed by its draft in the expected order. The final launcher passed Node's syntax check.
 - The in-app browser's download-event wait timed out after clicking the draft Markdown button; no error was logged. Browser download completion is therefore unqualified in this run. The exact Markdown from the SDK receipt is supplied as `draft.md` beside its portable source map. The existing earlier browser qualification retains its own download result.
 
-The chat's `outputs/SEREMY-Documentation-Context` directory holds the context, submission, receipt, portable source map, generated guide, review pack, screenshots and test receipt. A separate independent reviewer has not yet assessed factual support, clarity or usefulness. The implementing assistant's real drafting example is an integration and evidence-readability example, not an independent quality score.
+The chat's `outputs/Archdoc-Documentation-Context` directory holds the context, submission, receipt, portable source map, generated guide, review pack, screenshots and test receipt. A separate independent reviewer has not yet assessed factual support, clarity or usefulness. The implementing assistant's real drafting example is an integration and evidence-readability example, not an independent quality score.
 
 ## Product boundary
 

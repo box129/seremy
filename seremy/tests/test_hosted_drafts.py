@@ -77,6 +77,7 @@ def test_browser_routes_delivery_and_idempotency(service):
                for citation in statement["citations"])
     assert request(web, "/api/documentation/" + job + "/" + data["request_id"], **headers)[0] == 200
     assert request(web, "/api/documentation/" + job, data, **headers)[0] == 202
+    assert request(web, "/api/documentation/" + job, data, HTTP_X_ARCHDOC_GENERATION=token)[0] == 202
     assert provider.calls == 1
     assert request(web, "/api/documentation/" + job, {**data, "question": "different"}, **headers)[0] == 400
 
@@ -179,3 +180,15 @@ def test_purpose_is_validated_and_bound_to_retry_identity(service):
     with pytest.raises(ValueError, match="identity"):
         app.drafts.start(job, {**data, "purpose": "overview"}, token)
     assert provider.calls == 1
+
+
+def test_archdoc_settings_override_legacy_settings(monkeypatch):
+    monkeypatch.setenv("SEREMY_AI_API_KEY", "old-test-key")
+    monkeypatch.setenv("SEREMY_AI_MODEL", "old-model")
+    monkeypatch.setenv("SEREMY_AI_DAILY_REQUEST_LIMIT", "1")
+    monkeypatch.setenv("ARCHDOC_AI_API_KEY", "new-test-key")
+    monkeypatch.setenv("ARCHDOC_AI_MODEL", "new-model")
+    monkeypatch.setenv("ARCHDOC_AI_DAILY_REQUEST_LIMIT", "2")
+    provider = OpenAIProvider()
+    assert provider.enabled and provider.model == "new-model" and provider.daily_limit == 2
+    assert provider.key == "new-test-key"

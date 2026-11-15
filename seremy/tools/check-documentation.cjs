@@ -75,7 +75,7 @@ async function run(){
     checks.push('Downloaded Markdown retains snapshot-bound links that open the standalone map');
     await page.locator('#doc-tab').click();await page.screenshot({path:path.join(evidence,'guide.png')});
     assert.deepEqual(errors,[]);
-    const result={status:'passed',hosted_url:process.argv[3]||null,renderer:process.env.SEREMY_RENDERER||'svg',browser:browser.version(),checks,page_errors:errors};
+    const result={status:'passed',hosted_url:process.argv[3]||null,renderer:(process.env.ARCHDOC_RENDERER||process.env.SEREMY_RENDERER)||'svg',browser:browser.version(),checks,page_errors:errors};
     fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
   }finally{if(browser)await browser.close();server.kill();}
 }

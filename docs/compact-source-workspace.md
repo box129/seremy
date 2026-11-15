@@ -32,9 +32,9 @@ Existing core browser suites, local stdio MCP checks, three-workload viewport/DP
 
 ```powershell
 node seremy/tools/check-compact-source.cjs test-results/compact-source/long-lines
-$env:SEREMY_RENDERER='pixi'
+$env:ARCHDOC_RENDERER='pixi'
 node seremy/tools/qualify-workflow.cjs REDUX_PUBLICATION test-results/qualification test-results/compact-source/workflow
-Remove-Item Env:SEREMY_RENDERER
+Remove-Item Env:ARCHDOC_RENDERER
 node seremy/tools/qualify-product-renderers.cjs REDUX_PUBLICATION test-results/qualification test-results/compact-source/performance
 ```
 
@@ -51,7 +51,7 @@ The final run passed 155 Python tests and 135 local browser case groups. Referen
 | Pydantic | SVG | 3.05 | 77.9 | 28.4 | 54.5 | 18.2 |
 | Pydantic | PIXI | 3.73 | 145.6 | 66.8 | 78.6 | 46.8 |
 
-These are current-view measurements on one laptop; source-card geometry changed from earlier records. They are not a controlled before/after speed claim. Raw samples, screenshots, framebuffer/alignment checks and resource receipts are in the local SEREMY-Compact-Source-Verification deliverable.
+These are current-view measurements on one laptop; source-card geometry changed from earlier records. They are not a controlled before/after speed claim. Raw samples, screenshots, framebuffer/alignment checks and resource receipts are in the local Archdoc-Compact-Source-Verification deliverable.
 
 ## Verified hosted rollout
 

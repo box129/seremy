@@ -1,4 +1,4 @@
-# SEREMY implementation readiness audit
+# Archdoc implementation readiness audit
 
 Current follow-up: [callable bindings and lexical ownership](callable-bindings.md) supersede the earlier blanket arrow/callable limitation for the documented immutable-value and namespace cases. Method-body identities do not establish receiver dispatch. The guide/MCP now expose that scope; independent architectural prose review, framework source semantics and larger project acquisition remain next work.
 

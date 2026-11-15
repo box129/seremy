@@ -2,7 +2,7 @@
 
 Use [README.md](README.md) for the local server, complete pipeline commands and current capability limits. Current verification is recorded in [the review fix record](../docs/review-fixes.md). The milestone profile below records the earlier two-file regression lane.
 
-# SEREMY implementation profile — Milestone 1 slice
+# Archdoc implementation profile — Milestone 1 slice
 
 Decisions recorded per [05-IMPLEMENTATION-HANDOFF.md] ("Exact grammar/binder/library
 versions ... must be captured in the implementation's profile before running
@@ -52,9 +52,9 @@ acceptance cases").
 ## Relationship to archdoc-ai
 
 This package is intentionally separate from `backend/app` (the FYP submission).
-The [ArchDoc-vs-SEREMY comparison](../outputs/ArchDoc-vs-SEREMY/COMPARISON.md)
+The [ArchDoc-vs-Archdoc comparison](../outputs/ArchDoc-vs-Archdoc/COMPARISON.md)
 found ArchDoc's resolver unsuitable as a source of factual edges; the T1–T5
-modules here implement the SEREMY contract from scratch and do not import
+modules here implement the Archdoc contract from scratch and do not import
 archdoc-ai backend code.
 
 ## Version identifiers used in artifacts

@@ -1,4 +1,4 @@
-# SEREMY local implementation
+# Archdoc local implementation
 
 Current script binding behavior is specified in [the callable profile](../docs/callable-bindings.md). It includes immutable callable values, namespace calls and exact lexical body ownership, with explicit file-level fallback and remaining dynamic limits. Earlier Milestone 1 and ECMAScript-only receipts retain their original scope.
 

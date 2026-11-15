@@ -12,7 +12,7 @@ The runner starts three fresh Python processes for each of six source snapshots.
 
 The recovered Stage 5 research established contracts and native-output feasibility. It contains no executed semantic winner. The local experiment uses the existing strongly connected component routine over observed static CALLS between named entities. A qualifying core spans at least two files. Its interpretation remains unassessed. Shared one-way consumers and isolated declarations retain unassignment. The output names describe the call signal.
 
-The candidate is `seremy.reciprocal-call-core/0.1`. It is a new bounded SEREMY proposal. CodeBoarding affinity/kinship/planner and Understand Anything agent workflows retain their historical execution and review gates. This comparison performs local analysis of developer-authored source. It uses the standard library and existing SEREMY implementation, with no additional model provider.
+The candidate is `seremy.reciprocal-call-core/0.1`. It is a new bounded Archdoc proposal. CodeBoarding affinity/kinship/planner and Understand Anything agent workflows retain their historical execution and review gates. This comparison performs local analysis of developer-authored source. It uses the standard library and existing Archdoc implementation, with no additional model provider.
 
 Use it with the existing opt-in API.
 

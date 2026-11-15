@@ -2,7 +2,7 @@
 
 Share a repository snapshot from Inspect in the local launcher. Ask the connected client to draft a guide section. The `draft_documentation_section` prompt supplies the workflow. The client lists sections, retrieves a page of evidence, writes statements and submits them. Drafts appear in Inspect and below the generated guide in Docs. Source buttons focus the exact cited range. Download draft Markdown saves the section with its review labels and relative `map.html` links.
 
-The connected client's model writes the prose. SEREMY's MCP server supplies snapshot-bound evidence and checks the submission. This route uses the client's model connection. The hosted app continues to generate its deterministic guide. Live MCP sharing uses the local launcher.
+The connected client's model writes the prose. Archdoc's MCP server supplies snapshot-bound evidence and checks the submission. This route uses the client's model connection. The hosted app continues to generate its deterministic guide. Live MCP sharing uses the local launcher.
 
 ## Tools
 

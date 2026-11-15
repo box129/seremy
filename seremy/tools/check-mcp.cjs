@@ -105,7 +105,7 @@ async function run(){
     await map.locator('#status').filter({hasText:'source verified'}).waitFor();
     await map.locator('#inspect').click();await map.locator('#arrangement-tools summary').click();await map.locator('#restore-view').click();
     await map.locator('#mcp-tools summary').click();
-    if(process.env.SEREMY_RENDERER==='pixi')await map.locator('body[data-renderer=pixi]').waitFor();
+    if((process.env.ARCHDOC_RENDERER||process.env.SEREMY_RENDERER)==='pixi')await map.locator('body[data-renderer=pixi]').waitFor();
     assert.equal(await map.locator('#agent-notes p').textContent(),text);
     assert.equal(await map.locator('#fixture').textContent(),canonical);
     checks.push('Cited agent annotations focus source, persist in saved views and remain distinct from graph evidence; stopping sharing revokes access');

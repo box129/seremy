@@ -89,7 +89,7 @@ class NoRedirects(HTTPRedirectHandler):
 
 
 def fetch(url, limit, accept):
-    request = Request(url, headers={"User-Agent": "SEREMY", "Accept": accept})
+    request = Request(url, headers={"User-Agent": "Archdoc", "Accept": accept})
     try:
         with build_opener(NoRedirects()).open(request, timeout=20) as response:
             raw = response.read(limit + 1)

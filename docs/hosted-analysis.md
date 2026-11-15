@@ -21,4 +21,4 @@ docker run --rm -p 10000:10000 seremy-hosted
 
 Health checks use GET /healthz. The Docker image includes Python 3.13, Node 22, Git and the pinned TypeScript adapter. The server runs as an unprivileged user. Uploaded source is statically analyzed without running repository scripts or installing repository dependencies.
 
-The local launcher remains available through python -m seremy.server with its local folder, ZIP and HTTPS Git inputs.
+The local launcher remains available through python -m archdoc.server with its local folder, ZIP and HTTPS Git inputs.

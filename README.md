@@ -1,4 +1,4 @@
-# SEREMY
+# Archdoc
 
 Start with the [beta setup and user guide](docs/beta-guide.md) for the public app, local MCP documentation workflow, saving and troubleshooting.
 
@@ -8,7 +8,7 @@ The current [callable binding extension](docs/callable-bindings.md) resolves nam
 
 The [live interaction follow-up](docs/live-audit-fixes.md) adds compiler-resolved file imports/type imports/re-exports, source-text search, a rendered cited guide and improved file/narrow-window framing. Module dependencies are a separate checked graph layer; they are not runtime call edges. Hosted GitHub failures now identify known limits and recovery actions. Larger-repository ingestion and complete architectural explanations remain qualified follow-up work.
 
-SEREMY turns a source repository into a graph of observed declarations and static calls, a spatial source map, and cited Markdown documentation. The local pipeline has eight stages covering discovery, parsing, dependency resolution, framework evidence, structural components, relationship views, validation, and documentation.
+Archdoc turns a source repository into a graph of observed declarations and static calls, a spatial source map, and cited Markdown documentation. The local pipeline has eight stages covering discovery, parsing, dependency resolution, framework evidence, structural components, relationship views, validation, and documentation.
 
 The hosted entry point accepts repository ZIP uploads or public GitHub URLs and provides an interactive map, documentation and downloads. Visitors can save reports on their device and reopen them after server results expire. Its Docker image contains both language runtimes. See [hosted analysis](docs/hosted-analysis.md) for limits, device history, temporary server storage and deployment commands.
 
@@ -18,7 +18,7 @@ Python 3.12 or newer and Node.js 22 are required. The TypeScript compiler is pin
 
 ```powershell
 npm ci --prefix seremy/tools
-python -B -m seremy.server --port 8765
+python -B -m archdoc.server --port 8765
 ```
 
 Open http://127.0.0.1:8765 and select a folder, ZIP archive, or HTTPS Git repository. Try the full path to `seremy/fixtures/local-demo` for the mixed Python/TypeScript example or `seremy/fixtures/redux-slice` for the recorded Redux source. The server binds to the local computer.
@@ -26,8 +26,8 @@ Open http://127.0.0.1:8765 and select a folder, ZIP archive, or HTTPS Git reposi
 The command-line entry point writes an immutable draft and a current-version pointer.
 
 ```powershell
-python -B -m seremy analyze seremy/fixtures/local-demo --output .seremy-artifacts
-python -B -m seremy analyze --zip C:/path/source.zip --output .seremy-artifacts
+python -B -m archdoc analyze seremy/fixtures/local-demo --output .seremy-artifacts
+python -B -m archdoc analyze --zip C:/path/source.zip --output .seremy-artifacts
 ```
 
 The map, graph, documentation, and validation result are stored together under `.seremy-artifacts/versions/`. The map renders actual source in place as you zoom. Its repository tree expands folders and opens files. Select a call in source and choose Follow target to reach its declaration. Back restores selection, camera position, zoom, tree expansion, and tree scroll. The selected source region stays highlighted. File and symbol search, global canvas folder collapse, and a minimap are also available. Distinct relationships and source sites have separate counts. Compact controls keep search in the Find drawer (`/`). Source cards have bounded widths with horizontal reveal for long lines; call/declaration navigation and saved views retain per-file offsets. See [the compact source workspace](docs/compact-source-workspace.md).
@@ -43,7 +43,7 @@ Browser checks use Playwright and Chromium. Install the browser once, generate a
 
 ```powershell
 npx --prefix seremy/tools playwright install chromium
-python -B -m seremy analyze seremy/fixtures/redux-slice --output .seremy-artifacts
+python -B -m archdoc analyze seremy/fixtures/redux-slice --output .seremy-artifacts
 node seremy/tools/check-product-map.cjs PUBLICATION_DIRECTORY test-results/map
 node seremy/tools/check-navigation.cjs PUBLICATION_DIRECTORY test-results/navigation
 node seremy/tools/check-nested-folders.cjs PUBLICATION_DIRECTORY test-results/nested-folders
@@ -53,7 +53,7 @@ node seremy/tools/check-review-map.cjs PUBLICATION_DIRECTORY test-results/review
 node seremy/tools/check-launcher.cjs test-results/launcher
 ```
 
-The repository contains the standalone SEREMY implementation, fixtures, and tests. The original ArchDoc AI web application lives in the earlier local checkout. Third-party Redux fixture source retains its included MIT license.
+The repository contains the standalone Archdoc implementation, fixtures, and tests. The original ArchDoc AI web application lives in the earlier local checkout. Third-party Redux fixture source retains its included MIT license.
 
 Selecting a symbol or connection opens an evidence inspector with caller and target source excerpts. Inspect and Files toggle their panels without changing the camera. See [selection inspector](docs/selection-inspector.md).
 
@@ -79,8 +79,13 @@ The map now exposes the active profile, parse limits, exclusions and resolution 
 
 Files now has per-file and subtree visibility checkboxes, a visible/total count and Restore all. Hidden sources remain searchable and evidence stays intact; navigation reveals targets, while Back and saved views restore visibility. See [file visibility and working sets](docs/file-visibility.md).
 
-The [documentation evaluation](docs/documentation-evaluation.md) runs a separately specified Python/TSX corpus and prepares source-linked human review records. Run `python -B -m seremy.evaluate_documentation --output test-results/documentation-evaluation` from the repository root.
+The [documentation evaluation](docs/documentation-evaluation.md) runs a separately specified Python/TSX corpus and prepares source-linked human review records. Run `python -B -m archdoc.evaluate_documentation --output test-results/documentation-evaluation` from the repository root.
 
 The opt-in [Stage 5 membership interface](docs/membership-views.md) accepts snapshot-bound authored or candidate views through `--membership-plan`, with explicit evidence, hierarchy, roles, disputes and unassigned endpoints. Semantic quality assessment remains open.
 
 The [experimental membership comparison](docs/membership-comparison.md) runs a dependency-only candidate in three fresh processes per fixture snapshot, with coverage, ambiguity, lineage and failure companions. Its findings support retaining experimental status.
+
+
+## Naming and existing installations
+
+The system is named **Archdoc**. New local commands use `python -m archdoc`. The `archdoc` namespace delegates to the established implementation package, so existing Python imports and automation continue to work. Configure `ARCHDOC_AI_API_KEY`, `ARCHDOC_AI_MODEL`, `ARCHDOC_AI_DAILY_REQUEST_LIMIT` and `ARCHDOC_DATA` for new deployments. The earlier environment names remain accepted as fallbacks. Existing graph profiles, citation links, saved report storage and MCP wire identities retain their compatibility identifiers. The current hosted address and GitHub repository address still resolve through their existing names.

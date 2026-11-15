@@ -7,12 +7,12 @@ exports.openFinder=async scope=>{
 
 exports.pathToFileURL=file=>{
   const url=pathToFileURL(file);
-  if(process.env.SEREMY_RENDERER)url.searchParams.set('renderer',process.env.SEREMY_RENDERER);
+  if((process.env.ARCHDOC_RENDERER||process.env.SEREMY_RENDERER))url.searchParams.set('renderer',(process.env.ARCHDOC_RENDERER||process.env.SEREMY_RENDERER));
   return url;
 };
 
 exports.requireRenderer=async page=>{
-  if(process.env.SEREMY_RENDERER!=='pixi')return;
+  if((process.env.ARCHDOC_RENDERER||process.env.SEREMY_RENDERER)!=='pixi')return;
   const info=await page.locator('body').evaluate(()=>window.__seremyRendererInfo());
   assert.equal(info.engine,'pixi',await page.locator('#renderer-status').textContent());
   assert.ok(info.objects>0&&info.text_objects>0);
@@ -20,7 +20,7 @@ exports.requireRenderer=async page=>{
 };
 
 exports.selectRenderer=async scope=>{
-  if(process.env.SEREMY_RENDERER!=='pixi')return;
+  if((process.env.ARCHDOC_RENDERER||process.env.SEREMY_RENDERER)!=='pixi')return;
   await scope.locator('#inspect').click();await scope.locator('#arrangement-tools summary').click();
   await scope.locator('#renderer').selectOption('pixi');await scope.locator('body[data-renderer=pixi]').waitFor();
   await exports.requireRenderer(scope);

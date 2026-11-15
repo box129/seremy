@@ -1,4 +1,4 @@
-"""SEREMY shared contract records for the Milestone 1 slice.
+"""Archdoc shared contract records for the Milestone 1 slice.
 
 Implements the record-level requirements of shared contract v1
 (02-SHARED-CONTRACT.md) as tightened by the v1.1 cross-stage addendum,

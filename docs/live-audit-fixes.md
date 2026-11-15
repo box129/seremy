@@ -32,7 +32,7 @@ The analyzer opts into module extraction; the low-level legacy adapter remains a
 - `randomString`: four text matches; clicking the declaration reaches line 8.
 - At 680 × 587 the document root had `scrollWidth === innerWidth === 680`.
 
-These counts describe the fixture used in this run, not a same-commit accuracy comparison with CodeCanvas's live Redux import. Earlier qualification receipts retain their original scope. Screenshots and the release verification receipt are saved in the chat's `outputs/SEREMY-Live-Audit-Fixes` folder.
+These counts describe the fixture used in this run, not a same-commit accuracy comparison with CodeCanvas's live Redux import. Earlier qualification receipts retain their original scope. Screenshots and the release verification receipt are saved in the chat's `outputs/Archdoc-Live-Audit-Fixes` folder.
 
 ## Next work
 

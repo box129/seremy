@@ -10,8 +10,9 @@ RUN npm ci --prefix seremy/tools --omit=dev --ignore-scripts && npm cache clean 
 COPY requirements-hosted.txt ./
 RUN pip install --no-cache-dir -r requirements-hosted.txt
 COPY seremy ./seremy
-RUN python -B -m seremy.example_report
+COPY archdoc ./archdoc
+RUN python -B -m archdoc.example_report
 RUN useradd --create-home seremy && chown -R seremy:seremy /app
 USER seremy
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
-CMD ["sh", "-c", "exec gunicorn 'seremy.hosted:create_app()' --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 4 --timeout 240 --access-logfile -"]
+CMD ["sh", "-c", "exec gunicorn 'archdoc.hosted:create_app()' --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 4 --timeout 240 --access-logfile -"]

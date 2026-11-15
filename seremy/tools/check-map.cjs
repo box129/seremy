@@ -1,4 +1,4 @@
-// MAP-A3-style acceptance checks on the REAL SEREMY bundle slice.
+// MAP-A3-style acceptance checks on the REAL Archdoc bundle slice.
 // Run: node check-map.cjs <seremy map dir>
 // Verifies: no page errors, real source binding, the real isAction →
 // isPlainObject edge followed to its declaration with Back restoring the
@@ -107,7 +107,7 @@ async function check() {
       JSON.stringify(
         {
           status: 'passed',
-          scope: 'Real SEREMY graph bundle slice (2 files, 1 statically bound edge)',
+          scope: 'Real Archdoc graph bundle slice (2 files, 1 statically bound edge)',
           browser: browser.version(),
           viewport: [1400, 900],
           bundle: fixture.bundle,

@@ -20,9 +20,9 @@ Reproduce from the repository root:
 
 ```powershell
 node seremy/tools/check-scene-resources.cjs PUBLICATION_DIRECTORY test-results/scene-resources
-$env:SEREMY_RENDERER='pixi'
+$env:ARCHDOC_RENDERER='pixi'
 node seremy/tools/qualify-workflow.cjs REDUX_PUBLICATION test-results/qualification test-results/pixi-workflow
-Remove-Item Env:SEREMY_RENDERER
+Remove-Item Env:ARCHDOC_RENDERER
 node seremy/tools/qualify-product-renderers.cjs REDUX_PUBLICATION test-results/qualification test-results/product-comparison
 ```
 
@@ -41,7 +41,7 @@ SVG stays the default. Current timing results against the earlier integration ba
 | Pydantic | SVG | 2.93 | 57.7 → 53.1 | 66.4 → 21.3 | 57.5 → 26.3 | 14.8 |
 | Pydantic | PIXI | 3.53 | 355.1 → 176.2 | 68.3 → 52.1 | 92.3 → 58.9 | 28.5 |
 
-The gains on the larger inputs do not establish that Pixi beats SVG. Redux SVG overview tails varied: 23.2 ms in the primary run and 12.6 ms in a bounded repeat versus the earlier 10.1 ms; source tails also varied. Both runs are retained. This is not an across-the-board speed improvement. Next product work is compact control rails and source framing with horizontal reveal, while GPU default promotion remains subject to broader performance/browser qualification. Raw measurements, the repeat, actual GL allocation receipts and screenshots are in the local SEREMY-Scene-Performance-Verification deliverable.
+The gains on the larger inputs do not establish that Pixi beats SVG. Redux SVG overview tails varied: 23.2 ms in the primary run and 12.6 ms in a bounded repeat versus the earlier 10.1 ms; source tails also varied. Both runs are retained. This is not an across-the-board speed improvement. Next product work is compact control rails and source framing with horizontal reveal, while GPU default promotion remains subject to broader performance/browser qualification. Raw measurements, the repeat, actual GL allocation receipts and screenshots are in the local Archdoc-Scene-Performance-Verification deliverable.
 
 ## Verified hosted rollout
 

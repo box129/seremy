@@ -209,7 +209,7 @@ def render_markdown(ir: dict) -> str:
     meta = ir["binds"]
     label = ir["label"]
     lines: List[str] = []
-    lines.append("# SEREMY developer guide")
+    lines.append("# Archdoc developer guide")
     lines.append("")
     lines.append(
         f"> **{label['state'].replace('_', ' ').capitalize()}.** Slice scope: "

@@ -100,7 +100,7 @@ def input_root(args):
 
 
 def main(argv=None):
-    parser=argparse.ArgumentParser(prog="seremy")
+    parser=argparse.ArgumentParser(prog="archdoc")
     commands=parser.add_subparsers(dest="command",required=True)
     scan=commands.add_parser("analyze")
     scan.add_argument("root",nargs="?")

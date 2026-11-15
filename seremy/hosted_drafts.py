@@ -29,10 +29,10 @@ class NoRedirect(HTTPRedirectHandler):
 
 class OpenAIProvider:
     def __init__(self):
-        self.key = os.environ.get("SEREMY_AI_API_KEY", "")
-        self.model = os.environ.get("SEREMY_AI_MODEL", "")
+        self.key = os.environ.get("ARCHDOC_AI_API_KEY", os.environ.get("SEREMY_AI_API_KEY", ""))
+        self.model = os.environ.get("ARCHDOC_AI_MODEL", os.environ.get("SEREMY_AI_MODEL", ""))
         try:
-            self.daily_limit = int(os.environ.get("SEREMY_AI_DAILY_REQUEST_LIMIT", "0"))
+            self.daily_limit = int(os.environ.get("ARCHDOC_AI_DAILY_REQUEST_LIMIT", os.environ.get("SEREMY_AI_DAILY_REQUEST_LIMIT", "0")))
         except ValueError:
             self.daily_limit = 0
         self.max_output_tokens = 2048

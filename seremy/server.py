@@ -182,7 +182,7 @@ def main():
     args=parser.parse_args()
     app=Application(args.output)
     server=ThreadingHTTPServer(("127.0.0.1",args.port),handler_for(app))
-    print(f"SEREMY · http://127.0.0.1:{server.server_port}",flush=True)
+    print(f"Archdoc · http://127.0.0.1:{server.server_port}",flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

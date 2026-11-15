@@ -37,7 +37,7 @@ async function run(){
     checks.push('Call navigation, Back and saved-view restoration preserve source evidence and membership lineage');
     await page.locator('#show-coverage').click();await page.screenshot({path:path.join(evidence,'membership.png')});
     assert.deepEqual(errors,[]);
-    const result={status:'passed',browser:browser.version(),renderer:process.env.SEREMY_RENDERER||'svg',graph_digest:data.bundle.content_digest,
+    const result={status:'passed',browser:browser.version(),renderer:(process.env.ARCHDOC_RENDERER||process.env.SEREMY_RENDERER)||'svg',graph_digest:data.bundle.content_digest,
       membership_version:membership.views[0].version,checks,page_errors:errors};
     fs.writeFileSync(path.join(evidence,'checks.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
   }finally{await browser.close();}

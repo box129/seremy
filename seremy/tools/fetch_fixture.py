@@ -1,6 +1,6 @@
 """Fetch the pinned Redux fixture slice from GitHub and record its identity.
 
-Materializes the exact bytes of the recorded revision used by the SEREMY
+Materializes the exact bytes of the recorded revision used by the Archdoc
 spatial-map research (tree SHA 61ebf8596654cf3c4b197e426e302fcb3c2bc13e).
 
 Writes:

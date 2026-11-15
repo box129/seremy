@@ -147,7 +147,7 @@ def worker(case_id, repeat, output):
         sensitivity = (alternative_sensitivity(list(files), alternatives, normalized, ambiguous=case["ambiguous"])
                        if alternatives else {"status": "not_applicable", "reason": "no_alternative_partitions"})
         result = {"profile": PROFILE, "case_id": case_id, "repeat": repeat, "producer": PRODUCER,
-                  "runtime": {"python": sys.version, "platform": platform.platform(), "dependencies": "standard library and existing SEREMY pipeline"},
+                  "runtime": {"python": sys.version, "platform": platform.platform(), "dependencies": "standard library and existing Archdoc pipeline"},
                   "lane": "source_to_output_developer_fixture", "status": "completed" if normalized["status"] == "completed" and scored["valid_partition"] else "failed",
                   "failure_reason": scored["reason"],
                   "scope": {"source": sorted(files), "support": [], "all": sorted(files), "ambiguous": case.get("ambiguous", [])},

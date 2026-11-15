@@ -33,7 +33,7 @@ Developer guide v0.4 adds a named-callable section with source citations, observ
 - Ownership cases verify returned functions and method bodies, anonymous-body file fallback, portable map metadata, guide disclosure and actual MCP context.
 - Final full Python suite: **281 passed** in 219.01 seconds.
 - On the same Redux fixture, the legacy profile has 25 relationships / 30 bound sites; this profile has 29 / 34. All 30 previously bound sites retain the same targets, four additional sites resolve, and creator/body ownership is corrected. New regions are `randomString`, `combination`, `unsubscribe` and the observable's `subscribe` method. Module dependencies remain 38 distinct / 39 sites.
-- Local browser checks exercise alias and namespace target navigation, the named-callable guide and explicit owner qualification. Release receipts and screenshots are stored in the chat's `outputs/SEREMY-Callable-Bindings` folder.
+- Local browser checks exercise alias and namespace target navigation, the named-callable guide and explicit owner qualification. Release receipts and screenshots are stored in the chat's `outputs/Archdoc-Callable-Bindings` folder.
 
 The Redux count comparison is a same-input profile comparison, not a general accuracy score or a controlled CodeCanvas benchmark. Earlier verification receipts retain their recorded profiles and counts.
 

@@ -1,12 +1,12 @@
 # Documentation comparison and follow-up
 
-On 15 November 2026 I interacted with SEREMY and DeepWiki using Redux. DeepWiki is the closest comparison for repository-generated developer documentation. This inspection does not establish a universal best documentation product.
+On 15 November 2026 I interacted with Archdoc and DeepWiki using Redux. DeepWiki is the closest comparison for repository-generated developer documentation. This inspection does not establish a universal best documentation product.
 
-I opened DeepWiki's Redux overview and Store API page, then submitted the same question used in SEREMY's live test about the checks in `isAction`. DeepWiki returned a structured answer with source and test excerpts, examples, related API context and related pages. Its persistent wiki also provides a hierarchy of conceptual and API pages. [Redux overview](https://deepwiki.com/reduxjs/redux), [Store API](https://deepwiki.com/reduxjs/redux/2.1-store-api), [matching question](https://deepwiki.com/search/0126a029-3eb3-413d-9fc7-9ecfd041ce47?mode=fast)
+I opened DeepWiki's Redux overview and Store API page, then submitted the same question used in Archdoc's live test about the checks in `isAction`. DeepWiki returned a structured answer with source and test excerpts, examples, related API context and related pages. Its persistent wiki also provides a hierarchy of conceptual and API pages. [Redux overview](https://deepwiki.com/reduxjs/redux), [Store API](https://deepwiki.com/reduxjs/redux/2.1-store-api), [matching question](https://deepwiki.com/search/0126a029-3eb3-413d-9fc7-9ecfd041ce47?mode=fast)
 
 ## Findings
 
-| Area | SEREMY before this follow-up | DeepWiki observed behavior | Follow-up |
+| Area | Archdoc before this follow-up | DeepWiki observed behavior | Follow-up |
 | --- | --- | --- | --- |
 | Analysis feedback | Status text without a percent bar | An already indexed repository was inspected | Add progress bars driven by worker milestones in the dialog and workspace |
 | First visible generated result | Short answer appended below the structural guide | Standalone wiki pages and a separate question response | Open the selected generated document directly, with a document picker |
@@ -15,7 +15,7 @@ I opened DeepWiki's Redux overview and Store API page, then submitted the same q
 | Repository-wide coverage | Structural guide plus separately requested drafts | Hierarchical conceptual and API pages | Further work is required for a planned multi-page wiki and cross-page links |
 | Diagrams | Source map is separate from documentation | Conceptual and lifecycle diagrams on wiki pages | Further work is required for evidence-backed diagrams within documents |
 
-The scopes differ. DeepWiki's indexed Redux version was `28d433b7` from 23 June 2026 and its pages use README, docs and tests. SEREMY's live example analyzed the newer `src` subtree. This is a feature and user-experience comparison, with different source scope and versions. It is not a matched extraction-accuracy benchmark.
+The scopes differ. DeepWiki's indexed Redux version was `28d433b7` from 23 June 2026 and its pages use README, docs and tests. Archdoc's live example analyzed the newer `src` subtree. This is a feature and user-experience comparison, with different source scope and versions. It is not a matched extraction-accuracy benchmark.
 
 ## Implemented changes
 

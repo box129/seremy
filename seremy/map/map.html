@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEREMY · Redux slice source map (real bundle)</title>
+<title>Archdoc · Redux slice source map (real bundle)</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#101619;color:#e6eeea;font:14px system-ui,sans-serif}header,footer,nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap}header{padding:14px 20px;border-bottom:1px solid #344244}header b{letter-spacing:.1em}header small{color:#a8bdb4}nav{margin-left:auto;gap:6px}button,select{font:inherit;color:inherit;background:#223032;border:1px solid #415454;border-radius:5px;padding:6px 10px}button:enabled,select{cursor:pointer}button:disabled{opacity:.4}main{position:relative}#map{width:100%;height:clamp(260px,74vh,1000px);display:block;touch-action:none;background-color:#101819;background-image:radial-gradient(#32403c 1px,transparent 1px);background-size:24px 24px}svg text{user-select:none}#mini{position:absolute;bottom:12px;right:12px;width:125px;height:85px;background:#142020;border:1px solid #485d55;border-radius:4px}.frame{fill:#182322;stroke:#698478;stroke-width:2}.card{fill:#14201f;stroke:#71958a}.title{fill:#deeee8;font:600 18px system-ui}.code{font:14px "Consolas",monospace;fill:#c5d5cf}.num{fill:#82978e}.kw{fill:#e5adcc}.str{fill:#dbcb90}.comment{fill:#99aea3}.wire{fill:none;stroke:#8cbfb7;stroke-width:2.4}.calls{stroke:#edba74}.wire.active{stroke:#fff0aa;stroke-width:4}.hit{stroke:transparent;stroke-width:13;fill:none;cursor:pointer}.token{fill:#66c9af33;stroke:#6fc5b099;cursor:pointer}.token:hover,.token.active{fill:#ffe69d55;stroke:#ffe69d}#bind-state{font-weight:600}#bind-state.stale{color:#ff9d8a}footer{padding:12px 20px;border-top:1px solid #344244}#detail{min-width:200px;flex:1}#detail small{display:block;color:#a4b9ad;margin-top:3px}#hint{margin:0;padding:0 20px 12px;color:#9bb2a6;font-size:12px}@media(max-width:650px){nav{margin-left:0}#map{height:58vh}}
 </style>
-<header><div><b>SEREMY</b> / Redux slice · real graph bundle<br><small id="bind-state">verifying binding…</small></div>
+<header><div><b>Archdoc</b> / Redux slice · real graph bundle<br><small id="bind-state">verifying binding…</small></div>
 <nav aria-label="Map controls"><button id="back" disabled>Back</button><button id="fit">Fit map</button><button id="minus" aria-label="Zoom out">−</button><button id="plus" aria-label="Zoom in">+</button><button id="fold">Collapse utils</button></nav></header>
 <main><svg id="map" aria-label="Spatial source map" tabindex="0"><g id="world"></g></svg><svg id="mini" aria-label="Map overview"></svg></main>
 <footer><div id="detail" aria-live="polite"></div><select id="relations" aria-label="Inspect relationship"></select><button id="origin">Show source</button><button id="target">Follow target</button></footer>
@@ -110,7 +110,7 @@ function highlight(t,line){
 function draw(){
   world.replaceChildren();mini.replaceChildren();mini.setAttribute('viewBox','0 0 2500 1240');
   world.setAttribute('transform','translate('+camera.x+' '+camera.y+') scale('+camera.k+')');
-  add(world,'text',{x:40,y:45,class:'title'},'redux / src (SEREMY slice)');
+  add(world,'text',{x:40,y:45,class:'title'},'redux / src (Archdoc slice)');
   add(world,'rect',{x:utils.x,y:utils.y,width:collapsed?260:utils.w,height:collapsed?72:utils.h,rx:12,class:'frame'});
   const folder=add(world,'text',{x:utils.x+12,y:utils.y+26,class:'title'},collapsed?'utils  ·  2 files':'utils');
   folder.onclick=()=>find('fold').click();

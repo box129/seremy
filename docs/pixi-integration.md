@@ -12,21 +12,21 @@ History capture and Save view now use the tree's scroll-event cache, avoiding a 
 
 ## Verification and reproduction
 
-The Python regression suite passed all 155 tests. The same ten browser suites run in default SVG and with `SEREMY_RENDERER=pixi`. GPU-mode suites assert the actual Pixi engine, nonempty Graphics/Text objects and no GL error, covering 49 recorded case groups per renderer. The MCP suite uses a real stdio SDK client and two browser views. WebGL-specific checks read real nontransparent framebuffer pixels, switch renderers, restore saved renderer/camera state, deliberately lose a context and disable WebGL in a separate browser. The unchanged graph and source hashes remain the evidence authority.
+The Python regression suite passed all 155 tests. The same ten browser suites run in default SVG and with `ARCHDOC_RENDERER=pixi`. GPU-mode suites assert the actual Pixi engine, nonempty Graphics/Text objects and no GL error, covering 49 recorded case groups per renderer. The MCP suite uses a real stdio SDK client and two browser views. WebGL-specific checks read real nontransparent framebuffer pixels, switch renderers, restore saved renderer/camera state, deliberately lose a context and disable WebGL in a separate browser. The unchanged graph and source hashes remain the evidence authority.
 
 ```powershell
 node seremy/tools/check-pixi-surface.cjs PUBLICATION_DIRECTORY test-results/pixi-surface
-$env:SEREMY_RENDERER='pixi'
+$env:ARCHDOC_RENDERER='pixi'
 node seremy/tools/check-navigation.cjs PUBLICATION_DIRECTORY test-results/pixi-navigation
 node seremy/tools/check-arrangement.cjs PUBLICATION_DIRECTORY test-results/pixi-arrangement
 node seremy/tools/check-launcher.cjs test-results/pixi-launcher
 node seremy/tools/check-mcp.cjs test-results/pixi-mcp
 node seremy/tools/qualify-workflow.cjs REDUX_PUBLICATION test-results/qualification test-results/pixi-workflow
-Remove-Item Env:SEREMY_RENDERER
+Remove-Item Env:ARCHDOC_RENDERER
 node seremy/tools/qualify-product-renderers.cjs REDUX_PUBLICATION test-results/qualification test-results/product-comparison
 ```
 
-The complete-product comparison uses three trials with 20 samples per mode on Redux, the fixed 100-file / 50,000-line / 5,000-site fixture and 106-file Pydantic 2.14.3. Both modes use identical geometry and cameras. It records startup, wheel handlers, selection dispatch, native dropdown assignment, frame scheduling proxies, DOM count, JavaScript heap and CPU profiles. First-trial synthetic selections include profiler overhead. These measurements describe this laptop and Chromium; they exclude GPU texture memory and do not measure compositor FPS. See the local `SEREMY-Pixi-Integration-Verification` deliverable for receipts, screenshots and raw results.
+The complete-product comparison uses three trials with 20 samples per mode on Redux, the fixed 100-file / 50,000-line / 5,000-site fixture and 106-file Pydantic 2.14.3. Both modes use identical geometry and cameras. It records startup, wheel handlers, selection dispatch, native dropdown assignment, frame scheduling proxies, DOM count, JavaScript heap and CPU profiles. First-trial synthetic selections include profiler overhead. These measurements describe this laptop and Chromium; they exclude GPU texture memory and do not measure compositor FPS. See the local `Archdoc-Pixi-Integration-Verification` deliverable for receipts, screenshots and raw results.
 
 ## Earlier integration baseline
 
