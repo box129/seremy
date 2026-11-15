@@ -120,15 +120,34 @@ def submit_draft(context, statements, generation):
 
 
 def render_draft(draft):
-    lines = [f"# Documentation draft — {draft['title']}", "", f"Status {draft['status']}. Human review pending.",
-             "", "Generation metadata is client reported. " + str(draft["generation"]), "",
-             "Evidence coverage " + str(draft["coverage"]), ""]
+    lines = [f"# Documentation draft — {draft['title']}", "",
+             "Human review pending. Check the explanation against its source citations before using it.", ""]
     if "requested_scope" in draft:
-        lines.extend(["Requested scope " + str(draft["requested_scope"]), "", "Question " + draft["question"], ""])
+        scope = draft["requested_scope"]
+        lines.extend([f"{scope['kind'].title()} \u0060{scope['value']}\u0060", ""])
+        if draft["question"]:
+            lines.extend(["Question — " + draft["question"], ""])
     for statement in draft["statements"]:
-        lines.extend([f"## {statement['statement_id']} · {statement['status']}", "", statement["text"], "",
-                      "Check outcome " + statement["reason"], ""])
+        if statement["kind"] == "hypothesis":
+            lines.extend(["Inferred explanation. Confirm this interpretation against the source.", ""])
+        if statement["status"] == "rejected":
+            lines.extend(["Rejected source projection.", ""])
+        lines.extend([statement["text"], ""])
         for citation in statement["citations"]:
             ref = {"file_id": citation["file"], "span": [citation["start"], citation["end"]], "blob_sha256": citation["sha256"]}
             lines.extend([f"[{citation['file']} line {citation['line']}]({source_link(ref, draft['binds'])})", ""])
+    coverage = draft["coverage"]
+    generation = draft["generation"]
+    lines.extend(["## Evidence and generation", "",
+                  f"Used {coverage['referenced_claim_count']} of {coverage['section_claim_count']} available claims. "
+                  f"Retrieved {coverage['retrieved_claim_count']} claims for this request.", ""])
+    if coverage.get("next_offset") is not None:
+        lines.extend(["This explanation covers part of the selected scope. Choose a smaller scope for more detail.", ""])
+    if coverage.get("partial_source_body_count") or coverage.get("omitted_source_body_count"):
+        lines.extend([f"Source context includes {coverage.get('partial_source_body_count', 0)} partial bodies "
+                      f"and omits {coverage.get('omitted_source_body_count', 0)} bodies.", ""])
+    basis = "Recorded by the service" if generation.get("basis") == "server_observed" else "Reported by the connected agent"
+    lines.extend([basis + ". Provider " + str(generation.get("provider") or "unavailable") +
+                  ". Model " + str(generation.get("model") or "unavailable") + ".", "",
+                  "Human review and semantic verification are pending.", ""])
     return "\n".join(lines)

@@ -66,6 +66,9 @@
     await verify(report.files);
     release();active=report;publication=report.id;repositoryName=report.name;
     get('map').src=fileUrl(report.files['map.html'],'text/html');
+    get('map').addEventListener('load',()=>{
+      visibleDrafts=Array.isArray(report.drafts)?report.drafts.filter(draft=>typeof draft.markdown==='string'&&draft.markdown.length<=262144).slice(0,16):[];
+    },{once:true});
     get('download-map').href=get('map').src;get('download-map').hidden=false;
     get('download').href=fileUrl(report.files['graph.json'],'application/json');
     get('download-doc').href=fileUrl(report.files['architecture.md'],'text/markdown');
@@ -75,6 +78,7 @@
     get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');
     get('summary').textContent='Saved on this device · '+new Date(report.saved).toLocaleString();
     status('Saved report opened');save.disabled=true;dialog.close();
+    window.dispatchEvent(new Event('seremy-restored-report'));
   }
   async function showHistory(){
     list.replaceChildren();
@@ -107,7 +111,8 @@
         files[filename]=await response.text();
       }
       await verify(files);
-      const report={id,name,saved:Date.now(),files};
+      if(publication!==id)throw new Error('The active report changed. Save the current report again.');
+      const report={id,name,saved:Date.now(),files,drafts:visibleDrafts};
       await persistReport(report);
       status('Saved on this device');
     }catch(error){status(error.message||'Device history could not be saved. Download the files instead.');}

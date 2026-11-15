@@ -6,6 +6,8 @@ Open [SEREMY](https://seremy-analysis.onrender.com/), choose a repository ZIP or
 
 Use Files or Find to open source. Select a call and follow its target, then use Back to return. Open Documentation to read the cited guide. Download the map, graph and Markdown to keep them. **Save on this device** stores the report in this browser. Server results expire after one hour and can disappear earlier when the free service restarts.
 
+Choose **Generate documentation** for an explanation of a file, folder or map selection. Online AI drafts become available after the owner completes the [model connection setup](hosted-documentation.md). The form identifies the source excerpts sent to the provider. Returned explanations include citations and require review. Save the report after generation to keep its displayed drafts on this device.
+
 ## Start the local launcher for AI documentation
 
 Install Python 3.12 or later, Node.js 22 and Git. Clone this repository, then run these commands from its root in PowerShell.
@@ -48,7 +50,7 @@ Keep sharing enabled while using local server saves. **Stop sharing selection** 
 
 | What you see | What to do |
 |---|---|
-| AI drafting asks for the local launcher on the public site | Start the local launcher, configure the MCP client and analyze the source there. Use the setup steps above. |
+| Online drafting awaits the owner's model connection | The owner can enable browser drafting through the [hosted setup](hosted-documentation.md). The local MCP workflow above is also available. |
 | No view, expired view or stale snapshot | Return to the map and create a fresh documentation request. Paste its exact view ID and digest into the intended agent. |
 | Agent cannot connect | Check the Python executable, install `requirements-mcp.txt` in that environment, and match the launcher's running port. |
 | Returned draft is still queued | Return to Documentation to refresh delivery. Check the map's sharing status if it remains unavailable. |

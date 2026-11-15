@@ -45,6 +45,8 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 const get=id=>document.getElementById(id);
 const hosted=window.SEREMY_HOSTED===true;
 let job=null,publication=null,repositoryName='',pendingRepositoryName='';
+let generationTokens={};
+try{generationTokens=JSON.parse(sessionStorage.getItem('seremy-generation-tokens'))||{};}catch(error){}
 function status(message){get('status').textContent=get('connection-status').textContent=message;}
 const savePathDialog=document.createElement('dialog');
 savePathDialog.setAttribute('aria-label','Save documentation to a local path');
@@ -125,6 +127,10 @@ get('form').onsubmit=async event=>{
     const sourceFolder=hosted&&kind==='git'?get('source-folder').value.trim():'';
     if(sourceFolder)pendingRepositoryName+=' / '+sourceFolder;
     const result=await post('/api/jobs',{kind,value,revision:get('revision').value||null,source_folder:sourceFolder||null});
+    if(hosted&&result.generation_token){
+      generationTokens[result.id]=result.generation_token;
+      try{sessionStorage.setItem('seremy-generation-tokens',JSON.stringify(generationTokens));}catch(error){}
+    }
     job=result.id;
     if(hosted)try{sessionStorage.setItem('seremy-job',JSON.stringify({job,repositoryName:pendingRepositoryName}));}catch(error){}
     get('cancel').hidden=false;poll();
@@ -137,6 +143,44 @@ get('map-tab').onclick=()=>{get('map').hidden=false;get('doc').hidden=true;get('
 get('generate-documentation').onclick=()=>{get('map-tab').click();get('map').contentWindow.postMessage({type:'seremy-generate-documentation'},'*');};
 let documentationMarkdown='',visibleDrafts=[],documentationBlobUrls=[];
 get('map').addEventListener('load',()=>{visibleDrafts=[];});
+async function configureHostedDocumentation(){
+  if(!hosted)return;
+  const frame=get('map'),requested=frame.contentWindow,source=frame.src;
+  let config;
+  try{
+    const response=await fetch('/api/documentation/config');if(!response.ok)throw new Error();
+    config=await response.json();
+    config.available=config.enabled&&!!generationTokens[publication]&&source.startsWith(location.origin+'/reports/');
+    if(!config.enabled)config.notice='Online AI drafting is awaiting the service owner’s model connection. Your guide and downloads are available.';
+    else if(!config.available)config.notice='Analyze this repository again in this browser to generate a new draft. Saved documentation remains available.';
+  }catch(error){config={available:false,notice:'Online generation is temporarily unavailable. Your guide and downloads are available.'};}
+  if(frame.src===source)requested.postMessage({type:'seremy-hosted-documentation',config},'*');
+}
+get('map').addEventListener('load',configureHostedDocumentation);
+window.addEventListener('seremy-restored-report',configureHostedDocumentation);
+window.addEventListener('message',async event=>{
+  if(!hosted||event.source!==get('map').contentWindow)return;
+  if(event.data?.type==='seremy-hosted-draft-ready'){get('doc-tab').click();status('Documentation draft ready for review');return;}
+  if(event.data?.type!=='seremy-hosted-draft-request')return;
+  const report=publication,frameSource=get('map').src,request=event.data.request;
+  const send=result=>{if(publication===report&&get('map').src===frameSource)get('map').contentWindow.postMessage({type:'seremy-hosted-draft-result',...result},'*');};
+  try{
+    if(!generationTokens[report]||!frameSource.startsWith(location.origin+'/reports/'))throw new Error('Analyze this repository again before generating a draft.');
+    const headers={'Content-Type':'application/json','X-Seremy-Generation':generationTokens[report]};
+    let response=await fetch('/api/documentation/'+report,{method:'POST',headers,body:JSON.stringify(request)});
+    let result=await response.json();if(!response.ok)throw new Error(result.error||'Generation unavailable');
+    const deadline=Date.now()+120000;
+    while(['queued','running'].includes(result.status)){
+      if(Date.now()>deadline)throw new Error('Generation is taking longer than expected. Choose Generate draft again to check this request.');
+      await new Promise(resolve=>setTimeout(resolve,1000));
+      if(publication!==report||get('map').src!==frameSource)return;
+      response=await fetch('/api/documentation/'+report+'/'+request.request_id,{headers});
+      result=await response.json();if(!response.ok)throw new Error(result.error||'Draft unavailable');
+    }
+    if(result.status!=='completed'){send({error:result.error||'Generation failed. Try generating again.',retry_new:true});return;}
+    send({draft:result.draft});
+  }catch(error){send({error:error.message});}
+});
 window.addEventListener('message',event=>{
   if(event.source!==get('map').contentWindow||event.data?.type!=='seremy-documentation-drafts')return;
   const drafts=event.data.drafts;
@@ -218,6 +262,8 @@ get('doc-tab').onclick=async()=>{
 };
 if(hosted){
   get('hosted-ai-help').hidden=false;
+  get('hosted-ai-help').textContent='Choose Generate documentation, select a scope and enter an optional question. Online drafting becomes available when the service owner connects a model. Returned drafts include source citations and a Markdown download.';
+  get('help-dialog').querySelector('h3').nextElementSibling.textContent='Generate documentation creates an explanation for a file, folder or map selection. The form identifies the model provider and the source excerpts sent for generation. Follow citations and review the explanation before using it.';
   get('kind').querySelector('[value=folder]').remove();
   get('kind').querySelector('[value=git]').textContent='Public GitHub repository';
   get('kind').value='zip';get('kind').onchange();

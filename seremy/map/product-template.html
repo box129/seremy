@@ -773,7 +773,7 @@ function renderAgentNotes(){
     const article=document.createElement('article');article.className='documentation-draft';
     const title=document.createElement('strong');title.textContent='Documentation draft · '+draft.status.replaceAll('_',' ');article.append(title);
     const section=document.createElement('p');section.textContent=draft.title+' · Human review pending';article.append(section);
-    const provenance=document.createElement('p');provenance.textContent='Client-reported model '+(draft.generation?.model||'unavailable')+' · '+draft.coverage?.referenced_claim_count+' of '+draft.coverage?.section_claim_count+' section claims referenced';article.append(provenance);
+    const provenance=document.createElement('p');provenance.textContent=(draft.generation?.basis==='server_observed'?'Service model ':'Client-reported model ')+(draft.generation?.model||'unavailable')+' · '+draft.coverage?.referenced_claim_count+' of '+draft.coverage?.section_claim_count+' section claims referenced';article.append(provenance);
     for(const statement of draft.statements){
       const text=document.createElement('p');text.textContent=statement.text;article.append(text);
       const outcome=document.createElement('p');outcome.textContent=statement.status.replaceAll('_',' ')+' · '+statement.reason;article.append(outcome);
@@ -839,6 +839,15 @@ document.body.append(documentationDialog);
 const documentationHelp=document.createElement('p');
 const setupLink=document.createElement('a');setupLink.href='https://github.com/box129/seremy/blob/main/docs/beta-guide.md';setupLink.target='_blank';setupLink.rel='noopener';setupLink.textContent='Set up the local launcher and MCP agent';setupLink.style.color='#8dc5ff';documentationHelp.append(setupLink);documentationDialog.append(documentationHelp);
 const documentationOptions=[];
+let hostedDocumentation=null,hostedDocumentationBusy=false,hostedDocumentationRequest=null;
+function documentationAvailability(){
+  const button=el('copy-documentation-request');
+  button.textContent=hostedDocumentation?'Generate draft':'Copy request for agent';
+  button.disabled=hostedDocumentation?hostedDocumentationBusy||!bound||!hostedDocumentation.available:!agentPublication||!bound;
+  documentationHelp.hidden=!!hostedDocumentation;
+  el('documentation-request-status').textContent=hostedDocumentation?hostedDocumentation.notice:
+    (agentPublication?'Choose a scope and copy the request into your connected agent.':'Open this repository in the local SEREMY launcher to use MCP drafting.');
+}
 function openDocumentationRequest(useSelection){
   const picker=el('documentation-scope');picker.replaceChildren();documentationOptions.length=0;
   function option(label,scope){const node=document.createElement('option');node.value=String(documentationOptions.length);node.textContent=label;documentationOptions.push(scope);picker.append(node);}
@@ -853,18 +862,40 @@ function openDocumentationRequest(useSelection){
   const folders=new Set();for(const file of Object.keys(data.files)){const parts=file.split('/');for(let i=1;i<parts.length;i++)folders.add(parts.slice(0,i).join('/'));}
   for(const folder of [...folders].sort())option(folder+'/',{kind:'folder',value:folder});
   for(const file of Object.keys(data.files).sort())option(file,{kind:'file',value:file});
-  el('documentation-request-status').textContent=agentPublication?'Choose a scope and copy the request into your connected agent.':'Open this repository in the local SEREMY launcher to use MCP drafting.';
-  el('copy-documentation-request').disabled=!agentPublication||!bound;
+  documentationAvailability();
   el('documentation-request-text').hidden=true;documentationDialog.showModal();
 }
 el('explain-selection').onclick=()=>openDocumentationRequest(true);
 window.addEventListener('message',event=>{
   if(event.source!==parent)return;
+  if(event.data?.type==='seremy-hosted-documentation'){
+    hostedDocumentation=event.data.config;documentationAvailability();
+  }
+  if(event.data?.type==='seremy-hosted-draft-result'&&hostedDocumentation){
+    hostedDocumentationBusy=false;
+    const draft=event.data.draft;
+    if(draft&&validDocumentationDraft(draft)){
+      if(!documentationDrafts.some(item=>item.draft_id===draft.draft_id))documentationDrafts.push(draft);
+      if(documentationDrafts.length>16)documentationDrafts.shift();
+      renderAgentNotes();documentationDialog.close();hostedDocumentationRequest=null;
+      parent.postMessage({type:'seremy-hosted-draft-ready'},'*');
+    }else{
+      if(event.data.retry_new)hostedDocumentationRequest=null;
+      documentationAvailability();el('documentation-request-status').textContent=event.data.error||'The returned draft could not be verified.';
+    }
+  }
   if(event.data?.type==='seremy-generate-documentation')openDocumentationRequest(false);
   if(event.data?.type==='seremy-refresh-drafts'&&agentSharing)reportAgent();
 });
 el('copy-documentation-request').onclick=async()=>{
   const button=el('copy-documentation-request');button.disabled=true;
+  if(hostedDocumentation){
+    const payload={digest:data.bundle.content_digest,scope:documentationOptions[Number(el('documentation-scope').value)],question:el('documentation-question').value};
+    const identity=JSON.stringify(payload);
+    if(hostedDocumentationRequest?.identity!==identity)hostedDocumentationRequest={identity,request_id:crypto.randomUUID()};
+    hostedDocumentationBusy=true;el('documentation-request-status').textContent='Generating documentation…';
+    parent.postMessage({type:'seremy-hosted-draft-request',request:{...payload,request_id:hostedDocumentationRequest.request_id}},'*');return;
+  }
   try{
     if(!agentSharing){agentSharing=true;el('connect-agent').textContent='Stop sharing selection';}
     await reportAgent();

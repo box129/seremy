@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 import zipfile
 from seremy.github_input import github_source, validate_archive, source_subdirectory
 from seremy.input_errors import MESSAGES
+from seremy.hosted_drafts import HostedDrafts, DraftUnavailable
 
 ID = re.compile(r"[0-9a-f]{64}\Z")
 MAX_UPLOAD = 3 * 1024 * 1024
@@ -30,7 +31,7 @@ class Busy(ValueError):
 
 
 class HostedApplication:
-    def __init__(self, directory, *, timeout=180):
+    def __init__(self, directory, *, timeout=180, draft_provider=None):
         self.directory = Path(directory).resolve()
         self.directory.mkdir(parents=True, exist_ok=True)
         self.timeout = timeout
@@ -46,6 +47,7 @@ class HostedApplication:
             if state["status"] in {"queued", "running"}:
                 self.update(path.parent.name, status="failed", error="The service restarted. Submit the repository again.")
         self.cleanup()
+        self.drafts = HostedDrafts(self, draft_provider)
 
     def update(self, job, **changes):
         with self.lock:
@@ -90,7 +92,8 @@ class HostedApplication:
                 (folder / "source.json").write_text(json.dumps(source), encoding="utf8")
             else:
                 (folder / "input.zip").write_bytes(raw)
-            self.jobs[job] = {"id": job, "status": "queued", "stage": "Queued", "expires_at": time.time() + RESULT_TTL}
+            self.jobs[job] = {"id": job, "status": "queued", "stage": "Queued", "expires_at": time.time() + RESULT_TTL,
+                              "generation_token": secrets.token_hex(32)}
             self.update(job)
             self.worker.submit(self.run, job)
             return job
@@ -199,8 +202,16 @@ def make_app(application):
             elif method == "GET" and path == "/history.js":
                 content_type = "text/javascript; charset=utf-8"
                 body = (Path(__file__).parent / "map/history.js").read_bytes()
+            elif method == "GET" and path == "/api/documentation/config":
+                body = application.drafts.config()
+            elif method == "GET" and path.startswith("/api/documentation/"):
+                parts = path.split("/")
+                if len(parts) != 5 or not ID.fullmatch(parts[3]):
+                    raise KeyError()
+                body = application.drafts.read(parts[3], parts[4], environ.get("HTTP_X_SEREMY_GENERATION"))
             elif method == "GET" and path.startswith("/api/jobs/") and ID.fullmatch(path.split("/")[-1]):
                 body = application.state(path.split("/")[-1])
+                body.pop("generation_token", None)
             elif method == "GET" and path.startswith("/reports/"):
                 parts = path.split("/")
                 if len(parts) != 4 or not ID.fullmatch(parts[2]):
@@ -219,7 +230,11 @@ def make_app(application):
                 if not isinstance(request, dict):
                     raise ValueError("JSON object required.")
                 if path == "/api/jobs":
-                    body, status = {"id": application.start(request)}, 202
+                    job = application.start(request)
+                    body, status = {"id": job, "generation_token": application.state(job)["generation_token"]}, 202
+                elif path.startswith("/api/documentation/") and ID.fullmatch(path.split("/")[-1]):
+                    body = application.drafts.start(path.split("/")[-1], request, environ.get("HTTP_X_SEREMY_GENERATION"))
+                    status = 202
                 elif path.startswith("/api/cancel/") and ID.fullmatch(path.split("/")[-1]):
                     application.cancel(path.split("/")[-1])
                     body = {"status": "cancellation_requested"}
@@ -229,6 +244,8 @@ def make_app(application):
                 raise KeyError()
         except Busy as error:
             status, body = 429, {"error": str(error)}
+        except DraftUnavailable as error:
+            status, body = 503, {"error": str(error)}
         except (ValueError, zipfile.BadZipFile) as error:
             status, body = 400, {"error": str(error)}
         except PermissionError:
