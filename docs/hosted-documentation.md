@@ -18,6 +18,8 @@ The provider request sends the selected scope, optional question, claims, covera
 
 The adapter caps serialized evidence at 160 KiB and completion tokens at 2,048, with one active call and at most one queued call. A report permits up to 16 requests. Each attempt reserves one daily allowance unit before dispatch, including failed calls. Retries with the same request ID return the existing job. A completed failure permits a new attempt. Configure a spending limit through the provider account too. Request counts provide a usage bound whose cost depends on the chosen model and evidence size.
 
+The approved pilot configuration uses `gpt-6-luna`, low reasoning and 10 requests per UTC day across the service, with a $3 monthly project spending cap in the OpenAI account. The adapter explicitly sends `reasoning_effort: low` and records it with the returned draft. The account spending cap is configured separately from these deployment variables.
+
 ## Results and access
 
 Only the browser that submitted the analysis receives its generation capability. That capability is kept in session storage, sent in a request header and excluded from the shared report and public job status. Opening a shared report permits reading its source and guide. Generate a fresh analysis in that browser to obtain generation access.

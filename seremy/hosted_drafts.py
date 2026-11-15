@@ -36,6 +36,7 @@ class OpenAIProvider:
         except ValueError:
             self.daily_limit = 0
         self.max_output_tokens = 2048
+        self.reasoning_effort = "low"
         self.enabled = bool(self.key and 0 < len(self.model) <= 200 and self.daily_limit > 0)
 
     def generate(self, context):
@@ -55,6 +56,7 @@ class OpenAIProvider:
             "and disclose incomplete coverage and omitted bodies. Never claim execution or tests."
         )
         body = {"model": self.model, "store": False, "max_completion_tokens": self.max_output_tokens,
+                "reasoning_effort": self.reasoning_effort,
                 "messages": [{"role": "system", "content": instruction},
                              {"role": "user", "content": canonical_bytes(context).decode("utf8")}],
                 "response_format": {"type": "json_schema", "json_schema": {
@@ -72,7 +74,8 @@ class OpenAIProvider:
                 raise ValueError()
             statements = json.loads(choice["message"]["content"])["statements"]
             metadata = {"provider": "OpenAI", "model": self.model, "prompt_version": PROMPT_VERSION,
-                        "settings": {"max_completion_tokens": self.max_output_tokens}}
+                        "settings": {"max_completion_tokens": self.max_output_tokens,
+                                     "reasoning_effort": self.reasoning_effort}}
             return statements, metadata
         except (URLError, OSError, ValueError, KeyError, IndexError, TypeError) as error:
             raise DraftUnavailable("The model could not return a complete draft. Try again later.") from error

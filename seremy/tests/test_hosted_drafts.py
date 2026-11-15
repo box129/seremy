@@ -154,6 +154,7 @@ def test_provider_contract_and_error_redaction(monkeypatch):
             body = json.loads(req.data)
             assert req.full_url == "https://api.openai.com/v1/chat/completions"
             assert body["store"] is False and body["max_completion_tokens"] == 2048
+            assert body["reasoning_effort"] == "low"
             assert body["response_format"]["json_schema"]["strict"] is True
             assert timeout == 60
             return Response()
