@@ -1,5 +1,6 @@
 """Bounded implementation reading packets derived only from a verified bundle."""
 from seremy.contracts import canonical_bytes, sha256_hex
+import re
 
 PROFILE = "seremy-draft-sources-v0.1"
 MAX_RANGES = 8
@@ -33,6 +34,24 @@ def source_packet(loader, claims, read_citation):
             identity = subject.get(key)
             entity = entities.get(identity)
             if entity:
+                # TypeScript overload signatures precede the implementation.
+                # Only join declarations separated by whitespace/comments, so
+                # another scope's same-name declaration cannot be substituted.
+                if entity["file_id"].endswith((".ts", ".tsx")) and entity.get("kind") == "function_declaration":
+                    group = [entity]
+                    following = sorted((e for e in entities.values() if e["file_id"] == entity["file_id"]
+                                        and e.get("name") == entity.get("name") and e.get("kind") == entity.get("kind")
+                                        and e["decl_span"][0] >= entity["decl_span"][1]), key=lambda e: e["decl_span"][0])
+                    raw = contents["source_texts"][entity["file_id"]].encode("utf8")
+                    for sibling in following:
+                        gap = raw[group[-1]["decl_span"][1]:sibling["decl_span"][0]].decode("utf8")
+                        if re.fullmatch(r"(?:\s|/\*.*?\*/|//[^\n]*)*", gap, re.S) is None:
+                            break
+                        group.append(sibling)
+                    implementation = max(group, key=lambda e: e["decl_span"][1] - e["decl_span"][0])
+                    if implementation is not entity:
+                        request(implementation["file_id"], implementation["decl_span"], "adjacent_overload_declaration",
+                                claim["claim_id"], implementation["entity_id"])
                 request(entity["file_id"], entity["decl_span"], "identified_declaration", claim["claim_id"], identity)
             elif key == "source" and isinstance(identity, str):
                 file = identity.removeprefix("file:")

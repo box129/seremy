@@ -84,3 +84,20 @@ def test_module_occurrences_keep_direction_kind_and_separate_semantics():
 def test_claim_page_without_subjects_does_not_invent_source_bodies():
     result = packet(make_loader({"entry.py": "x"}), [{"claim_id": "one", "subject": {"scope": "snapshot"}}])
     assert result["records"] == [] and result["requested_range_count"] == 0
+
+
+def test_overload_signature_reads_adjacent_implementation_and_stops_at_other_code():
+    signature = "export function run(value: string): string;"
+    comment = "\n/** implementation */\n"
+    body = "export function run(value: string) { return value.trim() }"
+    unrelated = "\nconst stop = 1;\nexport function run(value: number) { return value }"
+    text = signature + comment + body + unrelated
+    entities = [
+        {"entity_id": "signature", "file_id": "entry.ts", "kind": "function_declaration", "name": "run", "decl_span": [0, len(signature)]},
+        {"entity_id": "body", "file_id": "entry.ts", "kind": "function_declaration", "name": "run", "decl_span": [len(signature + comment), len(signature + comment + body)]},
+        {"entity_id": "unrelated", "file_id": "entry.ts", "kind": "function_declaration", "name": "run", "decl_span": [text.index("export function run(value: number)"), len(text)]},
+    ]
+    result = packet(make_loader({"entry.ts": text}, entities), [{"claim_id": "one", "subject": {"entity_id": "signature"}}])
+    assert result["records"][0]["citation"]["text"] == body
+    assert result["records"][0]["basis"] == "adjacent_overload_declaration"
+    assert {r["entity_id"] for r in result["records"]} == {"signature", "body"}
