@@ -73,6 +73,8 @@ def test_browser_routes_delivery_and_idempotency(service):
     assert draft["generation"]["basis"] == "server_observed"
     assert not draft["accepted"] and draft["status"] == "review_required"
     assert "map.html#seremy-source=" in draft["markdown"]
+    assert all("text" not in citation and citation["sha256"] for statement in draft["statements"]
+               for citation in statement["citations"])
     assert request(web, "/api/documentation/" + job + "/" + data["request_id"], **headers)[0] == 200
     assert request(web, "/api/documentation/" + job, data, **headers)[0] == 202
     assert provider.calls == 1
