@@ -71,6 +71,10 @@ class HostedApplication:
 
     def start(self, request):
         kind, value = request.get("kind"), request.get("value")
+        is_example = kind == "example"
+        if is_example:
+            from seremy.example_report import example_archive
+            kind, value = "zip", base64.b64encode(example_archive()).decode("ascii")
         if kind not in {"zip", "git"} or not isinstance(value, str):
             raise ValueError("Choose a repository ZIP or public GitHub repository.")
         if kind == "git":
@@ -95,6 +99,8 @@ class HostedApplication:
             self.jobs[job] = {"id": job, "status": "queued", "stage": "Queued", "expires_at": time.time() + RESULT_TTL,
                               "progress": 0,
                               "generation_token": secrets.token_hex(32)}
+            if is_example:
+                self.jobs[job]["example"] = True
             self.update(job)
             self.worker.submit(self.run, job)
             return job

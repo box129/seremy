@@ -149,10 +149,16 @@
   });
   window.addEventListener('seremy-open-example',async()=>{
     try{
-      const response=await fetch('/example-report');
-      if(!response.ok)throw new Error('The example is unavailable. Try analyzing your repository.');
-      await openReport(await response.json(),false);
-      window.dispatchEvent(new Event('seremy-example-opened'));
+      if(job)throw new Error('Wait for the current analysis to finish before opening the example.');
+      get('try-example').disabled=true;
+      status('Preparing the Redux example…');
+      analysisProgress({status:'queued',progress:0,stage:'Preparing bundled Redux source'});
+      const result=await post('/api/jobs',{kind:'example'});
+      rememberGenerationAccess(result);
+      pendingRepositoryName='Redux example (bundled source)';job=result.id;
+      try{sessionStorage.setItem('seremy-job',JSON.stringify({job,repositoryName:pendingRepositoryName}));}catch(error){}
+      await poll();
     }catch(error){status(error.message);}
+    finally{get('try-example').disabled=false;}
   });
 })();

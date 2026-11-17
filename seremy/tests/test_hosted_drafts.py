@@ -59,6 +59,47 @@ def result(app, job, token, data):
     pytest.fail("Draft did not complete")
 
 
+def test_redux_example_has_private_generation_access_and_normal_quota(tmp_path):
+    provider = Provider()
+    provider.daily_limit = 1
+    app = HostedApplication(tmp_path, draft_provider=provider)
+    web = make_app(app)
+    try:
+        assert request(web, "/api/jobs", {"kind": "example"}, HTTP_ORIGIN="https://foreign.test")[0] == 403
+        examples = []
+        for _ in range(2):
+            code, raw = request(web, "/api/jobs", {"kind": "example"})
+            assert code == 202
+            submitted = json.loads(raw)
+            job, token = submitted["id"], submitted["generation_token"]
+            state = finished(app, job)
+            assert state["status"] == "completed", state
+            assert state["example"] is True and state["progress"] == 100
+            assert b"generation_token" not in request(web, "/api/jobs/" + job)[1]
+            assert request(web, "/reports/" + job + "/map.html")[0] == 200
+            loader, _ = MapBridge(tmp_path / job / "results").publication(state["version"])
+            data = {"request_id": "redux-example-request-12345678", "digest": loader.meta["content_digest"],
+                    "scope": {"kind": "file", "value": "utils/isAction.ts"}, "purpose": "walkthrough", "question": ""}
+            examples.append((job, token, data))
+        assert examples[0][0] != examples[1][0] and examples[0][1] != examples[1][1]
+        assert provider.calls == 0  # Opening the example never starts inference.
+        job, token, data = examples[0]
+        assert request(web, "/api/documentation/" + job, data)[0] == 403
+        assert request(web, "/api/documentation/" + job, data, HTTP_X_ARCHDOC_GENERATION=examples[1][1])[0] == 403
+        assert request(web, "/api/documentation/" + job, data, HTTP_X_ARCHDOC_GENERATION=token)[0] == 202
+        assert result(app, job, token, data)["status"] == "completed"
+        other, other_token, other_data = examples[1]
+        code, raw = request(web, "/api/documentation/" + other, other_data, HTTP_X_ARCHDOC_GENERATION=other_token)
+        assert code == 503 and b"daily AI allowance" in raw
+        assert provider.calls == 1
+        app.update(job, expires_at=0)
+        assert request(web, "/reports/" + job + "/map.html")[0] == 404
+    finally:
+        provider.release.set()
+        app.worker.shutdown()
+        app.drafts.worker.shutdown()
+
+
 def test_browser_routes_delivery_and_idempotency(service):
     app, provider, job, token, data = service
     web = make_app(app)

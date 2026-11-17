@@ -1,12 +1,25 @@
 """Prepare the bundled, public Redux example without a model request."""
 from functools import lru_cache
+import io
 import json
 from pathlib import Path
 import tempfile
 import time
+import zipfile
 
 from seremy.product import analyze, publish
 from seremy.viewer import render_map
+
+
+def example_archive():
+    """Package the shipped public source for a private, ordinary hosted job."""
+    fixture = Path(__file__).parent / "fixtures" / "redux-slice" / "src"
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as output:
+        for path in sorted(fixture.rglob("*")):
+            if path.is_file():
+                output.write(path, path.relative_to(fixture).as_posix())
+    return archive.getvalue()
 
 
 @lru_cache(maxsize=1)

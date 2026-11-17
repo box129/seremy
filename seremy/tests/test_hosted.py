@@ -96,6 +96,7 @@ def test_hosted_queued_cancel_and_capacity(tmp_path):
     try:
         first, second = service.start(upload()), service.start(upload())
         assert request(make_app(service), "/api/jobs", upload())[0] == 429
+        assert request(make_app(service), "/api/jobs", {"kind": "example"})[0] == 429
         service.cancel(first)
         service.cancel(second)
         release.set()
