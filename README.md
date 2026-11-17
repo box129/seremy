@@ -1,5 +1,7 @@
 # Archdoc
 
+See the [usability improvements](docs/hci-usability.md) for touch zoom, keyboard navigation, mobile controls and the documentation workflow, including validation and remaining usability work.
+
 Start with the [beta setup and user guide](docs/beta-guide.md) for the public app, local MCP documentation workflow, saving and troubleshooting.
 
 For browser-only AI drafts, see [hosted documentation setup](docs/hosted-documentation.md). The owner configures the model connection and usage allowance in the service dashboard.

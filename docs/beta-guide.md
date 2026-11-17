@@ -40,7 +40,7 @@ The agent client should expose `list_views` and `read_documentation_scope`. The 
 
 ## Generate and save documentation
 
-1. Choose **Generate documentation**, select a file or folder and optionally ask a question. **Explain selection** in Inspect starts from the current code or connection.
+1. Choose **Generate documentation**, select a file or folder and optionally ask a question. **Document this selection** in Inspect starts from the current code or connection.
 2. Choose **Copy request for agent**. This shares the verified snapshot locally. Paste the copied request into the connected agent. If clipboard access fails, copy the visible request text.
 3. Ask the agent to follow that request and submit its explanation. Return to **Documentation** to see the draft. Opening Documentation also requests an immediate check for returned drafts.
 4. Follow citations to inspect the supporting source. Check the draft's coverage and omissions. Review its explanation before using it as authoritative project documentation.
@@ -71,9 +71,9 @@ The current scope covers bounded static analysis. Dynamic callbacks, general rec
 
 ## First visit
 
-Choose **Try the Redux example** to open a prepared map and its source-linked guide. It uses public bundled Redux source and does not upload a repository or request AI generation. The optional guided task opens Find, selection details, Back, the Repository guide and device saving. Dismiss it at any time. **Help with Archdoc** explains the main actions and opens their controls. Replay the example from Help.
+Choose **Try the Redux example** to open a prepared map and its source-linked guide. It uses public bundled Redux source and does not upload a repository or request AI generation. The optional guided task opens Find, selection details, Back, the Documentation and device saving. Dismiss it at any time. **Help with Archdoc** explains the main actions and opens their controls. Replay the example from Help.
 
-**Repository guide** opens the analyzed repository's documentation. **Generate a page** opens the overview or walkthrough request. The prepared example can be read immediately. New AI pages require your own completed online analysis and its generation capability.
+**Documentation** opens the analyzed repository's documentation. **Generate documentation** opens the overview or walkthrough request. The prepared example can be read immediately. New AI pages require your own completed online analysis and its generation capability.
 
 When analysis finishes, the open tab retrieves and verifies the report's five export files in memory. This allows reading and Save on this device after the server report expires. Browser persistence happens only when you choose Save. Close or reload the tab before saving and the memory copy is lost. Saved reports include the displayed generated pages, and can be reopened from Saved on this device. A report that expired before all exports reached the tab still needs another analysis.
 

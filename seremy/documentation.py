@@ -211,6 +211,11 @@ def render_markdown(ir: dict) -> str:
     lines: List[str] = []
     lines.append("# Archdoc developer guide")
     lines.append("")
+    lines.append("> **Analysis overview.** This is a structural guide to the analyzed source, not an AI-generated explanation. Review coverage limits before relying on it.")
+    lines.append("")
+    lines.append(render_guide(ir))
+    lines.append("## Technical evidence")
+    lines.append("")
     lines.append(
         f"> **{label['state'].replace('_', ' ').capitalize()}.** Slice scope: "
         f"{label['slice_scope']}. Graph and template check results accompany this draft in validation.json. "
@@ -225,7 +230,6 @@ def render_markdown(ir: dict) -> str:
     )
     lines.append("")
 
-    lines.append(render_guide(ir))
     declarations = [c for c in ir["claims"] if c["kind"] == "declaration"]
     relationships = [c for c in ir["claims"] if c["kind"] == "relationship"]
     coverage_claims = [c for c in ir["claims"] if c["kind"] == "coverage"]

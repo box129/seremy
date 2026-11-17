@@ -3,6 +3,20 @@
 <title>Archdoc source map</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#101a1d;color:#dce9e2;font:14px system-ui}header,footer{padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid #33483f}header b{letter-spacing:.12em}button,input,select{font:inherit;background:#20332e;color:#e0eee5;border:1px solid #547266;padding:7px;border-radius:4px}button:enabled,select{cursor:pointer}button:disabled{opacity:.4}#status{font-size:12px;color:#afc6b7}#map{width:100%;height:70vh;display:block;touch-action:none;background-image:radial-gradient(#2e443a 1px,transparent 1px);background-size:25px 25px}main{position:relative}#mini{position:absolute;bottom:12px;right:12px;width:145px;height:95px;background:#14231e;border:1px solid #658b76}#detail{flex:1;min-width:240px}#detail small{display:block;color:#9fbca9;margin-top:4px}.file{fill:#14251f;stroke:#789788}.folder{fill:#182a2233;stroke:#587664}.wire{fill:none;stroke:#87b9a3;stroke-width:2}.wire.selected{stroke:#ffd78c;stroke-width:4}.hit{fill:none;stroke:transparent;stroke-width:15;cursor:pointer}.token{fill:#73d9ab33;stroke:#7ac59f;cursor:pointer}.token:hover{fill:#f9e19e66;stroke:#f9e19e}.code{font:14px Consolas,monospace;fill:#c5dbcd}.name{font:600 17px system-ui;fill:#e2eee7}.number{fill:#8aa490}.keyword{fill:#e6b1ce}.comment{fill:#9daf9b}p{padding:0 18px;color:#a1bba9;font-size:12px}#evidence{word-break:break-word}
+
+#zoom-level{min-width:44px;color:#bbb;font-variant-numeric:tabular-nums;font-size:12px}
+dialog{max-height:90dvh;overflow:auto}#documentation-preview{max-width:60ch}
+@media(max-width:700px){
+ header{flex-wrap:wrap}header button{min-height:44px;min-width:44px;font-size:13px}
+ .rail-group{gap:2px}.rail-group+.rail-group{padding-left:4px}
+ #repository{width:min(300px,90%);font-size:14px}#tree button{font-size:14px;min-height:44px}
+ #tree input{min-width:24px;min-height:24px}#tree summary{min-height:44px}
+ #inspector{inset:auto 0 0;width:100%;max-height:70%;font-size:14px}
+ main:has(#inspector:not([hidden])) #mini{display:none}
+ #mini{width:100px;height:65px}#collapse{display:none}#inspector button{min-height:44px}
+ #file-finder{left:8px;top:8px;width:calc(100% - 16px);max-height:95%;overflow:auto}
+ #map{outline-offset:-3px}#status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#visible-file-count{font-size:12px}
+}
 </style>
 <style>
 body{background:#141414;color:#ddd}main{display:flex;height:70vh}#map{flex:1;min-width:0;height:100%;background-color:#171717;background-image:radial-gradient(#333 1px,transparent 1px)}
@@ -38,13 +52,13 @@ header{flex-wrap:nowrap;min-height:44px;padding:6px 12px;gap:12px;overflow-x:aut
 @media(max-width:700px){header{flex-wrap:wrap}.rail-secondary{margin-left:auto}footer{min-width:0}#visible-file-count{flex-shrink:0}#status{max-width:90px}#detail{overflow:hidden}}
 </style>
 <a id="skip-map" href="#map">Skip to source map</a><header aria-label="Map controls"><div class="rail-group"><button id="toggle-files" aria-controls="repository" aria-expanded="true">Files</button><button id="toggle-search" aria-controls="file-finder" aria-expanded="false" aria-keyshortcuts="/ Control+k Meta+k">Find <kbd>/</kbd></button><button id="back" disabled>Back</button></div>
-<div class="rail-group"><button id="fit" aria-label="Fit map">Fit</button><button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button></div>
+<div class="rail-group"><button id="fit" aria-label="Fit map">Fit</button><button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button><output id="zoom-level" aria-label="Map zoom"></output></div>
 <div class="rail-group rail-secondary"><button id="collapse">Collapse folders</button><button id="arrange" aria-pressed="false" title="Select and drag files or folders. Shift adds to the selection.">Arrange</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></div></header>
 <main><section id="file-finder" role="search" aria-label="Find source" hidden><div class="panel-heading"><h2>Find source</h2><button id="close-search" aria-label="Close Find">×</button></div><input id="search" type="search" placeholder="File path, symbol or source text" aria-label="Find file or symbol"><div class="finder-result"><select id="files" aria-label="Open file"></select><button id="open">Open file</button></div><p id="finder-status" role="status"></p><div id="code-results" aria-label="Source text matches"></div><p>Enter opens a result · Esc returns to the map</p></section><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><button id="restore-all-files" disabled>Restore all</button><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
 <section id="working-set-empty" hidden><h2>No files visible</h2><p>Files are hidden from this view. Use Files or Find to reveal one, or restore the full map.</p><button id="restore-visible-files">Restore all files</button></section>
 <aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
 <details id="coverage-tools"><summary>Analysis coverage and limits</summary><div id="analysis-coverage"></div></details>
-<button id="explain-selection">Explain selection</button>
+<button id="explain-selection">Document this selection</button>
 <details id="mcp-tools"><summary>MCP and agent notes</summary><p id="agent-status" role="status">Connect an agent through the local launcher.</p><button id="connect-agent">Share selection with agent</button><div id="agent-notes"></div></details>
 <details id="arrangement-tools"><summary>Arrangement and saved view</summary><div id="arrangement"><label>Renderer<select id="renderer"><option value="svg">SVG</option><option value="pixi">Pixi / WebGL preview</option></select></label><div id="renderer-status" role="status">SVG active</div><label>Layout<select id="layout-mode"><option value="packed">Packed</option><option value="columns">Columns</option></select></label><label>Group name<input id="group-name" maxlength="80" placeholder="Group name"></label><div id="arrangement-actions"><button id="group-selection">Group selection</button><button id="ungroup">Ungroup</button><button id="save-view">Save view</button><button id="restore-view">Restore view</button></div><div id="view-status" role="status">Use Arrange to move files or folders. Shift selects multiple items.</div></div></details>
 <section id="source-columns" hidden><label>Long-line position<input id="source-scroll" type="range" min="0" max="0" step="1" value="0" aria-label="Horizontal source position"></label><p id="source-scroll-status"></p><button id="source-start">First columns</button></section><div class="scope-controls"><label>Connections<select id="connection-mode"><option value="all">All files</option><option value="incoming">Incoming to selected file</option><option value="outgoing">Outgoing from selected file</option><option value="neighborhood">Selected file neighborhood</option></select></label><div id="scope-label"></div><div id="connection-count" role="status"></div></div>
@@ -498,6 +512,7 @@ function visibleCode(file,index){
 }
 
 function draw(){
+  el('zoom-level').textContent=Math.round(camera.k*100)+'%';
   sceneAdapter.begin();
   world.setAttribute('transform','translate('+camera.x+' '+camera.y+') scale('+camera.k+')');
   mini.setAttribute('viewBox','0 0 '+maxX+' '+(maxY+30));
@@ -663,7 +678,7 @@ function buildTree(){
     const button=document.createElement('button');
     button.type='button';button.textContent=parts.at(-1);button.dataset.file=path;
     button.setAttribute('aria-label','Open '+path);
-    button.onclick=()=>follow({file:path,start:0,end:0});
+    button.onclick=()=>{follow({file:path,start:0,end:0});if(map.clientWidth<=700)setPanel('repository',false);};
     const row=document.createElement('div');row.className='tree-file';
     const visibility=document.createElement('input');visibility.type='checkbox';visibility.checked=true;visibility.dataset.visibilityFile=path;
     visibility.setAttribute('aria-label','Show '+path+' on map');visibility.onchange=()=>changeVisibility([path],visibility.checked);
@@ -676,7 +691,8 @@ function filterFiles(){
   const query=el('search').value.toLowerCase(),picker=el('files');
   picker.replaceChildren();
   const results=el('code-results');results.replaceChildren();let total=0;
-  for(const f of Object.values(files)){
+  const rank=f=>{const stem=f.path.split('/').at(-1).replace(/\.[^.]+$/,'').toLowerCase();return f.path.toLowerCase()===query?0:stem===query?1:data.entities.some(e=>e.file_id===f.path&&e.name.toLowerCase()===query)?2:f.path.toLowerCase().includes(query)?3:4;};
+  for(const f of Object.values(files).sort((a,b)=>rank(a)-rank(b)||a.path.localeCompare(b.path))){
     const names=data.entities.filter(e=>e.file_id===f.path).map(e=>e.name).join(' ').toLowerCase();
     const sourceMatches=query&&f.text.toLowerCase().includes(query);
     if(f.path.toLowerCase().includes(query)||names.includes(query)||sourceMatches)picker.add(new Option(f.path,f.path));
@@ -703,7 +719,7 @@ el('open').onclick=()=>{
   const first=[...el('code-results').children].find(button=>button.textContent.startsWith(file+':'));
   if(!entity&&first){first.click();return;}
   follow(entity?{file,start:entity.name_span[0],end:entity.name_span[1]}:{file,start:0,end:0});
-  setFinder(false,false);map.focus();
+  setFinder(false,false);if(map.clientWidth<=700)setPanel('repository',false);map.focus();
 };
 el('edges').onchange=()=>{const id=el('edges').value;select(data.edges.find(edge=>edge.id===id));};
 el('connection-mode').onchange=()=>{
@@ -842,11 +858,16 @@ window.addEventListener('message',event=>{
 const documentationDialog=document.createElement('dialog');
 documentationDialog.setAttribute('aria-label','Generate documentation');
 documentationDialog.style.cssText='width:min(560px,90vw);max-height:85vh;overflow:auto;background:#252525;color:#ddd;border:1px solid #555;border-radius:8px;padding:24px';
-documentationDialog.innerHTML='<form method="dialog"><button style="float:right" aria-label="Close documentation request">×</button></form><h2>Generate documentation</h2><label>Page<select id="documentation-purpose" style="display:block;width:100%;margin:10px 0"><option value="overview">Start here — overview and reading path</option><option value="walkthrough">How it works — feature walkthrough</option></select></label><label>Document a file, folder or selection<select id="documentation-scope" style="display:block;width:100%;margin:10px 0"></select></label><label>What would you like to understand? (optional)<textarea id="documentation-question" maxlength="2000" rows="3" style="display:block;width:100%;margin:10px 0;background:#181818;color:#ddd"></textarea></label><button id="copy-documentation-request">Copy request for agent</button><p id="documentation-request-status" role="status"></p><textarea id="documentation-request-text" aria-label="Agent documentation request" readonly hidden rows="8" style="width:100%;background:#181818;color:#ddd"></textarea>';
+documentationDialog.innerHTML='<form method="dialog"><button style="float:right" aria-label="Close documentation request">×</button></form><h2>Generate documentation</h2><label>Documentation type<select id="documentation-purpose" style="display:block;width:100%;margin:10px 0"><option value="overview">Repository overview — structure and where to start</option><option value="walkthrough">Feature or function walkthrough</option></select></label><label>What should this document cover?<select id="documentation-scope" style="display:block;width:100%;margin:10px 0"></select></label><label>What would you like to understand? (optional)<textarea id="documentation-question" maxlength="2000" rows="3" style="display:block;width:100%;margin:10px 0;background:#181818;color:#ddd"></textarea></label><button id="copy-documentation-request">Copy request for agent</button><p id="documentation-request-status" role="status"></p><textarea id="documentation-request-text" aria-label="Agent documentation request" readonly hidden rows="8" style="width:100%;background:#181818;color:#ddd"></textarea>';
 document.body.append(documentationDialog);
 const documentationHelp=document.createElement('p');
 const setupLink=document.createElement('a');setupLink.href='https://github.com/box129/seremy/blob/main/docs/beta-guide.md';setupLink.target='_blank';setupLink.rel='noopener';setupLink.textContent='Set up the local launcher and MCP agent';setupLink.style.color='#8dc5ff';documentationHelp.append(setupLink);documentationDialog.append(documentationHelp);
+const documentationPreview=document.createElement('p');documentationPreview.id='documentation-preview';documentationPreview.style.cssText='padding:0;line-height:1.6;color:#ccc';documentationDialog.querySelector('#copy-documentation-request').before(documentationPreview);
+function updateDocumentationPreview(){documentationPreview.textContent=el('documentation-purpose').value==='overview'?'Creates a source-grounded overview with major modules and a suggested reading path. It uses selected excerpts, so it may not cover every file.':'Creates a source-grounded explanation of the selected code or question, with citations and analysis limits.';}
+el('documentation-purpose').onchange=updateDocumentationPreview;
 const documentationOptions=[];
+let documentationInvoker=null;
+documentationDialog.addEventListener('close',()=>{if(documentationInvoker?.isConnected)documentationInvoker.focus();if(parent!==window)parent.postMessage({type:'seremy-documentation-closed'},'*');});
 let hostedDocumentation=null,hostedDocumentationBusy=false,hostedDocumentationRequest=null;
 function documentationAvailability(){
   const button=el('copy-documentation-request');
@@ -857,6 +878,7 @@ function documentationAvailability(){
     (agentPublication?'Choose a scope and copy the request into your connected agent.':'Open this repository in the local Archdoc launcher to use MCP drafting.');
 }
 function openDocumentationRequest(useSelection){
+  documentationInvoker=document.activeElement;
   const picker=el('documentation-scope');picker.replaceChildren();documentationOptions.length=0;
   function option(label,scope){const node=document.createElement('option');node.value=String(documentationOptions.length);node.textContent=label;documentationOptions.push(scope);picker.append(node);}
   if(useSelection&&selected)option('Selected connection',{kind:'connection',value:selected.id});
@@ -866,11 +888,12 @@ function openDocumentationRequest(useSelection){
     option('Selected file · '+focus.file,{kind:'file',value:focus.file});
   }
   if(useSelection)for(const id of nodeSelection){if(id.startsWith('file:'))option(id.slice(5),{kind:'file',value:id.slice(5)});if(id.startsWith('folder:'))option(id.slice(7)+'/',{kind:'folder',value:id.slice(7)});}
-  option('Entire captured repository',{kind:'folder',value:'.'});
+  option('Analyzed repository snapshot',{kind:'folder',value:'.'});
   const folders=new Set();for(const file of Object.keys(data.files)){const parts=file.split('/');for(let i=1;i<parts.length;i++)folders.add(parts.slice(0,i).join('/'));}
   for(const folder of [...folders].sort())option(folder+'/',{kind:'folder',value:folder});
   for(const file of Object.keys(data.files).sort())option(file,{kind:'file',value:file});
   el('documentation-purpose').value=useSelection?'walkthrough':'overview';
+  updateDocumentationPreview();
   documentationAvailability();
   el('documentation-request-text').hidden=true;documentationDialog.showModal();
 }
@@ -940,9 +963,21 @@ el('back').onclick=()=>{
 el('in').onclick=()=>zoom(map.clientWidth/2,map.clientHeight/2,1.5);
 el('out').onclick=()=>zoom(map.clientWidth/2,map.clientHeight/2,1/1.5);
 map.addEventListener('wheel',event=>{event.preventDefault();const r=map.getBoundingClientRect();zoom(event.clientX-r.left,event.clientY-r.top,Math.exp(-.002*event.deltaY));},{passive:false});
-let drag=null,moved=false;
+let drag=null,moved=false,pinch=null,suppressClick=false;
+const touchPointers=new Map();
+function beginPinch(){
+  const [a,b]=[...touchPointers.values()];if(!a||!b)return;
+  const r=map.getBoundingClientRect(),x=(a.x+b.x)/2-r.left,y=(a.y+b.y)/2-r.top;
+  pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),x:(x-camera.x)/camera.k,y:(y-camera.y)/camera.k,k:camera.k};
+  drag=null;moved=true;suppressClick=true;
+}
 map.onpointerdown=e=>{
+  if(e.pointerType==='touch'){
+    touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});map.setPointerCapture(e.pointerId);
+    if(touchPointers.size>=2){beginPinch();return;}
+  }
   if(e.button!==0)return;
+  suppressClick=false;
   if(!el('file-finder').hidden)setFinder(false,false);
   moved=false;drag={x:e.clientX,y:e.clientY,c:{...camera}};
   if(!arranging)return;
@@ -960,13 +995,29 @@ map.onpointerdown=e=>{
   }
   freezePositions();drag.starts=movableSelection().map(id=>({id,...placements[layoutMode][id]}));draw();
 };
-map.onpointermove=e=>{if(!drag)return;const x=e.clientX-drag.x,y=e.clientY-drag.y;
+map.onpointermove=e=>{
+  if(touchPointers.has(e.pointerId))touchPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&touchPointers.size>=2){
+    const [a,b]=[...touchPointers.values()],r=map.getBoundingClientRect();
+    const k=Math.min(4,Math.max(.001,pinch.k*Math.hypot(a.x-b.x,a.y-b.y)/pinch.distance));
+    camera={x:(a.x+b.x)/2-r.left-pinch.x*k,y:(a.y+b.y)/2-r.top-pinch.y*k,k};draw();return;
+  }
+  if(!drag)return;const x=e.clientX-drag.x,y=e.clientY-drag.y;
   if(!moved&&Math.hypot(x,y)<4)return;moved=true;map.setPointerCapture(e.pointerId);
   if(drag.starts?.length){moveSelection(drag.starts,x/drag.c.k,y/drag.c.k);return;}
   camera={...drag.c,x:drag.c.x+x,y:drag.c.y+y};draw();};
-window.addEventListener('pointerup',()=>{drag=null;});
-window.addEventListener('pointercancel',()=>{drag=null;});
-map.addEventListener('click',e=>{if(moved||arranging){e.stopPropagation();moved=false;}},true);
+function endPointer(e){
+  const wasPinching=!!pinch;touchPointers.delete(e.pointerId);drag=null;pinch=null;
+  if(touchPointers.size>=2)beginPinch();
+  else if(wasPinching&&touchPointers.size===1&&e.type!=='pointercancel'){
+    const p=[...touchPointers.values()][0];drag={x:p.x,y:p.y,c:{...camera}};
+  }
+  if(e.type==='pointercancel'||e.type==='lostpointercapture'){touchPointers.clear();pinch=null;drag=null;}
+}
+window.addEventListener('pointerup',endPointer);
+window.addEventListener('pointercancel',endPointer);
+map.addEventListener('lostpointercapture',e=>{if(touchPointers.has(e.pointerId))endPointer(e);});
+map.addEventListener('click',e=>{if(moved||suppressClick||arranging){e.stopPropagation();moved=false;suppressClick=false;}},true);
 mini.onclick=e=>{
   const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(mini.getScreenCTM().inverse());
   save();center({x:Math.min(maxX,Math.max(0,p.x)),y:Math.min(maxY+30,Math.max(0,p.y))},camera.k);draw();
@@ -977,9 +1028,16 @@ map.onkeydown=e=>{
     moveSelection(movableSelection().map(id=>({id,...placements[layoutMode][id]})),e.key==='ArrowLeft'?-step:e.key==='ArrowRight'?step:0,e.key==='ArrowUp'?-step:e.key==='ArrowDown'?step:0);return;
   }
   if(e.key==='Escape'){focus=null;selected=null;selectedOutcome=null;draw();}
+  if(e.target!==map)return;
   if(e.key==='f'){el('fit').click();e.preventDefault();}
+  if(e.key==='+'||e.key==='='){el('in').click();e.preventDefault();}
+  if(e.key==='-'){el('out').click();e.preventDefault();}
+  if(!arranging&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+    e.preventDefault();camera.x+=e.key==='ArrowLeft'?60:e.key==='ArrowRight'?-60:0;camera.y+=e.key==='ArrowUp'?60:e.key==='ArrowDown'?-60:0;draw();
+  }
 };
 window.addEventListener('resize',draw);
+if(map.clientWidth<=700)setPanel('repository',false);
 fit();draw();
 (async()=>{
   try{
