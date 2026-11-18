@@ -54,7 +54,7 @@ header{flex-wrap:nowrap;min-height:44px;padding:6px 12px;gap:12px;overflow-x:aut
 <a id="skip-map" href="#map">Skip to source map</a><header aria-label="Map controls"><div class="rail-group"><button id="toggle-files" aria-controls="repository" aria-expanded="true">Files</button><button id="toggle-search" aria-controls="file-finder" aria-expanded="false" aria-keyshortcuts="/ Control+k Meta+k">Find <kbd>/</kbd></button><button id="back" disabled>Back</button></div>
 <div class="rail-group"><button id="fit" aria-label="Fit map">Fit</button><button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button><output id="zoom-level" aria-label="Map zoom"></output></div>
 <div class="rail-group rail-secondary"><button id="collapse">Collapse folders</button><button id="arrange" aria-pressed="false" title="Select and drag files or folders. Shift adds to the selection.">Arrange</button><button id="inspect" aria-controls="inspector" aria-expanded="false">Inspect</button></div></header>
-<main><section id="file-finder" role="search" aria-label="Find source" hidden><div class="panel-heading"><h2>Find source</h2><button id="close-search" aria-label="Close Find">×</button></div><input id="search" type="search" placeholder="File path, symbol or source text" aria-label="Find file or symbol"><div class="finder-result"><select id="files" aria-label="Open file"></select><button id="open">Open file</button></div><p id="finder-status" role="status"></p><div id="code-results" aria-label="Source text matches"></div><p>Enter opens a result · Esc returns to the map</p></section><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><button id="restore-all-files" disabled>Restore all</button><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
+<main><section id="file-finder" role="search" aria-label="Find source" hidden><div class="panel-heading"><h2>Find source</h2><button id="close-search" aria-label="Close Find">×</button></div><input id="search" type="search" placeholder="File path, symbol or source text" aria-label="Find file or symbol"><div class="finder-result"><select id="files" aria-label="Open file"></select><button id="open">Open file</button></div><p id="finder-status" role="status"></p><div id="code-results" role="region" aria-label="Source text matches"></div><p>Enter opens a result · Esc returns to the map</p></section><nav id="repository" aria-label="Repository files"><div class="panel-heading"><h2>Files</h2><button id="close-files" aria-label="Close Files">×</button></div><button id="restore-all-files" disabled>Restore all</button><div id="tree"></div></nav><svg id="map" tabindex="0" aria-label="Source code map"><defs><marker id="direction" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#91a0b5"/></marker></defs><g id="world"></g></svg><svg id="mini" aria-label="Minimap"></svg>
 <section id="working-set-empty" hidden><h2>No files visible</h2><p>Files are hidden from this view. Use Files or Find to reveal one, or restore the full map.</p><button id="restore-visible-files">Restore all files</button></section>
 <aside id="inspector" aria-labelledby="inspector-title" hidden><div class="panel-heading"><h2 id="inspector-title">Selection evidence</h2><button id="close-inspector" aria-label="Close inspector">×</button></div>
 <details id="coverage-tools"><summary>Analysis coverage and limits</summary><div id="analysis-coverage"></div></details>
@@ -75,7 +75,9 @@ header{flex-wrap:nowrap;min-height:44px;padding:6px 12px;gap:12px;overflow-x:aut
 #coverage-tools{margin-bottom:16px}#analysis-coverage p{padding:0;line-height:1.7;overflow-wrap:anywhere;color:#bbb}#analysis-coverage ul{padding-left:18px;line-height:1.7;overflow-wrap:anywhere}#analysis-coverage details{margin:12px 0}#analysis-coverage pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;color:#aaa}
 #map-empty{position:absolute;inset:80px 24px auto;max-width:460px;margin:auto;padding:24px;border:1px solid #444;border-radius:8px;background:#232323;color:#bbb;z-index:1;text-align:center;line-height:1.7}#map-empty h2{font-size:16px;color:#ddd;margin-top:0}#map-empty p{padding:0;color:inherit}
 #working-set-empty{position:absolute;inset:80px 24px auto;max-width:420px;margin:auto;padding:24px;border:1px solid #444;border-radius:8px;background:#232323;color:#bbb;z-index:1;text-align:center;line-height:1.7}#working-set-empty h2{font-size:16px;color:#ddd;margin-top:0}#working-set-empty p{padding:0;color:inherit}
-#visible-file-count{white-space:nowrap;font-size:11px;color:#aaa;flex-shrink:0}#restore-all-files{margin:0 8px 12px;font-size:11px}#tree .tree-file{display:flex;align-items:center;gap:4px;padding-left:4px}#tree .tree-file button{min-width:0;flex:1;padding-left:6px;overflow:hidden;text-overflow:ellipsis}#tree .tree-file[data-included=false] button{color:#777}#tree input[type=checkbox]{width:14px;height:14px;flex:none;padding:0;margin:4px;accent-color:#a6bbde;cursor:pointer}#tree summary input[type=checkbox]{float:right}
+#visible-file-count{white-space:nowrap;font-size:11px;color:#aaa;flex-shrink:0}#restore-all-files{margin:0 8px 12px;font-size:11px}#tree .tree-file{display:flex;align-items:center;gap:4px;padding-left:4px}#tree .tree-file button{min-width:0;flex:1;padding-left:6px;overflow:hidden;text-overflow:ellipsis}#tree .tree-file[data-included=false] button{color:#aaa}#tree input[type=checkbox]{width:24px;height:24px;flex:none;padding:0;margin:4px;accent-color:#a6bbde;cursor:pointer}
+.directory-node{position:relative;padding-right:32px}.directory-node>input{position:absolute;right:0;top:0}.directory-node>details{margin-left:0!important}.directory-node>details>summary{min-height:32px}.directory-node .directory-node{margin-left:12px}.number{fill:#aaa}
+input,select,textarea{border-color:#888}
 </style>
 <script id="fixture" type="application/json">FIXTURE_JSON</script>
 <script id="pixi-runtime" type="text/plain">PIXI_RUNTIME_JS</script>
@@ -672,8 +674,8 @@ function buildTree(){
       visibility.setAttribute('aria-label','Show subtree '+directory+' on map');
       visibility.onclick=event=>event.stopPropagation();
       const prefix=directory+'/';visibility.onchange=()=>changeVisibility(Object.keys(files).filter(path=>path.startsWith(prefix)),visibility.checked);
-      summary.append(visibility);
-      group.append(summary);parent.append(group);directories.set(directory,group);
+      const wrapper=document.createElement('div');wrapper.className='directory-node';
+      group.append(summary);wrapper.append(visibility,group);parent.append(wrapper);directories.set(directory,group);
     }
     const button=document.createElement('button');
     button.type='button';button.textContent=parts.at(-1);button.dataset.file=path;
@@ -867,6 +869,13 @@ function updateDocumentationPreview(){documentationPreview.textContent=el('docum
 el('documentation-purpose').onchange=updateDocumentationPreview;
 const documentationOptions=[];
 let documentationInvoker=null;
+documentationDialog.addEventListener('keydown',event=>{
+  if(event.key!=='Tab')return;
+  const items=[...documentationDialog.querySelectorAll('button,input,select,textarea,a[href],[tabindex="0"]')].filter(node=>!node.disabled&&!node.hidden&&node.getClientRects().length);
+  const first=items[0],last=items.at(-1);
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+});
 documentationDialog.addEventListener('close',()=>{if(documentationInvoker?.isConnected)documentationInvoker.focus();if(parent!==window)parent.postMessage({type:'seremy-documentation-closed'},'*');});
 let hostedDocumentation=null,hostedDocumentationBusy=false,hostedDocumentationRequest=null;
 function documentationAvailability(){
@@ -896,6 +905,7 @@ function openDocumentationRequest(useSelection){
   updateDocumentationPreview();
   documentationAvailability();
   el('documentation-request-text').hidden=true;documentationDialog.showModal();
+  if(parent!==window)parent.postMessage({type:'seremy-documentation-opened'},'*');
 }
 el('explain-selection').onclick=()=>openDocumentationRequest(true);
 window.addEventListener('message',event=>{

@@ -7,11 +7,13 @@ body{margin:0;height:100dvh;overflow:hidden;background:#181818;color:#d5d5d5;fon
 button,input,select{font:inherit;color:inherit;border:1px solid #444;border-radius:5px;background:#272727;padding:8px 10px}
 button,a{transition:background .15s,color .15s}button{cursor:pointer}button:hover,a:hover{background:#343434;color:#fff}button:disabled{opacity:.45;cursor:default}
 :focus-visible{outline:2px solid #a6bbde;outline-offset:3px}
+input,select,textarea{border-color:#888}
+@media(prefers-reduced-motion:reduce){button,a{transition:none}}
 header{min-height:44px;min-width:0;display:flex;align-items:center;gap:14px;padding:0 12px;border-bottom:1px solid #303030;background:#202020}
 #connect{border:0;background:transparent;text-align:left;max-width:36%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dedede}
 #outputs{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px}#outputs button,#outputs a{padding:6px 9px;border:0;background:transparent;color:#b8b8b8;text-decoration:none}#outputs [aria-pressed=true]{background:#363636;color:#fff}
 main{min-width:0;position:relative;min-height:0;background-image:radial-gradient(#363636 1px,transparent 1px);background-size:24px 24px}
-#empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:12px;color:#777}#empty p{margin:0}#empty button{background:#252525;color:#ccc;border-color:#424242}
+#empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:12px;color:#aaa}#empty p{margin:0}#empty button{background:#252525;color:#ccc;border-color:#424242}
 iframe{display:block;width:100%;height:100%;border:0;background:#181818}
 #doc{position:absolute;inset:0;min-width:0;overflow:auto;margin:0;padding:28px max(20px,calc((100% - 900px)/2));line-height:1.75;overflow-wrap:anywhere;font:14px/1.75 'Segoe UI',system-ui,sans-serif;background:#1b1b1b}
 #doc h1{font-size:26px}#doc h2{font-size:20px;margin-top:30px}#doc h3{font-size:16px}#doc a{color:#8dc5ff}#doc code{font:12px Consolas,monospace;background:#292929;padding:2px 4px;border-radius:3px}#doc pre{white-space:pre-wrap;background:#242424;padding:16px}#doc blockquote{margin:16px 0;padding:8px 16px;border-left:3px solid #6b86a8;background:#23272b;color:#bfc9d6}#doc table{border-collapse:collapse;font-size:12px;width:100%;table-layout:fixed}#doc td,#doc th{border:1px solid #444;padding:7px;text-align:left;overflow-wrap:anywhere}#doc details{border-top:1px solid #3b3b3b;padding:14px 0}#doc summary{cursor:pointer;font-weight:600}#doc nav{background:#222;padding:16px;border:1px solid #353535;border-radius:6px}#doc nav a{display:block}#doc p{margin:14px 0}#doc .source-link{display:block;font-size:12px}
@@ -36,7 +38,7 @@ dialog{max-height:90dvh;overflow:auto}
 #doc>p:first-of-type{overflow-wrap:anywhere}
 @media(max-width:700px){
  header{gap:6px}#outputs{display:grid;grid-template-columns:1fr 1fr;gap:4px}
- #outputs button,#outputs summary{min-height:44px;font-size:13px;padding:8px}
+ #outputs button,#outputs summary{min-height:44px;font-size:13px;padding:8px;white-space:normal;overflow-wrap:anywhere}
  #outputs #workspace-help,#outputs #downloads,#outputs #save-device{display:none}
  #outputs #generate-documentation{grid-column:1/-1;background:#34473e;color:#fff}
  #outputs #map-tab,#outputs #doc-tab{min-width:0}
@@ -184,7 +186,22 @@ get('cancel').onclick=async()=>{
 get('map-tab').onclick=()=>{get('map').hidden=false;get('doc').hidden=true;get('map-tab').setAttribute('aria-pressed','true');get('doc-tab').setAttribute('aria-pressed','false');};
 let documentationTrigger=null;
 get('generate-documentation').onclick=()=>{documentationTrigger=get('generate-documentation');get('map-tab').click();get('map').contentWindow.postMessage({type:'seremy-generate-documentation'},'*');};
-window.addEventListener('message',event=>{if(event.source===get('map').contentWindow&&event.data?.type==='seremy-documentation-closed'&&documentationTrigger){documentationTrigger.focus();documentationTrigger=null;}});
+let documentationBackground=[];
+function restoreDocumentationBackground(){for(const [node,inert] of documentationBackground)node.inert=inert;documentationBackground=[];}
+get('map').addEventListener('load',restoreDocumentationBackground);
+window.addEventListener('message',event=>{
+ if(event.source!==get('map').contentWindow)return;
+ if(event.data?.type==='seremy-documentation-opened'){
+  if(documentationBackground.length)return;
+  for(const node of [document.querySelector('header'),document.querySelector('footer'),...document.querySelector('main').children]){
+   if(node===get('map'))continue;documentationBackground.push([node,node.inert]);node.inert=true;
+  }
+ }
+ if(event.data?.type==='seremy-documentation-closed'){
+  restoreDocumentationBackground();
+  if(documentationTrigger){documentationTrigger.focus();documentationTrigger=null;}
+ }
+});
 let documentationMarkdown='',visibleDrafts=[],documentationBlobUrls=[],selectedDocument=null;
 get('map').addEventListener('load',()=>{visibleDrafts=[];selectedDocument=null;});
 async function configureHostedDocumentation(){
