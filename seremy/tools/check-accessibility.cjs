@@ -36,7 +36,11 @@ async function main(){
   assert.ok(results.keyboard.every(s=>s.outer==='map'),'Tab must stay in the documentation iframe');
   assert.equal(await page.locator('header').evaluate(e=>e.inert),true);
   await frame.getByRole('button',{name:'Close documentation request'}).focus();await page.keyboard.press('Shift+Tab');
-  assert.equal(await frame.locator('body').evaluate(e=>e.ownerDocument.activeElement.id),'copy-documentation-request');
+  const lastEnabled=await frame.locator('dialog').evaluateAll(dialogs=>{
+   const dialog=dialogs.find(d=>!d.hidden&&getComputedStyle(d).display!=='none');
+   return [...dialog.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')].filter(e=>!e.disabled&&e.tabIndex>=0&&e.getClientRects().length).at(-1).id;
+  });
+  assert.equal(await frame.locator('body').evaluate(e=>e.ownerDocument.activeElement.id),lastEnabled);
   await frame.locator('#documentation-purpose').press('Escape');
   await page.waitForFunction(()=>document.activeElement?.id==='generate-documentation');
   assert.equal(await page.locator('header').evaluate(e=>e.inert),false);

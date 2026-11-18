@@ -16,6 +16,8 @@ async function run(){
     await page.locator('#kind').selectOption('git');
     await page.locator('#value').fill('https://github.com/pallets/itsdangerous');
     await page.locator('#start').click();
+    await page.locator('#repository-check-title').waitFor({timeout:75000});
+    await page.locator('#start').click();
     await page.waitForFunction(()=>document.querySelector('#outputs').hidden===false||document.querySelector('#status').textContent.startsWith('Analysis failed'),{},{timeout:210000});
     assert.equal(await page.locator('#outputs').isVisible(),true,await page.locator('#status').innerText());
     await page.frameLocator('#map').locator('#status').filter({hasText:'source verified'}).waitFor();

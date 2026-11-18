@@ -21,6 +21,7 @@ output to the S01 inventory:
 from __future__ import annotations
 
 import json
+from array import array
 import subprocess
 import sys
 import tempfile
@@ -133,6 +134,22 @@ def utf16_index_to_byte_offset(data: bytes, index: int) -> int:
     return byte_offset
 
 
+def utf16_byte_offsets(data: bytes):
+    """Build the independent coordinate index once per file, in linear time.
+
+    -1 marks the interior of an astral character's surrogate pair; source
+    ranges must address complete Unicode characters. No adapter map is reused.
+    """
+    offsets = array("i", [0])
+    offset = 0
+    for char in data.decode("utf-8"):
+        if ord(char) > 0xFFFF:
+            offsets.append(-1)
+        offset += len(char.encode("utf-8"))
+        offsets.append(offset)
+    return offsets
+
+
 def run_adapter(
     root: Path,
     file_ids: List[str],
@@ -190,8 +207,11 @@ def _validate_and_convert_file(
     declarations: List[DeclarationRecord] = []
     candidates: List[CandidateRecord] = []
 
+    coordinate_offsets = None
+
     def checked_span(byte_range: list, utf16_range: list) -> Span:
         """Validate one adapter record's spans against the real blob bytes."""
+        nonlocal coordinate_offsets
         start, end = byte_range
         span = Span(start, end)
         slice_bytes(blob_bytes, span)  # raises if beyond the blob
@@ -200,8 +220,12 @@ def _validate_and_convert_file(
         if not is_grapheme_boundary(blob_bytes, span.end):
             raise ValueError(f"{file_id}: span end splits a multibyte character at {span.end}")
         # Independent coordinate-map cross-check.
-        derived_start = utf16_index_to_byte_offset(blob_bytes, utf16_range[0])
-        derived_end = utf16_index_to_byte_offset(blob_bytes, utf16_range[1])
+        if coordinate_offsets is None:
+            coordinate_offsets = utf16_byte_offsets(blob_bytes)
+        if any(type(index) is not int or index < 0 or index >= len(coordinate_offsets)
+               or coordinate_offsets[index] < 0 for index in utf16_range):
+            raise ValueError(f"{file_id}: invalid UTF-16 character boundary")
+        derived_start, derived_end = (coordinate_offsets[index] for index in utf16_range)
         if (derived_start, derived_end) != (start, end):
             raise ValueError(
                 f"{file_id}: coordinate-map disagreement for utf16 {utf16_range}: "

@@ -75,11 +75,12 @@ def github_source(value, revision=None):
     return f"https://github.com/{owner}/{repo}", revision or "HEAD"
 
 
-def validate_archive(raw):
-    if len(raw) > MAX_ARCHIVE:
+def validate_archive(raw, *, compressed_limit=MAX_ARCHIVE):
+    if len(raw) > compressed_limit:
         raise ValueError("Repository archive exceeds 3 MiB. Upload a smaller ZIP or use the local app.")
     with zipfile.ZipFile(io.BytesIO(raw)) as archive:
-        if len(archive.infolist()) > 1000 or sum(item.file_size for item in archive.infolist()) > 8 * 1024 * 1024:
+        if (len(archive.infolist()) > 1000 or sum(item.file_size for item in archive.infolist()) > 8 * 1024 * 1024
+                or any(item.file_size > 1024 * 1024 for item in archive.infolist())):
             raise InputFailure("ARCHIVE_EXTRACTION_LIMIT", "Repository limit is 1,000 ZIP entries and 8 MiB extracted.")
 
 

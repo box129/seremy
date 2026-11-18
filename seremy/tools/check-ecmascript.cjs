@@ -22,7 +22,9 @@ async function run(){
       assert.equal((await page.goto(url,{timeout:120000})).status(),200);await page.locator('#empty-connect').click();
       assert.match(await page.locator('#input-profile').innerText(),/\.js, \.jsx and \.tsx/);
       if(hostedUrl)await page.locator('#zip').setInputFiles({name:'ecmascript-fixture.zip',mimeType:'application/zip',buffer:archive});else await page.locator('#value').fill(fixture);
-      await page.locator('#start').click();const frame=page.frameLocator('#map');await frame.locator('#status').filter({hasText:'source verified'}).waitFor({timeout:120000});await selectRenderer(frame);
+      await page.locator('#start').click();
+      if(hostedUrl){await page.locator('#repository-check-title').waitFor({timeout:75000});await page.locator('#start').click();}
+      const frame=page.frameLocator('#map');await frame.locator('#status').filter({hasText:'source verified'}).waitFor({timeout:120000});await selectRenderer(frame);
       const rendering=await frame.locator('body').evaluate(()=>window.__seremyRendererInfo());assert.equal(rendering.engine,renderer);renderers.push(rendering);
       const canonical=await frame.locator('#fixture').textContent(),data=JSON.parse(canonical);
       const basename=file=>file.split('/').at(-1),file=name=>Object.keys(data.files).find(file=>basename(file)===name);

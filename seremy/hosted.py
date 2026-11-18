@@ -18,6 +18,7 @@ import zipfile
 from seremy.github_input import github_source, validate_archive, source_subdirectory
 from seremy.input_errors import MESSAGES
 from seremy.hosted_drafts import HostedDrafts, DraftUnavailable
+from seremy.preflight import limits
 
 ID = re.compile(r"[0-9a-f]{64}\Z")
 MAX_UPLOAD = 3 * 1024 * 1024
@@ -98,6 +99,7 @@ class HostedApplication:
                 (folder / "input.zip").write_bytes(raw)
             self.jobs[job] = {"id": job, "status": "queued", "stage": "Queued", "expires_at": time.time() + RESULT_TTL,
                               "progress": 0,
+                              "check_first": request.get("preflight") is True,
                               "generation_token": secrets.token_hex(32)}
             if is_example:
                 self.jobs[job]["example"] = True
@@ -115,6 +117,25 @@ class HostedApplication:
             self.state(job)
             if self.jobs[job]["status"] in {"queued", "running"}:
                 self.cancelled.add(job)
+            elif self.jobs[job]["status"] == "ready":
+                self.update(job, status="cancelled", stage="Cancelled")
+                self.remove_inputs(job)
+
+    def confirm(self, job, token):
+        with self.lock:
+            state = self.state(job)
+            if not isinstance(token, str) or not secrets.compare_digest(token, state["generation_token"]):
+                raise PermissionError()
+            if state["status"] != "ready":
+                raise ValueError("Check the repository again before starting analysis.")
+            if sum(s["status"] in {"queued", "running"} for s in self.jobs.values()) >= 2:
+                raise Busy("The analysis service is busy. Please try again later.")
+            self.update(job, status="queued", stage="Queued for analysis", progress=0, confirmed=True)
+            self.worker.submit(self.run, job)
+
+    def remove_inputs(self, job):
+        for name in ("input.zip", "source.json", "prepared.zip", "prepared.json"):
+            (self.directory / job / name).unlink(missing_ok=True)
 
     @staticmethod
     def stop(process):
@@ -131,14 +152,21 @@ class HostedApplication:
         folder = self.directory / job
         process = None
         outcome = {}
+        checking = self.jobs[job].get("check_first") and not self.jobs[job].get("confirmed")
         try:
             if job in self.cancelled:
                 outcome = {"status": "cancelled", "stage": "Cancelled"}
                 return
-            self.update(job, status="running", stage="Preparing repository", progress=2)
+            self.update(job, status="running", stage="Checking repository size and source files" if checking else "Preparing repository",
+                        progress=2, started_at=time.time(), time_limit_seconds=60 if checking else self.timeout,
+                        phase="preflight" if checking else "analysis")
             environment = dict(os.environ, NODE_OPTIONS="--max-old-space-size=192", PYTHONDONTWRITEBYTECODE="1",
                                ARCHDOC_PROGRESS_FILE=str(folder / "progress.json"))
-            if (folder / "source.json").exists():
+            if self.jobs[job].get("check_first"):
+                command = ["seremy.preflight", "--job-folder", str(folder)]
+                if not checking:
+                    command += ["--analyze"]
+            elif (folder / "source.json").exists():
                 source = json.loads((folder / "source.json").read_text(encoding="utf8"))
                 command = ["seremy.github_input", source["url"], "--revision", source["revision"]]
                 if source.get("subdirectory"):
@@ -149,7 +177,7 @@ class HostedApplication:
                                        cwd=Path(__file__).resolve().parent.parent, env=environment,
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                        start_new_session=os.name != "nt")
-            deadline = time.monotonic() + self.timeout
+            deadline = time.monotonic() + (60 if checking else self.timeout)
             while True:
                 try:
                     progress = json.loads((folder / "progress.json").read_text(encoding="utf8"))
@@ -163,7 +191,13 @@ class HostedApplication:
                     return
                 if time.monotonic() >= deadline:
                     self.stop(process)
-                    raise ValueError("Analysis reached its time limit. Try a smaller repository.")
+                    previous_stage = self.jobs[job].get("stage", "analysis")
+                    outcome = {"status": "failed", "stage": "Repository check timed out" if checking else "Analysis timed out",
+                               "error_code": "PREFLIGHT_TIMEOUT" if checking else "ANALYSIS_TIMEOUT",
+                               "failed_stage": previous_stage,
+                               "error": "Repository check reached its 60-second time limit. Retry or upload a source ZIP." if checking else
+                               f"Analysis reached its {self.timeout:g}-second time limit during {previous_stage.lower()}. This does not necessarily mean the repository is too large. Choose a source folder, omit compiled bundles from your ZIP, or use the local app."}
+                    return
                 try:
                     stdout, stderr = process.communicate(timeout=.25)
                     break
@@ -178,6 +212,18 @@ class HostedApplication:
                 outcome={"status":"failed","stage":"Analysis failed","error_code":code,"error":MESSAGES[code]}
                 return
             result=json.loads(stdout)
+            if checking:
+                if job in self.cancelled:
+                    outcome = {"status": "cancelled", "stage": "Cancelled"}
+                    return
+                summary = result["preflight"]
+                summary["limits"] = limits(self.timeout)
+                outcome = {"status": "ready" if summary["allowed"] else "failed", "progress": 0,
+                           "stage": "Repository checked — ready to analyze" if summary["allowed"] else "No supported source files",
+                           "preflight": summary}
+                if not summary["allowed"]:
+                    outcome["error"] = summary["warnings"][-1]
+                return
             publication = Path(result["publication"])
             coverage = json.loads((publication / "graph.json").read_text(encoding="utf8"))["contents"]["coverage"]
             if job in self.cancelled:
@@ -191,8 +237,8 @@ class HostedApplication:
                 self.stop(process)
             outcome = {"status": "failed", "stage": "Analysis failed", "error": str(error)}
         finally:
-            (folder / "input.zip").unlink(missing_ok=True)
-            (folder / "source.json").unlink(missing_ok=True)
+            if outcome.get("status") != "ready":
+                self.remove_inputs(job)
             self.update(job, **outcome)
 
     def report(self, job, name):
@@ -209,6 +255,8 @@ def make_app(application):
         try:
             if method == "GET" and path == "/healthz":
                 body = {"status": "ok"}
+            elif method == "GET" and path == "/api/limits":
+                body = limits(application.timeout)
             elif method == "GET" and path == "/":
                 content_type = "text/html; charset=utf-8"
                 body = (Path(__file__).parent / "map/launcher.html").read_text(encoding="utf8").replace(
@@ -250,6 +298,9 @@ def make_app(application):
                 if path == "/api/jobs":
                     job = application.start(request)
                     body, status = {"id": job, "generation_token": application.state(job)["generation_token"]}, 202
+                elif path.startswith("/api/analyze/") and ID.fullmatch(path.split("/")[-1]):
+                    application.confirm(path.split("/")[-1], environ.get("HTTP_X_ARCHDOC_GENERATION"))
+                    body, status = {"status": "queued"}, 202
                 elif path.startswith("/api/documentation/") and ID.fullmatch(path.split("/")[-1]):
                     body = application.drafts.start(path.split("/")[-1], request, environ.get("HTTP_X_ARCHDOC_GENERATION", environ.get("HTTP_X_SEREMY_GENERATION")))
                     status = 202

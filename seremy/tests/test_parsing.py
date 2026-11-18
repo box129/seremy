@@ -155,6 +155,36 @@ def test_utf16_index_independent_conversion():
     assert utf16_index_to_byte_offset(data, 3) == 4
 
 
+def test_cached_coordinate_index_preserves_all_unicode_boundaries():
+    from seremy.parsing import utf16_byte_offsets
+    text = "a\u03b4\r\n\U0001f642z\ufeff"
+    raw = text.encode("utf8")
+    offsets = utf16_byte_offsets(raw)
+    for index, byte in enumerate(offsets):
+        if byte >= 0:
+            assert byte == utf16_index_to_byte_offset(raw, index)
+    assert offsets[5] == -1  # Interior of the emoji's surrogate pair.
+
+
+def test_many_source_records_build_coordinate_index_once(monkeypatch, tmp_path):
+    from seremy import parsing
+    raw = b"export function target(){ return 1; }\n" + b"target();\n" * 5000
+    (tmp_path / "many.ts").write_bytes(raw)
+    output = run_adapter(tmp_path, ["many.ts"])
+    original = parsing.utf16_byte_offsets
+    calls = []
+    def counted(data):
+        calls.append(len(data))
+        return original(data)
+    monkeypatch.setattr(parsing, "utf16_byte_offsets", counted)
+    results = build_parsed_results(output, _blobs_for(tmp_path, ["many.ts"]))
+    assert len([c for c in results[0].candidates if c.kind == "call"]) == 5000
+    assert calls == [len(raw)]
+    output["files"][0]["candidates"][0]["utf16"][0] = -1
+    with pytest.raises(ValueError, match="UTF-16 character boundary"):
+        build_parsed_results(output, _blobs_for(tmp_path, ["many.ts"]))
+
+
 # --- Diagnostics and error regions --------------------------------------------
 
 

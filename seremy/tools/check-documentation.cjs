@@ -31,6 +31,7 @@ async function run(){
       await page.locator('#zip').setInputFiles({name:'redux-guide.zip',mimeType:'application/zip',buffer:archive});
     }else await page.locator('#value').fill(fixture);
     await page.locator('#start').click();
+    if(process.argv[3]){await page.locator('#repository-check-title').waitFor({timeout:75000});await page.locator('#start').click();}
     const map=page.frameLocator('#map');
     await map.locator('#status').filter({hasText:'source verified'}).waitFor({timeout:60000});
     await selectRenderer(map);

@@ -25,6 +25,9 @@ dialog{color:#ddd;background:#232323;border:1px solid #444;border-radius:10px;wi
 .analysis-progress{padding:12px;background:#232323;border:1px solid #424242;border-radius:6px}
 dialog{max-height:90dvh;overflow:auto}
 #dialog-progress{order:-1;position:sticky;top:0;z-index:2}
+#repository-check{border:1px solid #666;border-radius:6px;padding:14px;overflow-wrap:anywhere}
+#repository-check h3{margin:0 0 10px}#repository-check p{margin:8px 0}#repository-check ul{padding-left:20px;line-height:1.6}
+#repository-check button{min-height:44px;margin:4px;text-align:left}#limit-summary{margin:0}
 #doc .source-citations{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 18px}
 #doc .source-citations .source-link{display:inline-block;padding:2px 7px;background:#252b30;border-radius:4px;font-size:11px}
 .analysis-progress progress{display:block;width:100%;height:6px;margin-top:9px;accent-color:#6dc99a}
@@ -57,11 +60,13 @@ dialog{max-height:90dvh;overflow:auto}
 <dialog id="connect-dialog" aria-labelledby="connect-title"><button class="close" id="close-connect" aria-label="Close connection">×</button><h2 id="connect-title">Connect repository</h2>
 <form id="form">
 <p id="input-profile">Source analysis supports lowercase .py, .ts, .js, .jsx and .tsx. JSX syntax is recorded separately from runtime relationships. Open Coverage on the map for the active profile and analysis limits.</p>
+<p id="limit-summary" hidden></p><button id="limits-help" type="button" hidden>Supported files and limits</button>
 <label>Repository input<select id="kind"><option value="folder">Local folder</option><option value="zip">ZIP file</option><option value="git">Git HTTPS URL</option></select></label>
 <label id="value-label"><span id="value-title">Folder path</span><input id="value" required placeholder="C:\path\to\repository"></label>
 <label id="zip-label" hidden>ZIP file<input id="zip" type="file" accept=".zip"></label>
 <label id="revision-label" hidden>Branch or tag<input id="revision" placeholder="Default branch"></label><label id="source-folder-label" hidden>Source folder (optional)<input id="source-folder" placeholder="src" maxlength="128"><small>Only this folder is analyzed. Configuration outside it is not used. Source-folder imports allow a bounded 16 MiB GitHub download; selected files still have extraction limits.</small></label>
 <p id="connection-status" role="status" aria-live="polite"></p>
+<section id="repository-check" aria-labelledby="repository-check-title" tabindex="-1" hidden></section>
 <div id="dialog-progress" class="analysis-progress" hidden><p><span class="progress-stage"></span><span class="progress-percent"></span></p><progress aria-label="Repository analysis stage progress" max="100" value="0"></progress><small>Progress follows completed analysis stages.</small></div>
 <div class="actions"><button id="cancel" type="button" hidden>Cancel</button><button id="start">Analyze repository</button></div>
 </form></dialog>
@@ -71,6 +76,7 @@ dialog{max-height:90dvh;overflow:auto}
 const get=id=>document.getElementById(id);
 const hosted=window.ARCHDOC_HOSTED===true||window.SEREMY_HOSTED===true;
 let job=null,publication=null,repositoryName='',pendingRepositoryName='';
+let preparedJob=null;
 let generationTokens={};
 try{generationTokens=JSON.parse(sessionStorage.getItem('seremy-generation-tokens'))||{};}catch(error){}
 function status(message){get('status').textContent=get('connection-status').textContent=message;}
@@ -81,7 +87,8 @@ function analysisProgress(state){
   for(const id of ['analysis-progress','dialog-progress']){
     const box=get(id);box.hidden=false;box.querySelector('progress').value=percent;
     box.querySelector('.progress-stage').textContent=state.error||state.stage;
-    box.querySelector('.progress-percent').textContent=percent+'%';
+    box.querySelector('.progress-percent').textContent=state.phase==='preflight'?'':(state.status==='failed'?'Stopped at ':'')+percent+'%';
+    if(state.phase==='preflight'&&state.status==='running')box.querySelector('progress').removeAttribute('value');
   }
   if(state.status==='completed')progressHideTimer=setTimeout(()=>{get('analysis-progress').hidden=true;},2500);
 }
@@ -117,12 +124,49 @@ async function post(path,data){
   const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
   const result=await response.json();if(!response.ok)throw new Error(result.error);return result;
 }
+function invalidateCheck(){
+  if(preparedJob){post('/api/cancel/'+preparedJob,{}).catch(()=>{});preparedJob=null;}
+  get('repository-check').hidden=true;
+  get('zip').required=get('kind').value==='zip';get('value').required=get('kind').value!=='zip';
+  if(hosted)get('start').textContent='Check repository';
+}
+function inputBusy(busy){for(const id of ['kind','value','zip','revision','source-folder'])get(id).disabled=busy;}
+for(const id of ['kind','value','zip','revision','source-folder'])get(id).addEventListener('input',invalidateCheck);
+function showRepositoryCheck(check){
+  const panel=get('repository-check');panel.replaceChildren();panel.hidden=false;
+  const title=document.createElement('h3');title.id='repository-check-title';title.textContent=check.allowed?'Repository checked':'Choose supported source files';panel.append(title);
+  const add=text=>{const p=document.createElement('p');p.textContent=text;panel.append(p);};
+  const mib=bytes=>(bytes/1048576).toFixed(2)+' MiB';
+  add(check.source_files+' supported source files · '+mib(check.source_bytes)+' of source');
+  add(mib(check.download_bytes)+' downloaded/uploaded · '+mib(check.extracted_bytes)+' extracted · '+check.entry_count+' ZIP entries');
+  add(Object.entries(check.supported).map(([extension,count])=>extension+': '+count).join(' · '));
+  const warnings=document.createElement('ul');
+  for(const text of check.warnings){const li=document.createElement('li');li.textContent=text;warnings.append(li);}
+  if(check.dense_files.length){const li=document.createElement('li');li.textContent='Large or dense files: '+check.dense_files.map(item=>item.path).join(', ');warnings.append(li);}
+  panel.append(warnings);
+  add(check.limits.analysis_seconds+'-second analysis limit. '+check.runtime_note);
+  if(get('kind').value==='git'&&check.source_folders.length){
+    add('To narrow the analysis, choose a source folder and check again:');
+    for(const folder of check.source_folders){
+      const button=document.createElement('button');button.type='button';button.textContent=folder.path+' ('+folder.source_files+' source files)';
+      button.onclick=()=>{get('source-folder').value=folder.path;invalidateCheck();get('source-folder').focus();};panel.append(button);
+    }
+  }
+  panel.focus();
+}
 async function poll(){
   try{
     const response=await fetch('/api/jobs/'+job),state=await response.json();
     if(!response.ok)throw new Error(state.error);
     analysisProgress(state);
     status(state.status==='completed'?'Analysis complete':state.error||state.stage);
+    if(state.status==='ready'){
+      inputBusy(false);
+      get('zip').required=get('value').required=false;
+      preparedJob=job;job=null;get('start').disabled=false;get('start').textContent='Analyze repository';get('cancel').hidden=true;
+      get('analysis-progress').hidden=get('dialog-progress').hidden=true;showRepositoryCheck(state.preflight);return;
+    }
+    if(state.status==='failed'&&state.preflight)showRepositoryCheck(state.preflight);
     if(state.status==='completed'){
       publication=state.publication;
       repositoryName=pendingRepositoryName;
@@ -147,12 +191,22 @@ async function poll(){
       if(state.example)window.dispatchEvent(new Event('seremy-example-opened'));
     }
     if(['completed','failed','cancelled'].includes(state.status)){
+      inputBusy(false);
       get('start').disabled=false;get('cancel').hidden=true;job=null;
     }else{setTimeout(poll,750);}
-  }catch(error){job=null;status(error.message);get('start').disabled=false;get('cancel').hidden=true;}
+  }catch(error){job=null;inputBusy(false);status(error.message);get('start').disabled=false;get('cancel').hidden=true;}
 }
 get('form').onsubmit=async event=>{
   event.preventDefault();get('start').disabled=true;status('Preparing input…');
+  inputBusy(true);
+  if(hosted&&preparedJob){
+    try{
+      const response=await fetch('/api/analyze/'+preparedJob,{method:'POST',headers:{'Content-Type':'application/json','X-ArchDoc-Generation':generationTokens[preparedJob]||''},body:'{}'});
+      const result=await response.json();if(!response.ok){if(response.status!==429)invalidateCheck();throw new Error(result.error);}
+      job=preparedJob;preparedJob=null;get('repository-check').hidden=true;get('cancel').hidden=false;get('start').textContent='Check repository';poll();
+    }catch(error){inputBusy(false);status(error.message);get('start').disabled=false;}
+    return;
+  }
   analysisProgress({status:'queued',progress:0,stage:'Preparing upload'});
   try{
     const kind=get('kind').value;let value=get('value').value;
@@ -167,12 +221,13 @@ get('form').onsubmit=async event=>{
     pendingRepositoryName=kind==='zip'?get('zip').files[0].name:value.replace(/[\\/]+$/,'').split(/[\\/]/).pop();
     const sourceFolder=hosted&&kind==='git'?get('source-folder').value.trim():'';
     if(sourceFolder)pendingRepositoryName+=' / '+sourceFolder;
-    const result=await post('/api/jobs',{kind,value,revision:get('revision').value||null,source_folder:sourceFolder||null});
+    const result=await post('/api/jobs',{kind,value,revision:get('revision').value||null,source_folder:sourceFolder||null,preflight:hosted});
     rememberGenerationAccess(result);
     job=result.id;
-    if(hosted)try{sessionStorage.setItem('seremy-job',JSON.stringify({job,repositoryName:pendingRepositoryName}));}catch(error){}
+    if(hosted)try{sessionStorage.setItem('seremy-job',JSON.stringify({job,repositoryName:pendingRepositoryName,kind,
+      value:kind==='git'?value:'',revision:get('revision').value,sourceFolder}));}catch(error){}
     get('cancel').hidden=false;poll();
-  }catch(error){status(error.message);get('start').disabled=false;}
+  }catch(error){inputBusy(false);status(error.message);get('start').disabled=false;get('analysis-progress').hidden=get('dialog-progress').hidden=true;}
 };
 function rememberGenerationAccess(result){
   if(hosted&&result.generation_token){
@@ -339,6 +394,17 @@ get('doc-tab').onclick=async()=>{
   }catch(error){status(error.message);}
 };
 if(hosted){
+  get('start').textContent='Check repository';get('limit-summary').hidden=false;get('limits-help').hidden=false;
+  const limitText='ZIP/full GitHub archive: 3 MiB. Selected GitHub folder: up to 16 MiB download. Maximum 8 MiB extracted, 1,000 ZIP entries and 1 MiB per file. Analysis stops after 180 seconds.';
+  get('limit-summary').textContent=limitText+' We check the repository before you start analysis.';
+  const limitsSection=document.createElement('section');limitsSection.id='limits-section';limitsSection.tabIndex=-1;
+  limitsSection.innerHTML='<h3>Supported files and limits</h3><p></p><p>Python, JavaScript, TypeScript, JSX and TSX source are analyzed. HTML, CSS, images and documents are not architectural source inputs. React JSX syntax does not establish runtime relationships.</p><p>Check repository downloads and inspects the archive without parsing code. It shows source counts, sizes and warnings. Then choose Analyze repository. Size checks cannot predict every timeout: dense compiled bundles and complex code can take longer. Prefer source folders over generated bundles or dependency folders.</p><p>On a phone, open Files and select one source file first. Use two fingers to zoom, one finger to pan, or the + and − buttons. Fit resets the view. Open Documentation for a readable guide; use Generate documentation for an AI explanation.</p><p>After a timeout, choose a smaller source folder or upload a source-only ZIP. A folder selection excludes outside configuration and dependencies; the resulting map covers only that folder. The local app is available for larger projects.</p>';
+  limitsSection.querySelector('p').textContent=limitText;
+  get('help-dialog').append(limitsSection);
+  get('limits-help').onclick=()=>{get('help-dialog').showModal();limitsSection.scrollIntoView();limitsSection.focus();};
+  fetch('/api/limits').then(response=>response.ok?response.json():null).then(settings=>{
+    if(settings){const text=limitText.replace('180 seconds',settings.analysis_seconds+' seconds');get('limit-summary').textContent=text+' We check the repository before you start analysis.';limitsSection.querySelector('p').textContent=text;}
+  }).catch(()=>{});
   get('try-example').hidden=false;
   get('try-example').onclick=()=>window.dispatchEvent(new Event('seremy-open-example'));
   get('hosted-ai-help').hidden=false;
@@ -355,6 +421,7 @@ if(hosted){
   try{
     const saved=JSON.parse(sessionStorage.getItem('seremy-job'));
     if(saved&&/^[0-9a-f]{64}$/.test(saved.job)){
+      if(['zip','git'].includes(saved.kind)){get('kind').value=saved.kind;get('kind').onchange();get('value').value=saved.value||'';get('revision').value=saved.revision||'';get('source-folder').value=saved.sourceFolder||'';}
       job=saved.job;pendingRepositoryName=saved.repositoryName;get('start').disabled=true;poll();
     }
   }catch(error){}
