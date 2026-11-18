@@ -5,6 +5,7 @@ COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 WORKDIR /app
+COPY LICENSE THIRD_PARTY_NOTICES.md ./
 COPY seremy/tools/package*.json seremy/tools/
 RUN npm ci --prefix seremy/tools --omit=dev --ignore-scripts && npm cache clean --force
 COPY requirements-hosted.txt ./

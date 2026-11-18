@@ -1,5 +1,7 @@
 # Archdoc
 
+ArchDoc's original code and documentation are available under the [MIT License](LICENSE), permitting reuse, modification and commercial distribution with the required notices. Copyright (c) 2026 ArchDoc contributors. Third-party material retains its own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
+
 See the [usability improvements](docs/hci-usability.md) for touch zoom, keyboard navigation, mobile controls and the documentation workflow, including validation and remaining usability work.
 
 Start with the [beta setup and user guide](docs/beta-guide.md) for the public app, local MCP documentation workflow, saving and troubleshooting.
