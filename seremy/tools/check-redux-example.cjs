@@ -69,7 +69,10 @@ async function main(){
     const after=await matrix();assert.ok(Math.abs(after[2]/before[2]-2)<.02);
     const localX=x-rect.x,localY=y-rect.y;
     assert.ok(Math.hypot((localX-before[0])/before[2]*after[2]+after[0]-localX,(localY-before[1])/before[2]*after[2]+after[1]-localY)<1);
-    await touch('touchEnd',[[2,x+80,y]]);await touch('touchMove',[[1,x-60,y+20]]);
+    await touch('touchEnd',[[2,x+80,y]]);
+    const beforePan=await world.getAttribute('transform');
+    await touch('touchMove',[[1,x-60,y+20]]);
+    await page.waitForFunction(old=>document.querySelector('#map').contentDocument.querySelector('#world').getAttribute('transform')!==old,beforePan,{timeout:5000});
     const panned=await matrix();assert.ok(Math.abs(panned[0]-after[0]-20)<1,JSON.stringify({before,after,panned,events:await map.evaluate(()=>window.touchAudit)}));assert.ok(Math.abs(panned[1]-after[1]-20)<1);
     await touch('touchCancel',[]);
     await map.focus();await map.press('+');assert.ok((await matrix())[2]>panned[2]);
